@@ -1,0 +1,15 @@
+{
+  "name": "proavus",
+  "description": "Proavus – evidence-first genealogy with AI",
+  "owner": {
+    "name": "Petr Bělohlávek",
+    "url": "https://github.com/petrbelohlavek"
+  },
+  "plugins": [
+    {
+      "name": "proavus",
+      "source": ".",
+      "description": "Method, data schema and tools for genealogical research with an LLM under the Genealogical Proof Standard"
+    }
+  ]
+}

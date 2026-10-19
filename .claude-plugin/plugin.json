@@ -1,0 +1,12 @@
+{
+  "name": "proavus",
+  "version": "0.1.0",
+  "description": "Evidence-first genealogy with AI: method, data schema and tools for research under the Genealogical Proof Standard",
+  "author": {
+    "name": "Petr Bělohlávek",
+    "url": "https://github.com/petrbelohlavek"
+  },
+  "homepage": "https://github.com/petrbelohlavek/proavus",
+  "repository": "https://github.com/petrbelohlavek/proavus",
+  "keywords": ["genealogy", "family-history", "genealogical-proof-standard", "evidence"]
+}
