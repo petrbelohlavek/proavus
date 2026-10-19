@@ -1,0 +1,51 @@
+# Licensing of this repository by part (ADR 0012). Later tables override
+# earlier ones for the files they match. Full texts are in LICENSES/.
+version = 1
+
+# Default: documentation and other text – CC BY 4.0
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Code: tools, tests, hooks, workflows, project files – MIT
+[[annotations]]
+path = [
+  "tools/**",
+  "tests/**",
+  ".githooks/**",
+  ".github/**",
+  "hooks/**",
+  "pyproject.toml",
+]
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
+SPDX-License-Identifier = "MIT"
+
+# Schema, vocabularies, regional schema extensions, family repository
+# template, plugin manifests and small config files – CC0 (no conditions)
+[[annotations]]
+path = [
+  "schema/**",
+  "regions/*/schema-ext.yaml",
+  "templates/**",
+  ".claude-plugin/**",
+  ".gitignore",
+  ".gitattributes",
+  ".editorconfig",
+  ".guard-allow",
+  "uv.lock",
+]
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
+SPDX-License-Identifier = "CC0-1.0"
+
+# Name and logo – all rights reserved (see LICENSES/LicenseRef-Proavus-Brand.txt)
+[[annotations]]
+path = "brand/**"
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek"
+SPDX-License-Identifier = "LicenseRef-Proavus-Brand"
+
+# Brand README explains the rights; it is documentation
+[[annotations]]
+path = "brand/README.md"
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek"
+SPDX-License-Identifier = "CC-BY-4.0"

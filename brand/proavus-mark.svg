@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Proavus"><title>Proavus</title>
+<path d="M64 400 L64 150 Q160 118 250 150 L250 400 Q160 370 64 400 Z" fill="#FFFFFF" stroke="#1F3A5F" stroke-width="14" stroke-linejoin="round"/>
+<path d="M262 150 Q352 118 448 150 L448 400 Q352 370 262 400 Z" fill="#FFFFFF" stroke="#1F3A5F" stroke-width="14" stroke-linejoin="round"/>
+<g stroke="#B8742A" stroke-width="10" stroke-linecap="round"><line x1="100" y1="205" x2="216" y2="205"/><line x1="100" y1="245" x2="216" y2="245"/><line x1="100" y1="285" x2="188" y2="285"/><line x1="100" y1="325" x2="216" y2="325"/></g>
+<path d="M300 275 L338 275 M338 212 L338 338 M338 212 L392 212 M338 338 L392 338" fill="none" stroke="#1F3A5F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="296" cy="275" r="15" fill="#1F3A5F"/><circle cx="406" cy="212" r="15" fill="#1F3A5F"/><circle cx="406" cy="338" r="15" fill="#B8742A"/>
+</svg>

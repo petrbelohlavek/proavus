@@ -1,0 +1,21 @@
+Proavus name and logo – all rights reserved
+
+Copyright (c) 2026 Petr Bělohlávek
+
+The name "Proavus" and the Proavus logo, icon, favicon and social preview
+images (the files in the brand/ directory, except files that state another
+licence) are NOT licensed under the free licences used elsewhere in this
+repository. All rights are reserved.
+
+You may use the unmodified logo and the name to refer to the Proavus project,
+for example in an article, a list of tools, or a link to the repository.
+
+You may not:
+- use the name or the logo for another project, product or service,
+- present a modified version of Proavus, or a different project, as Proavus,
+- modify the logo or combine it with other marks.
+
+A fork of the repository may keep these files for reference, but a fork that
+is published as an independent project must use its own name and logo.
+
+For any other use, ask the author: https://github.com/petrbelohlavek
