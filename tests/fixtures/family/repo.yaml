@@ -1,0 +1,9 @@
+schema_version: 0.1.0
+title: Fictional family Pokusný (test data)
+regions: [cz]
+extensions: [cz]
+members:
+  - abbr: ab
+    name: Ada Badatelová
+    role: researcher
+living_threshold_years: 110
