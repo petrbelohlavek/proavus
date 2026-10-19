@@ -1,0 +1,10 @@
+# Generated on each computer, never saved in git (Proavus ADR 0019)
+START-HERE.md
+views/
+*.sqlite
+*.sqlite3
+__pycache__/
+.venv/
+.claude/settings.local.json
+.DS_Store
+Thumbs.db

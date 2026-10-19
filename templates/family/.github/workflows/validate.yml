@@ -1,0 +1,14 @@
+# Proavus: check every change. Only checks, never writes (ADR 0019).
+name: validate
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv run .proavus/tools/validate.py .

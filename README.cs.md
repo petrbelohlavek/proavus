@@ -11,8 +11,9 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.1.0).** Existuje schéma, validátor a závazná pravidla;
-> průvodce instalací a příkazy pro bádání zatím ne. Zatím není k použití.
+> **Rozpracováno (0.1.0).** Existuje schéma, validátor, závazná pravidla
+> a první příkazy (`/proavus:init`, `/start`, `/end`); průvodce instalací
+> (`/setup`) zatím ne. Zatím není k běžnému použití.
 
 ## Jak to bude fungovat
 

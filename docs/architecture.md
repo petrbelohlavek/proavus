@@ -78,7 +78,7 @@ proavus/
 │   ├── cz/       schema-ext.yaml [v0] · sources.yaml · law.md · pitfalls.md · glossary.md · scripts.md
 │   ├── at-wien/  sources.yaml · pitfalls.md
 │   └── _template/
-├── tools/                              Python přes `uv run` (ADR 0011, 0021)
+├── tools/                              Python přes `uv run` (ADR 0011, 0021); family_repo.py: init, .proavus, START-HERE, kontrola soukromí [v0]
 │   ├── validate.py                     schéma, odkazy, brána identity, žijící osoby, data, negativy [v0]
 │   ├── new_id.py                       ID bez kolizí                                    [v0]
 │   ├── guard_names.py                  kontrola jmen rodiny před commitem frameworku     [v0]
@@ -86,8 +86,9 @@ proavus/
 │   ├── build_views.py                  START-HERE, mapa, GEDCOM
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
-├── skills/ · commands/ · hooks/        /setup · /check · /init · /upgrade · /start · /claim · /end · /review · /feedback
-├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /init a /upgrade; ADR 0009)
+├── skills/                             init · start · end [v0]; později setup · check · upgrade · claim · review · feedback
+├── hooks/                              kontrola před uložením v rodinném repu (později)
+├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu
 ├── evals/                              testy napříč modely (rukopis, past rejstříku, jmenovci)
 ├── examples/worked-case/               fiktivní případ, bez žijících osob
@@ -118,7 +119,7 @@ Před vydáním převést nápis v logu na křivky.
 do jeho forku. **Fork veřejného repa je vždy veřejný** a zveřejnění je
 prakticky nevratné.
 
-**Správná cesta:** nainstalovat plugin a spustit `/init`. Příkaz založí nové
+**Správná cesta:** nainstalovat plugin a spustit `/proavus:init` (holé `/init` je vestavěný příkaz Claude Code, proto je příkaz pluginu s předponou). Příkaz založí nové
 **soukromé** repo `proavus-<rodina>` (výchozí `proavus-family`), naplní ho
 šablonou a ověří, že je soukromé. Fork `proavus` slouží jen k příspěvkům do
 metody.

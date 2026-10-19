@@ -1,0 +1,9 @@
+# Configuration of this family repository (Proavus).
+# schema_version is managed by /proavus:upgrade; the rest belongs to the family.
+schema_version: "{{VERSION}}"
+title: "{{TITLE}}"
+regions: {{REGIONS}}
+extensions: {{EXTENSIONS}}
+members:
+{{MEMBERS}}
+living_threshold_years: 110

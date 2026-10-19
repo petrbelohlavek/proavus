@@ -19,3 +19,7 @@ First minimal framework (build step 2).
   tests on fictional data; CI with tests and REUSE lint.
 - Method: `method/rules.md` (+ Czech), `method/reading-records.md`.
 - Documentation: `docs/architecture.md` and 26 ADRs in `docs/decisions/`.
+- Family repository template `templates/family/` and `tools/family_repo.py`
+  (init, install of the pinned copy `.proavus/`, START-HERE, privacy check).
+- Plugin skills `/proavus:init` (the bare `/init` is a built-in Claude Code
+  command), `/start` and `/end`.
