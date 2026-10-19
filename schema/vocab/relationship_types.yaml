@@ -1,0 +1,11 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: relationship_types
+description: Type of relationship between persons.
+values:
+  - id: parent-child
+    en: "parent – child"
+    cs: "rodič – dítě"
+  - id: partnership
+    en: "partnership (marriage, union)"
+    cs: "partnerství (sňatek, soužití)"

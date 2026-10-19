@@ -1,0 +1,26 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: search_methods
+description: How a source was searched (coverage).
+values:
+  - id: index
+    en: "index (name index of the book)"
+    cs: "rejstřík"
+  - id: page-through
+    en: "page by page"
+    cs: "listování stranu po straně"
+  - id: database-search
+    en: "database search"
+    cs: "hledání v databázi"
+  - id: full-text-search
+    en: "full-text search"
+    cs: "fulltextové hledání"
+  - id: finding-aid
+    en: "finding aid / inventory"
+    cs: "archivní pomůcka, inventář"
+  - id: inquiry
+    en: "written inquiry to the holder"
+    cs: "písemný dotaz archivu"
+  - id: other
+    en: "other"
+    cs: "jiné"

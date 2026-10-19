@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/coverage.schema.json",
+  "title": "coverage – register of what was searched (one search of one source)",
+  "description": "A negative result is only meaningful with its ranges, name variants and method. Searching an index is not proof of absence (method/rules.md).",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "source", "method", "ranges", "names", "result", "by", "on"],
+  "properties": {
+    "type": { "const": "coverage" },
+    "source": { "$ref": "common.schema.json#/$defs/ref_source" },
+    "method": { "type": "string", "x-vocab": "search_methods" },
+    "ranges": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dates": { "$ref": "common.schema.json#/$defs/edtf" },
+          "pages": { "type": "string", "description": "e.g. 12-140, or images 5-88" },
+          "note": { "type": "string" }
+        },
+        "x-hint": "each range needs dates or pages",
+      "anyOf": [{ "required": ["dates"] }, { "required": ["pages"] }]
+      }
+    },
+    "names": {
+      "description": "Name variants searched for (all of them – a new variant later reopens the negative).",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "result": {
+      "description": "found / negative (searched, not there) / partial / inaccessible (access state, NOT a negative).",
+      "enum": ["found", "negative", "partial", "inaccessible"]
+    },
+    "found": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
+    "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
+    "by": { "$ref": "common.schema.json#/$defs/member" },
+    "on": { "$ref": "common.schema.json#/$defs/date" },
+    "access_note": { "type": "string" }
+  },
+  "unevaluatedProperties": false
+}

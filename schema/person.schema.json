@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/person.schema.json",
+  "title": "person – a person (or candidate) in the tree",
+  "description": "Facts are not fields: they are typed assertions (assertions/) about this person (ADR 0015). Conclusions in the body cite assertions.",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "names", "vital_status"],
+  "properties": {
+    "type": { "const": "person" },
+    "candidate": {
+      "description": "true = a candidate (hypothesis) not yet tied to the tree.",
+      "type": "boolean"
+    },
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["value", "name_type"],
+        "additionalProperties": false,
+        "properties": {
+          "value": { "type": "string", "minLength": 1 },
+          "name_type": { "type": "string", "x-vocab": "name_types" },
+          "lang": { "$ref": "common.schema.json#/$defs/lang" },
+          "preferred": { "type": "boolean" }
+        }
+      }
+    },
+    "sex": { "enum": ["male", "female", "unknown"] },
+    "vital_status": {
+      "description": "deceased / living / unknown. Unknown and born less than the living threshold ago is treated as living (ADR 0025).",
+      "enum": ["deceased", "living", "unknown"]
+    },
+    "lines": { "type": "array", "items": { "type": "string" }, "description": "family line labels from lines.yaml" },
+    "aliases": {
+      "description": "IDs of person files merged into this one. The merge is a tree change and passes the identity gate.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "basis", "confirmed"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "common.schema.json#/$defs/ref_person" },
+          "basis": { "type": "array", "minItems": 1, "items": { "$ref": "common.schema.json#/$defs/ref_assertion" } },
+          "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" }
+        }
+      }
+    }
+  },
+  "unevaluatedProperties": false
+}

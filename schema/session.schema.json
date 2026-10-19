@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/session.schema.json",
+  "title": "session – one research session (sessions/YYYY/)",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "date", "by", "result", "next_step"],
+  "properties": {
+    "type": { "const": "session" },
+    "date": { "$ref": "common.schema.json#/$defs/date" },
+    "by": { "$ref": "common.schema.json#/$defs/member" },
+    "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
+    "coverage": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_coverage" } },
+    "records": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
+    "result": { "type": "string", "minLength": 1 },
+    "next_step": { "type": "string", "minLength": 1, "description": "Every session ends with the next step." },
+    "human_tasks": {
+      "description": "Tasks only a human can do (log-in portals, fees, letters) with exact addresses.",
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "unevaluatedProperties": false
+}

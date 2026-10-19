@@ -1,0 +1,44 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: place_types
+description: Type of place.
+values:
+  - id: country
+    en: "country"
+    cs: "stát"
+  - id: region
+    en: "region / land"
+    cs: "země, kraj"
+  - id: district
+    en: "district"
+    cs: "okres"
+  - id: estate
+    en: "estate (manor)"
+    cs: "panství, velkostatek"
+  - id: parish
+    en: "parish"
+    cs: "farnost"
+  - id: municipality
+    en: "municipality"
+    cs: "obec"
+  - id: town
+    en: "town"
+    cs: "město"
+  - id: village
+    en: "village"
+    cs: "vesnice"
+  - id: part
+    en: "part of municipality"
+    cs: "část obce"
+  - id: street
+    en: "street"
+    cs: "ulice"
+  - id: house
+    en: "house"
+    cs: "dům"
+  - id: cemetery
+    en: "cemetery"
+    cs: "hřbitov"
+  - id: other
+    en: "other"
+    cs: "jiné"

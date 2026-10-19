@@ -1,0 +1,86 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: participant_roles
+description: Role of a participant in a record. Covers FAN (friends, associates, neighbours) without a separate entity.
+values:
+  - id: principal
+    en: "principal (child, deceased, registrant)"
+    cs: "hlavní osoba (dítě, zemřelý, přihlášený)"
+  - id: father
+    en: "father"
+    cs: "otec"
+  - id: mother
+    en: "mother"
+    cs: "matka"
+  - id: groom
+    en: "groom"
+    cs: "ženich"
+  - id: bride
+    en: "bride"
+    cs: "nevěsta"
+  - id: groom-father
+    en: "father of the groom"
+    cs: "otec ženicha"
+  - id: groom-mother
+    en: "mother of the groom"
+    cs: "matka ženicha"
+  - id: bride-father
+    en: "father of the bride"
+    cs: "otec nevěsty"
+  - id: bride-mother
+    en: "mother of the bride"
+    cs: "matka nevěsty"
+  - id: spouse
+    en: "spouse (of the principal)"
+    cs: "manžel/ka hlavní osoby"
+  - id: paternal-grandfather
+    en: "paternal grandfather"
+    cs: "děd z otcovy strany"
+  - id: paternal-grandmother
+    en: "paternal grandmother"
+    cs: "babička z otcovy strany"
+  - id: maternal-grandfather
+    en: "maternal grandfather"
+    cs: "děd z matčiny strany"
+  - id: maternal-grandmother
+    en: "maternal grandmother"
+    cs: "babička z matčiny strany"
+  - id: godparent
+    en: "godparent"
+    cs: "kmotr/a"
+  - id: godfather
+    en: "godfather"
+    cs: "kmotr"
+  - id: godmother
+    en: "godmother"
+    cs: "kmotra"
+  - id: witness
+    en: "witness"
+    cs: "svědek"
+  - id: midwife
+    en: "midwife"
+    cs: "porodní bába"
+  - id: informant
+    en: "informant"
+    cs: "oznamovatel"
+  - id: officiant
+    en: "officiant (priest, registrar)"
+    cs: "oddávající, křtící, matrikář"
+  - id: house-owner
+    en: "house owner"
+    cs: "majitel domu"
+  - id: employer
+    en: "employer"
+    cs: "zaměstnavatel"
+  - id: guardian
+    en: "guardian"
+    cs: "poručník"
+  - id: child
+    en: "child (listed)"
+    cs: "dítě (uvedené)"
+  - id: household-member
+    en: "household member"
+    cs: "člen domácnosti"
+  - id: other
+    en: "other"
+    cs: "jiné"

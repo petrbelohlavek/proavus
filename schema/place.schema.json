@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/place.schema.json",
+  "title": "place – a place with historical and language variants (minimal in v0)",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "names"],
+  "properties": {
+    "type": { "const": "place" },
+    "names": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["value"],
+        "additionalProperties": false,
+        "properties": {
+          "value": { "type": "string", "minLength": 1 },
+          "lang": { "$ref": "common.schema.json#/$defs/lang" },
+          "period": { "$ref": "common.schema.json#/$defs/edtf" }
+        }
+      }
+    },
+    "place_type": { "type": "string", "x-vocab": "place_types" },
+    "part_of": { "$ref": "common.schema.json#/$defs/ref_place" },
+    "parish": { "$ref": "common.schema.json#/$defs/ref_place" },
+    "gov_id": { "type": "string", "description": "ID in GOV (gov.genealogy.net)" },
+    "coordinates": { "type": "string", "pattern": "^-?[0-9]+(\\.[0-9]+)?, ?-?[0-9]+(\\.[0-9]+)?$" }
+  },
+  "unevaluatedProperties": false
+}

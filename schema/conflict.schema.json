@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/conflict.schema.json",
+  "title": "conflict – two versions that disagree (minimal in v0)",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "status", "about"],
+  "properties": {
+    "type": { "const": "conflict" },
+    "status": { "enum": ["open", "resolved", "unresolved"] },
+    "about": { "type": "array", "minItems": 1, "items": { "$ref": "common.schema.json#/$defs/any_ref" } },
+    "versions": { "type": "array", "items": { "type": "string" } },
+    "decides": { "type": "string", "description": "What would decide it." },
+    "resolution": { "type": "string" }
+  },
+  "unevaluatedProperties": false
+}

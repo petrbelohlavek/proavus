@@ -1,0 +1,35 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: name_types
+description: Type of a name form.
+values:
+  - id: birth
+    en: "birth name"
+    cs: "rodné jméno"
+  - id: married
+    en: "married name"
+    cs: "jméno po sňatku"
+  - id: latin
+    en: "Latin form"
+    cs: "latinská podoba"
+  - id: german
+    en: "German form"
+    cs: "německá podoba"
+  - id: czech
+    en: "Czech form"
+    cs: "česká podoba"
+  - id: religious
+    en: "religious name"
+    cs: "řeholní jméno"
+  - id: nickname
+    en: "nickname"
+    cs: "přezdívka"
+  - id: house-name
+    en: "house name"
+    cs: "jméno po chalupě"
+  - id: alias
+    en: "alias"
+    cs: "jiné jméno"
+  - id: spelling-variant
+    en: "spelling variant"
+    cs: "pravopisná varianta"

@@ -1,0 +1,35 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: relationship_subtypes
+description: Subtype of a relationship.
+values:
+  - id: biological
+    en: "biological"
+    cs: "biologický"
+  - id: legitimated
+    en: "legitimated"
+    cs: "legitimovaný"
+  - id: step
+    en: "step"
+    cs: "nevlastní"
+  - id: adoptive
+    en: "adoptive"
+    cs: "adoptivní"
+  - id: foster
+    en: "foster"
+    cs: "pěstounský"
+  - id: guardian
+    en: "guardianship"
+    cs: "poručnictví"
+  - id: presumed
+    en: "presumed (by law, e.g. husband of the mother)"
+    cs: "předpokládaný (ze zákona)"
+  - id: marriage
+    en: "marriage"
+    cs: "manželství"
+  - id: civil-union
+    en: "civil union"
+    cs: "registrované partnerství"
+  - id: cohabitation
+    en: "cohabitation"
+    cs: "soužití"

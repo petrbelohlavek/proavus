@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/oral.schema.json",
+  "title": "oral – processed oral testimony (minimal in v0; raw recordings never go into git)",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "speaker", "date", "consent"],
+  "properties": {
+    "type": { "const": "oral" },
+    "speaker": {
+      "x-hint": "a person ID or a name",
+      "anyOf": [{ "$ref": "common.schema.json#/$defs/ref_person" }, { "type": "string", "minLength": 1 }]
+    },
+    "date": { "$ref": "common.schema.json#/$defs/edtf" },
+    "interviewer": { "$ref": "common.schema.json#/$defs/member" },
+    "consent": { "$ref": "common.schema.json#/$defs/ref_decision" }
+  },
+  "unevaluatedProperties": false
+}

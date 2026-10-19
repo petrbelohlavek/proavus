@@ -1,0 +1,50 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: event_types
+description: Type of event a record documents.
+values:
+  - id: birth
+    en: "birth"
+    cs: "narození"
+  - id: baptism
+    en: "baptism"
+    cs: "křest"
+  - id: banns
+    en: "banns"
+    cs: "ohlášky"
+  - id: marriage
+    en: "marriage"
+    cs: "sňatek"
+  - id: divorce
+    en: "divorce"
+    cs: "rozvod"
+  - id: death
+    en: "death"
+    cs: "úmrtí"
+  - id: burial
+    en: "burial"
+    cs: "pohřeb"
+  - id: confirmation
+    en: "confirmation"
+    cs: "biřmování"
+  - id: conversion
+    en: "religious conversion"
+    cs: "změna vyznání"
+  - id: residence-registration
+    en: "residence registration"
+    cs: "hlášení pobytu"
+  - id: census-entry
+    en: "census entry"
+    cs: "zápis při sčítání"
+  - id: military-entry
+    en: "military record entry"
+    cs: "vojenský záznam"
+  - id: property-transfer
+    en: "property transfer"
+    cs: "převod majetku"
+  - id: school-entry
+    en: "school record entry"
+    cs: "školní záznam"
+  - id: other
+    en: "other"
+    cs: "jiné"

@@ -1,0 +1,33 @@
+# Regional schema extension CZ (schema layer 3), switched on in a family
+# repository by `extensions: [cz]` in repo.yaml. Proven fields may later be
+# promoted to the core.
+name: cz
+description: Czech lands (Bohemia, Moravia, Silesia) – house numbers and estates
+fields:
+  # target: <entity>  or  <entity>#<$defs name>  (e.g. record#participant)
+  record#participant:
+    house_number:
+      description: Číslo popisné (house number) as written, e.g. "12" or "N. 12"
+      type: [string, integer]
+    estate:
+      description: Panství / dominium as written
+      type: string
+  assertion:
+    house_number:
+      description: Číslo popisné for a residence fact
+      type: [string, integer]
+  place:
+    estate:
+      description: Estate (panství) the place belonged to – place ID
+      $ref: "common.schema.json#/$defs/ref_place"
+    house_number:
+      description: House number of a place of type house
+      type: [string, integer]
+vocab:
+  source_kinds:
+    - id: urbar
+      en: "urbarium / land survey (Berní rula, Tereziánský katastr)"
+      cs: "urbář, berní rula, tereziánský katastr"
+    - id: soupis-poddanych
+      en: "list of subjects by faith (1651)"
+      cs: "soupis poddaných podle víry"

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/source.schema.json",
+  "title": "source – a book, register, database, document or work",
+  "description": "Citation at source level (ADR 0023): repository, collection or call number, title. Records add the exact locator.",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "kind", "form", "title", "repository", "citation"],
+  "properties": {
+    "type": { "const": "source" },
+    "kind": { "type": "string", "x-vocab": "source_kinds" },
+    "form": {
+      "description": "Original, derivative (copy, index, transcript, abstract) or authored work (ADR 0022).",
+      "enum": ["original", "derivative", "authored"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "repository": { "type": "string", "minLength": 1, "description": "archive, library, portal or holder" },
+    "collection": { "type": "string", "description": "fond, parish, record group" },
+    "call_number": { "type": "string", "description": "signature / inventory number / book number" },
+    "period": { "$ref": "common.schema.json#/$defs/edtf" },
+    "language": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/lang" } },
+    "url": { "$ref": "common.schema.json#/$defs/url" },
+    "accessed": { "$ref": "common.schema.json#/$defs/date" },
+    "citation": { "type": "string", "minLength": 1, "description": "Full citation in words (Evidence Explained style)." },
+    "original_file": { "type": "string", "description": "Path to the original (PDF, scan) in the family repo." },
+    "text_file": { "type": "string", "description": "Path to the text version (Markdown)." },
+    "terms": { "type": "string", "description": "Licence / terms of use of images from this source." }
+  },
+  "x-hint": "needs collection or call_number (unless form is authored)",
+      "anyOf": [{ "required": ["collection"] }, { "required": ["call_number"] }, { "properties": { "form": { "const": "authored" } } }],
+  "dependentRequired": { "url": ["accessed"] },
+  "unevaluatedProperties": false
+}

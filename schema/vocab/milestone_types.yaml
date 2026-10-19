@@ -1,0 +1,29 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: milestone_types
+description: Type of a research chronicle milestone.
+values:
+  - id: discovery
+    en: "key discovery"
+    cs: "zásadní nález"
+  - id: hypothesis-change
+    en: "hypothesis changed"
+    cs: "zlom hypotézy"
+  - id: error-corrected
+    en: "major error corrected"
+    cs: "opravená velká chyba"
+  - id: question-closed
+    en: "question closed"
+    cs: "uzavřená otázka"
+  - id: new-member
+    en: "new member"
+    cs: "nový člen"
+  - id: new-line
+    en: "new family line"
+    cs: "nová linie"
+  - id: transition
+    en: "transition (e.g. migration of earlier research)"
+    cs: "přechod (např. převod dřívějšího výzkumu)"
+  - id: other
+    en: "other"
+    cs: "jiné"

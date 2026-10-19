@@ -1,0 +1,71 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: fact_types
+description: Type of fact an assertion states (facts are assertions, not fields).
+values:
+  - id: birth
+    en: "birth"
+    cs: "narození"
+  - id: baptism
+    en: "baptism"
+    cs: "křest"
+  - id: marriage
+    en: "marriage"
+    cs: "sňatek"
+  - id: divorce
+    en: "divorce"
+    cs: "rozvod"
+  - id: death
+    en: "death"
+    cs: "úmrtí"
+  - id: burial
+    en: "burial"
+    cs: "pohřeb"
+  - id: name
+    en: "name"
+    cs: "jméno"
+  - id: sex
+    en: "sex"
+    cs: "pohlaví"
+  - id: residence
+    en: "residence"
+    cs: "bydliště"
+  - id: occupation
+    en: "occupation"
+    cs: "povolání"
+  - id: religion
+    en: "religion"
+    cs: "vyznání"
+  - id: conversion
+    en: "religious conversion"
+    cs: "změna vyznání"
+  - id: legitimation
+    en: "legitimation"
+    cs: "legitimace"
+  - id: illegitimate-birth
+    en: "illegitimate birth"
+    cs: "nemanželské narození"
+  - id: military-service
+    en: "military service"
+    cs: "vojenská služba"
+  - id: emigration
+    en: "emigration"
+    cs: "vystěhování"
+  - id: immigration
+    en: "immigration"
+    cs: "přistěhování"
+  - id: education
+    en: "education"
+    cs: "vzdělání"
+  - id: title
+    en: "title or rank"
+    cs: "titul, stav"
+  - id: citizenship
+    en: "citizenship / domicile right"
+    cs: "státní příslušnost, domovské právo"
+  - id: property
+    en: "property"
+    cs: "majetek"
+  - id: other
+    en: "other"
+    cs: "jiné"

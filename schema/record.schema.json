@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/record.schema.json",
+  "title": "record – one entry in a source (baptism, marriage, burial, registration …)",
+  "description": "Verbatim transcript and interpretation live in the Markdown body (## Transcript, ## Interpretation). Participants are personas exactly as written – NOT persons in the tree (ADR 0017).",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "source", "locator", "event", "reading", "participants"],
+  "properties": {
+    "type": { "const": "record" },
+    "source": { "$ref": "common.schema.json#/$defs/ref_source" },
+    "locator": { "$ref": "#/$defs/locator" },
+    "event": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "x-vocab": "event_types" },
+        "date": { "$ref": "common.schema.json#/$defs/edtf" },
+        "place": { "$ref": "common.schema.json#/$defs/ref_place" },
+        "place_as_written": { "type": "string" }
+      }
+    },
+    "language": { "$ref": "common.schema.json#/$defs/lang" },
+    "script": { "type": "string", "description": "e.g. kurrent, latin, print" },
+    "reading": { "$ref": "#/$defs/reading" },
+    "crop": {
+      "description": "Path to the evidence crop (small JPEG) relative to the record file, e.g. evidence/R-….jpg",
+      "type": "string"
+    },
+    "participants": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/participant" }
+    }
+  },
+  "unevaluatedProperties": false,
+  "$defs": {
+    "locator": {
+      "description": "Where exactly the entry is inside the source (ADR 0023). At least one of page, folio, entry or image.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "page": { "type": ["string", "integer"], "description": "page as printed / as shown by the portal (pg)" },
+        "folio": { "type": "string", "description": "folio with side, e.g. 23r, 23v" },
+        "entry": { "type": ["string", "integer"], "description": "entry number in the register" },
+        "image": { "type": ["string", "integer"], "description": "image (scan) number in the portal viewer" },
+        "url": { "$ref": "common.schema.json#/$defs/url" },
+        "accessed": { "$ref": "common.schema.json#/$defs/date" }
+      },
+      "x-hint": "needs at least one of page, folio, entry, image",
+      "anyOf": [
+        { "required": ["page"] },
+        { "required": ["folio"] },
+        { "required": ["entry"] },
+        { "required": ["image"] }
+      ],
+      "dependentRequired": { "url": ["accessed"] }
+    },
+    "reading": {
+      "description": "Reading state: read-once until a second, careful reading of the crop (ADR 0016).",
+      "type": "object",
+      "required": ["status", "read_by"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["read-once", "confirmed", "disputed"] },
+        "read_by": { "type": "array", "minItems": 1, "items": { "$ref": "common.schema.json#/$defs/member" } },
+        "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" },
+        "uncertain": {
+          "description": "Readings marked uncertain in the transcript with [ ].",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "if": { "properties": { "status": { "const": "confirmed" } } },
+      "then": { "required": ["confirmed"] }
+    },
+    "participant": {
+      "description": "A person as written in this record (persona).",
+      "type": "object",
+      "required": ["key", "name_as_written", "role"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "common.schema.json#/$defs/participant_key" },
+        "name_as_written": { "type": "string", "minLength": 1 },
+        "role": { "type": "string", "x-vocab": "participant_roles" },
+        "sex": { "enum": ["male", "female", "unknown"] },
+        "age_as_written": { "type": ["string", "integer"] },
+        "residence_as_written": { "type": "string" },
+        "residence_place": { "$ref": "common.schema.json#/$defs/ref_place" },
+        "occupation_as_written": { "type": "string" },
+        "religion": { "type": "string", "x-vocab": "religions" },
+        "status_as_written": { "type": "string", "description": "e.g. legitimate / illegitimate, widow, single" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

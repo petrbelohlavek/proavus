@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/common.schema.json",
+  "title": "Proavus common definitions (schema v0)",
+  "$defs": {
+    "base": {
+      "description": "Fields shared by every entity file.",
+      "type": "object",
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "type": { "type": "string" },
+        "created": { "$ref": "#/$defs/date" },
+        "created_by": { "$ref": "#/$defs/member" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "schema_gap": {
+          "description": "Safety net (layer 4): things the schema cannot express yet. Research never stops because of the schema.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "refs": {
+          "description": "Free links to other entities.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/any_ref" }
+        }
+      }
+    },
+    "id": {
+      "description": "<PREFIX>-<YYYYMMDD>-<member>-<3 random chars>, e.g. Q-20261019-jn-k7m",
+      "type": "string",
+      "pattern": "^(Q|S|C|R|SO|P|RL|A|X|PL|O|D|CH)-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$"
+    },
+    "any_ref": { "$ref": "#/$defs/id" },
+    "ref_question": { "type": "string", "pattern": "^Q-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_session": { "type": "string", "pattern": "^S-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_coverage": { "type": "string", "pattern": "^C-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_record": { "type": "string", "pattern": "^R-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_source": { "type": "string", "pattern": "^SO-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_person": { "type": "string", "pattern": "^P-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_relationship": { "type": "string", "pattern": "^RL-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_assertion": { "type": "string", "pattern": "^A-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_conflict": { "type": "string", "pattern": "^X-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_place": { "type": "string", "pattern": "^PL-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_oral": { "type": "string", "pattern": "^O-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_decision": { "type": "string", "pattern": "^D-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "member": {
+      "description": "Member abbreviation from repo.yaml (2–4 lowercase letters).",
+      "type": "string",
+      "pattern": "^[a-z]{2,4}$"
+    },
+    "date": {
+      "description": "Calendar date of work done today (ISO 8601).",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "edtf": {
+      "description": "Historical date, EDTF subset: 1935, 1935-04, 1935-04-12, 1935?, 1935~, 1935%, 19XX, 193X, 1904/1906, ../1900, 1900/..",
+      "type": ["string", "integer"],
+      "format": "edtf"
+    },
+    "lang": {
+      "description": "ISO 639-1 language code (la, de, cs, …).",
+      "type": "string",
+      "pattern": "^[a-z]{2}$"
+    },
+    "url": { "type": "string", "pattern": "^https?://" },
+    "confidence": {
+      "description": "Confidence of a conclusion (property of the conclusion, not of the source).",
+      "enum": ["proved", "probable", "possible", "not-proved", "disproved"]
+    },
+    "confirmation": {
+      "description": "Who confirmed in the session and when (identity gate).",
+      "type": "object",
+      "required": ["by", "on"],
+      "additionalProperties": false,
+      "properties": {
+        "by": { "$ref": "#/$defs/member" },
+        "on": { "$ref": "#/$defs/date" },
+        "note": { "type": "string" }
+      }
+    },
+    "citation": {
+      "description": "One piece of evidence behind an assertion, with its evaluation.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "record": { "$ref": "#/$defs/ref_record" },
+        "participant": { "$ref": "#/$defs/participant_key" },
+        "source": { "$ref": "#/$defs/ref_source" },
+        "oral": { "$ref": "#/$defs/ref_oral" },
+        "coverage": { "$ref": "#/$defs/ref_coverage" },
+        "detail": { "type": "string", "description": "Where in the source (page, paragraph) when citing a source directly." },
+        "information": {
+          "description": "Was the informant in a position to know? (Evidence Explained)",
+          "enum": ["primary", "secondary", "undetermined"]
+        },
+        "evidence": {
+          "description": "How the information answers the question.",
+          "enum": ["direct", "indirect", "negative"]
+        }
+      },
+      "x-hint": "cite exactly one of record, source, oral, coverage",
+      "oneOf": [
+        { "required": ["record"] },
+        { "required": ["source"] },
+        { "required": ["oral"] },
+        { "required": ["coverage"] }
+      ]
+    },
+    "participant_key": {
+      "description": "Key of a participant within one record (p1, p2, …).",
+      "type": "string",
+      "pattern": "^p[0-9]+$"
+    }
+  }
+}

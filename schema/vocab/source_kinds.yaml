@@ -1,0 +1,74 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: source_kinds
+description: Kind of source.
+values:
+  - id: parish-register
+    en: "parish register"
+    cs: "matrika (církevní)"
+  - id: register-index
+    en: "register index"
+    cs: "index k matrice"
+  - id: civil-register
+    en: "civil register"
+    cs: "civilní matrika"
+  - id: census
+    en: "census"
+    cs: "sčítání lidu"
+  - id: residence-register
+    en: "residence register"
+    cs: "evidence obyvatel, Meldezettel"
+  - id: conscription
+    en: "conscription / house list"
+    cs: "konskripce, soupis domů"
+  - id: land-register
+    en: "land register"
+    cs: "pozemková kniha"
+  - id: cadastre
+    en: "cadastre"
+    cs: "katastr"
+  - id: probate
+    en: "probate / estate file"
+    cs: "pozůstalostní spis"
+  - id: court-record
+    en: "court record"
+    cs: "soudní spis"
+  - id: school-record
+    en: "school record"
+    cs: "školní záznam"
+  - id: military-record
+    en: "military record"
+    cs: "vojenský záznam"
+  - id: newspaper
+    en: "newspaper"
+    cs: "noviny"
+  - id: address-book
+    en: "address book"
+    cs: "adresář"
+  - id: gravestone
+    en: "gravestone / cemetery record"
+    cs: "náhrobek, hřbitovní kniha"
+  - id: family-document
+    en: "family document"
+    cs: "rodinný dokument"
+  - id: memoir
+    en: "memoir / autobiography"
+    cs: "paměti, životopis"
+  - id: letter
+    en: "letter"
+    cs: "dopis"
+  - id: photograph
+    en: "photograph"
+    cs: "fotografie"
+  - id: oral-history
+    en: "oral history"
+    cs: "ústní výpověď"
+  - id: database
+    en: "online database"
+    cs: "online databáze"
+  - id: published-genealogy
+    en: "published genealogy"
+    cs: "publikovaná genealogie"
+  - id: other
+    en: "other"
+    cs: "jiné"

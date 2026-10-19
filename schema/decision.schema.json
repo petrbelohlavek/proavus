@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/decision.schema.json",
+  "title": "decision – a family decision or consent (minimal in v0; context, decision, consequences in the body)",
+  "type": "object",
+  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "required": ["type", "title", "date", "status"],
+  "properties": {
+    "type": { "const": "decision" },
+    "title": { "type": "string", "minLength": 1 },
+    "date": { "$ref": "common.schema.json#/$defs/date" },
+    "status": { "enum": ["proposed", "accepted", "superseded", "rejected"] },
+    "superseded_by": { "$ref": "common.schema.json#/$defs/ref_decision" },
+    "kind": { "enum": ["decision", "consent"] }
+  },
+  "unevaluatedProperties": false
+}

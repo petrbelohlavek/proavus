@@ -1,0 +1,35 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: religions
+description: Religion / confession as written in records, normalized.
+values:
+  - id: roman-catholic
+    en: "Roman Catholic"
+    cs: "římskokatolické"
+  - id: greek-catholic
+    en: "Greek Catholic"
+    cs: "řeckokatolické"
+  - id: lutheran
+    en: "Lutheran (Augsburg Confession)"
+    cs: "evangelické a. v."
+  - id: reformed
+    en: "Reformed (Helvetic Confession)"
+    cs: "evangelické h. v."
+  - id: jewish
+    en: "Jewish"
+    cs: "židovské (izraelitské)"
+  - id: orthodox
+    en: "Orthodox"
+    cs: "pravoslavné"
+  - id: old-catholic
+    en: "Old Catholic"
+    cs: "starokatolické"
+  - id: czechoslovak-hussite
+    en: "Czechoslovak (Hussite)"
+    cs: "československé (husitské)"
+  - id: none
+    en: "without confession"
+    cs: "bez vyznání"
+  - id: other
+    en: "other"
+    cs: "jiné"

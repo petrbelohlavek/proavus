@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/assertion.schema.json",
+  "title": "assertion – a fact about a person or relationship, or an identity link",
+  "description": "kind=fact: a typed fact (birth, residence, occupation …) about a subject. kind=identity: participant X of record Y is person P (ADR 0017); passes the identity gate.",
+  "type": "object",
+  "required": ["type", "kind", "citations", "confidence"],
+  "properties": {
+    "type": { "const": "assertion" },
+    "kind": { "enum": ["fact", "identity"] },
+    "subject": {
+      "description": "kind=fact: the person or relationship the fact is about.",
+      "x-hint": "a person or relationship ID",
+      "anyOf": [
+        { "$ref": "common.schema.json#/$defs/ref_person" },
+        { "$ref": "common.schema.json#/$defs/ref_relationship" }
+      ]
+    },
+    "fact_type": { "type": "string", "x-vocab": "fact_types" },
+    "value": { "type": ["string", "integer"] },
+    "date": { "$ref": "common.schema.json#/$defs/edtf" },
+    "place": { "$ref": "common.schema.json#/$defs/ref_place" },
+    "place_as_written": { "type": "string" },
+    "participant": {
+      "description": "kind=identity: the participant (persona) being identified.",
+      "type": "object",
+      "required": ["record", "key"],
+      "additionalProperties": false,
+      "properties": {
+        "record": { "$ref": "common.schema.json#/$defs/ref_record" },
+        "key": { "$ref": "common.schema.json#/$defs/participant_key" }
+      }
+    },
+    "person": {
+      "description": "kind=identity: the person in the tree.",
+      "$ref": "common.schema.json#/$defs/ref_person"
+    },
+    "citations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/citation" }
+    },
+    "confidence": { "$ref": "common.schema.json#/$defs/confidence" },
+    "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" }
+  },
+  "allOf": [
+    { "$ref": "common.schema.json#/$defs/base" },
+    {
+      "if": { "properties": { "kind": { "const": "fact" } } },
+      "then": { "required": ["subject", "fact_type"] }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "identity" } } },
+      "then": { "required": ["participant", "person"] }
+    }
+  ],
+  "unevaluatedProperties": false
+}
