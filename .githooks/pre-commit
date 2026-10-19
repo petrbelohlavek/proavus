@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+"""Framework pre-commit hook: block family data (see tools/guard_names.py)."""
+import subprocess, sys
+from pathlib import Path
+
+root = Path(__file__).resolve().parent.parent
+sys.exit(subprocess.call([sys.executable, str(root / "tools" / "guard_names.py"), "--staged"]))

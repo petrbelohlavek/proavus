@@ -1,0 +1,6 @@
+# Phrases that may appear in the framework although they contain a guarded
+# name: the author's attribution and the GitHub account in URLs.
+# One phrase per line; matching ignores case and diacritics.
+Petr Bělohlávek
+Petr Belohlavek
+petrbelohlavek

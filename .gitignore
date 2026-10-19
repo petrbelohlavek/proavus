@@ -1,0 +1,18 @@
+# Generated outputs are never committed (ADR 0019)
+views/
+START-HERE.md
+*.sqlite
+*.sqlite3
+
+# Python / uv
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Local Claude Code settings (permission locks, per machine)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
