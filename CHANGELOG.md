@@ -6,6 +6,16 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- From the identity gate of a family repository (fictional examples):
+  participant roles `spouse-father`, `spouse-mother`, `grandfather`,
+  `grandmother` (ADR 0044, also in the sex check); EDTF with single
+  unspecified digits in month and day – `1855-02-1X`, `1855-1X`,
+  `1855-02-X5` – only real dates, shown as „10.–19. 2. 1855“ (ADR 0045,
+  `edtf.expand`); `participant.marital_status_as_written` and
+  `marital_status` (vocabulary `marital_statuses`: single, married, widowed,
+  divorced) next to `status_as_written` (ADR 0046) – `upgrade-plan` lists
+  participants whose `status_as_written` holds a marital status, the method
+  (§4) says how to split them. Existing data stay valid unchanged.
 - Workflows (ADR 0043): `actions/checkout` and `astral-sh/setup-uv` pinned to
   a commit SHA (v4.4.0, v6.8.0) in the framework CI and the family
   template; `permissions: {}` for the workflow, `contents: read` for the

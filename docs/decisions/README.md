@@ -48,5 +48,8 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0041](0041-archive-portals.md) | Snímky z archivních portálů: jen kde to provozovatel dovolí, po souhlasu | přijato | — |
 | [0042](0042-bulk-import.md) | Převod staršího bádání plánem: klíče, odkazy @klíč, kontrola celé dávky | přijato | — |
 | [0043](0043-pinned-actions.md) | Akce GitHubu připnuté na commit, minimální oprávnění, Dependabot | přijato | — |
+| [0044](0044-roles-spouse-parents-grandparents.md) | Role účastníků: rodiče manžela/manželky, děd a babička bez strany | přijato | — |
+| [0045](0045-edtf-unspecified-digits.md) | EDTF: jednotlivá nespecifikovaná číslice v měsíci a dni | přijato | — |
+| [0046](0046-marital-status.md) | Rodinný stav účastníka jako samostatné pole | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

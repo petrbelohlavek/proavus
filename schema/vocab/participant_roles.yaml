@@ -33,6 +33,12 @@ values:
   - id: spouse
     en: "spouse (of the principal)"
     cs: "manžel/ka hlavní osoby"
+  - id: spouse-father
+    en: "father of the principal's spouse"
+    cs: "otec manžela/manželky"
+  - id: spouse-mother
+    en: "mother of the principal's spouse"
+    cs: "matka manžela/manželky"
   - id: paternal-grandfather
     en: "paternal grandfather"
     cs: "děd z otcovy strany"
@@ -45,6 +51,12 @@ values:
   - id: maternal-grandmother
     en: "maternal grandmother"
     cs: "babička z matčiny strany"
+  - id: grandfather
+    en: "grandfather – side or whose not stated (say whose in note)"
+    cs: "děd – strana nebo čí neuvedeno (čí do poznámky)"
+  - id: grandmother
+    en: "grandmother – side or whose not stated (say whose in note)"
+    cs: "babička – strana nebo čí neuvedeno (čí do poznámky)"
   - id: godparent
     en: "godparent"
     cs: "kmotr/a"

@@ -26,10 +26,10 @@ DEATH_FACTS = ("death", "burial")
 QUERY_METHODS = {"database-search", "full-text-search", "index"}
 # Sex implied by a participant's role when the record does not state it (ADR 0040).
 ROLE_SEX = {
-    "father": "male", "groom": "male", "groom-father": "male", "bride-father": "male",
-    "paternal-grandfather": "male", "maternal-grandfather": "male", "godfather": "male",
-    "mother": "female", "bride": "female", "groom-mother": "female", "bride-mother": "female",
-    "paternal-grandmother": "female", "maternal-grandmother": "female", "godmother": "female",
+    "father": "male", "groom": "male", "groom-father": "male", "bride-father": "male", "spouse-father": "male",
+    "paternal-grandfather": "male", "maternal-grandfather": "male", "grandfather": "male", "godfather": "male",
+    "mother": "female", "bride": "female", "groom-mother": "female", "bride-mother": "female", "spouse-mother": "female",
+    "paternal-grandmother": "female", "maternal-grandmother": "female", "grandmother": "female", "godmother": "female",
 }
 
 

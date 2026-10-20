@@ -63,6 +63,13 @@ If the plan says `repo.yaml has no map.root` (the family map, since 0.2.0):
   Czech, otherwise English); ask only whether that is right, and set it
   (`cs` or `en`) if they want it written down or different.
 
+If the plan lists **marital status inside status_as_written**: offer to
+split those participants after the upgrade
+(`${CLAUDE_PLUGIN_ROOT}/method/reading-records.md` §4) – the marital words
+into `marital_status_as_written` (and `marital_status` only when the record
+states it clearly), the rest stays in `status_as_written`. It is optional,
+nothing breaks without it; change a record only on the user's yes.
+
 ## 5. Confirm and upgrade
 
 Show the plan once more in one line (versions, map answers) and continue

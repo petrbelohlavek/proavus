@@ -328,6 +328,13 @@ class Dates(unittest.TestCase):
         for value, expected in cases.items():
             self.assertEqual(build_views.human_date(value, "en"), expected, value)
 
+    def test_single_unspecified_digits(self):
+        cases = {("1855-02-1X", "cs"): "10.–19. 2. 1855", ("1855-02-1X", "en"): "10–19 February 1855",
+                 ("1855-1X", "cs"): "říjen–prosinec 1855", ("1855-02-X5", "cs"): "5./15./25. 2. 1855",
+                 ("1855-02-1X~", "cs"): "kolem 10.–19. 2. 1855", ("1855-1X-31", "cs"): "1855-1X-31"}
+        for (value, lang), expected in cases.items():
+            self.assertEqual(build_views.human_date(value, lang), expected, value)
+
     def test_unknown_text_is_kept(self):
         self.assertEqual(build_views.human_date("spring of the flood", "cs"), "spring of the flood")
 

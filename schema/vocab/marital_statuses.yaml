@@ -1,0 +1,17 @@
+# Vocabulary (schema layer 2). Adding a value = minor version, no data migration.
+# Unknown values are only warned about by validate.py.
+name: marital_statuses
+description: Marital status of a participant as the record states it, normalised (ADR 0046).
+values:
+  - id: single
+    en: "single (never married)"
+    cs: "svobodný/á"
+  - id: married
+    en: "married"
+    cs: "ženatý / vdaná"
+  - id: widowed
+    en: "widowed"
+    cs: "vdovec / vdova"
+  - id: divorced
+    en: "divorced"
+    cs: "rozvedený/á"

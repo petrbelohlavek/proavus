@@ -36,6 +36,25 @@ class Edtf(unittest.TestCase):
         self.assertTrue(edtf.is_valid("1904-02-29"))
         self.assertFalse(edtf.is_valid("1900-02-29"))
 
+    def test_single_unspecified_digits(self):
+        """ADR 0045: 1855-02-1X, 1855-1X, 1855-02-X5 – the widest range, only real dates."""
+        cases = {"1855-02-1X": (1855, 1855), "1855-1X": (1855, 1855), "1855-02-X5": (1855, 1855),
+                 "1855-02-1X?": (1853, 1857), "1855-02-13/1855-02-1X": (1855, 1855)}
+        for value, expected in cases.items():
+            with self.subTest(value=value):
+                self.assertEqual(edtf.parse(value), expected)
+        self.assertEqual(edtf.expand("1855-02-1X"), (1855, [2], list(range(10, 20)), None))
+        self.assertEqual(edtf.expand("1855-1X"), (1855, [10, 11, 12], None, None))
+        self.assertEqual(edtf.expand("1855-02-X5"), (1855, [2], [5, 15, 25], None))
+        self.assertEqual(edtf.expand("1856-02-2X")[2][-1], 29)      # leap year
+        self.assertEqual(edtf.expand("1855-02-2X")[2][-1], 28)
+        self.assertIsNone(edtf.expand("185X"))
+
+    def test_single_digits_that_fit_no_date(self):
+        for value in ["1855-02-3X", "1855-2X", "1855-XX-1X", "185X-02-1X", "1855-0X-32", "1855-1x"]:
+            with self.subTest(value=value):
+                self.assertFalse(edtf.is_valid(value))
+
 
 class Ids(unittest.TestCase):
     def test_new_id_format_and_uniqueness(self):
