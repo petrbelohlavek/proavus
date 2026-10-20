@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.2.0 -->
+<!-- source: README.md @ v0.2.1 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -11,9 +11,9 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.2.0).** Existuje schéma, validátor, závazná pravidla
-> a první příkazy (`/proavus:init`, `/start`, `/end`); průvodce instalací
-> (`/setup`) zatím ne. Zatím není k běžnému použití.
+> **Rozpracováno (0.2.1).** Existuje schéma, validátor, závazná pravidla
+> a první příkazy (`/proavus:init`, `/proavus:start`, `/proavus:end`);
+> průvodce instalací (`/setup`) zatím ne. Zatím není k běžnému použití.
 
 ## Jak to bude fungovat
 
@@ -21,10 +21,10 @@ a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 2. Požádejte Clauda o nastavení Proavus – vše doinstaluje a založí vám vlastní
    **soukromé** repo rodiny. Nikdy nezapisujte data rodiny do forku Proavus:
    forky jsou veřejné.
-3. Otevřete své soukromé repo a napište `/start`.
+3. Otevřete své soukromé repo a napište `/proavus:start`.
 4. Popište, koho hledáte; Claude s vámi sestaví otázku a plán a provede vás
    čtením zápisů.
-5. Napište `/end`: výsledky se uloží s citacemi zdrojů a zkontrolují.
+5. Napište `/proavus:end`: výsledky se uloží s citacemi zdrojů a zkontrolují.
 
 ## Instalace pluginu z místní složky
 
@@ -72,6 +72,25 @@ počítač – v terminálu.
 Nástroje běží přímo z této složky (`${CLAUDE_PLUGIN_ROOT}` je sama složka)
 a Claude Code ji navíc kopíruje – i se soubory, které git ignoruje – do své
 mezipaměti pluginů. Ve složce frameworku nemějte nic soukromého.
+
+## Používání příkazů
+
+Příkazy se píšou do pole zprávy v sezení Claude Code (desktopová aplikace
+nebo `claude` v terminálu): napište `/proavus:` a vyberte. Rozhoduje,
+**ve které složce sezení běží** – je vidět pod polem zprávy.
+
+| Příkaz | Kdy | Kde | Co dělá |
+|---|---|---|---|
+| `/proavus:init` | jednou | nové sezení ve složce, kde má repo rodiny vzniknout, nebo v jeho prázdném klonu | založí **soukromé** repo rodiny ze šablony, nainstaluje `.proavus/`, ochrání framework před úpravami, nahraje repo na GitHub a ověří, že je soukromé |
+| `/proavus:start` | první zpráva každého sezení bádání | sezení v repu rodiny | kontrola soukromí, stažení práce ostatních, přehled (`START-HERE.md`), výběr nebo zápis výzkumné otázky |
+| `/proavus:end` | poslední zpráva každého sezení bádání | totéž sezení | záznam sezení s dalším krokem, rozhodnutí, která dělá jen člověk, validace (0 chyb), uložení na GitHub |
+
+Nikdy ve složce frameworku `proavus`: `/proavus:start` a `/proavus:end` se
+tam zastaví, `/proavus:init` odmítne složku, která není prázdná. Zapomněli
+jste? `/proavus:start` jde spustit kdykoli; po vynechaném `/proavus:end`
+otevřete sezení ve složce rodiny a spusťte ho – práce je pořád v souborech,
+jen ještě není uložená. Podrobnosti pro členy rodiny jsou v README repa
+rodiny.
 
 ## Mapa rodiny
 

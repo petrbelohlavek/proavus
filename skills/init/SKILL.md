@@ -117,6 +117,6 @@ private --accept-visibility-change-consequences`) before any data is added.
 ## 9. Hand over
 
 Tell the user: open the new folder in a new Claude Code session and type
-`/start`. To invite family members later: GitHub → repository → Settings →
+`/proavus:start`; end every session with `/proavus:end`. To invite family members later: GitHub → repository → Settings →
 Collaborators (only trusted people; members who leave keep what they
 downloaded). Recommend two-factor login on GitHub for everyone.

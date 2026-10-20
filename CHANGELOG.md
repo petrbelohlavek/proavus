@@ -4,6 +4,15 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
+## 0.2.1 – unreleased
+
+- How to use `/proavus:init`, `/proavus:start` and `/proavus:end` – what
+  each does, where to type it (the folder of the session) and what to do
+  if you forget one: in the family repository template README (for family
+  members) and in README (EN, CS).
+- Commands always with their full plugin names (`/proavus:start`,
+  `/proavus:end`) in README, the template and the skills.
+
 ## 0.2.0 – 2026-10-20
 
 First release (`stable`); includes everything listed under 0.1.0.

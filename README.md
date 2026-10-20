@@ -11,9 +11,10 @@
 tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
-> **Work in progress (0.2.0).** The schema, the validator, the binding rules
-> and the first commands (`/proavus:init`, `/start`, `/end`) exist; the guided
-> setup (`/setup`) does not yet. Not ready for general use.
+> **Work in progress (0.2.1).** The schema, the validator, the binding rules
+> and the first commands (`/proavus:init`, `/proavus:start`,
+> `/proavus:end`) exist; the guided setup (`/setup`) does not yet. Not ready
+> for general use.
 
 ## How it will work
 
@@ -21,10 +22,10 @@ Genealogical Proof Standard.
 2. Ask Claude to set up Proavus – it installs everything and creates your
    own **private** family repository. Never put family data in a fork of
    Proavus: forks are public.
-3. Open your private repository and type `/start`.
+3. Open your private repository and type `/proavus:start`.
 4. Describe who you are looking for; Claude helps you frame the question,
    plan the search and read the records.
-5. Type `/end`: findings are saved with source citations and checked.
+5. Type `/proavus:end`: findings are saved with source citations and checked.
 
 ## Install the plugin from a local folder
 
@@ -73,6 +74,25 @@ The tools run straight from this folder (`${CLAUDE_PLUGIN_ROOT}` is the
 folder itself), and Claude Code also copies the folder – including files git
 ignores – into its plugin cache. Keep nothing private in the framework
 folder.
+
+## Using the commands
+
+Type the commands in the message box of a Claude Code session (desktop app
+or `claude` in a terminal): type `/proavus:` and pick one. What matters is
+the **folder the session runs in** – it is shown under the message box.
+
+| Command | When | Where | What it does |
+|---|---|---|---|
+| `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, puts it on GitHub and checks it is private |
+| `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
+| `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
+
+Never in the `proavus` framework folder: `/proavus:start` and
+`/proavus:end` stop there, `/proavus:init` refuses a folder that is not
+empty. Forgot one? `/proavus:start` can be run at any time; after a missed
+`/proavus:end` open a session in the family folder and run it – the work is
+still in the files, just not saved yet. Details for family members are in
+the family repository's README.
 
 ## The family map
 

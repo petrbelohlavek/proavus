@@ -94,4 +94,4 @@ Follow the method:
   `uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" install-tools .`
   and save the updated `.proavus/` in the next commit.
 
-End with `/end`.
+End with `/proavus:end`.
