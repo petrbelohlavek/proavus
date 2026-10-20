@@ -4,8 +4,28 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
-## 0.2.1 – unreleased
+## 0.3.0 – unreleased
 
+- Plugin skill `/proavus:upgrade` and its deterministic part in
+  `family_repo.py` (ADR 0009, 0014, 0018): `upgrade-plan` compares
+  `.proavus/VERSION` with the plugin and shows the CHANGELOG sections in
+  between, schema changes (new and removed fields and vocabulary values),
+  whether a migration is needed and missing map settings with candidate
+  starting persons; `upgrade` reinstalls `.proavus/`, refreshes the
+  `proavus:begin/end` blocks and the check workflow (never the family's own
+  text), migrates data on a major version change, sets `schema_version` and
+  `map.root` / `map.lang`, validates with the new copy and prints the commit
+  message. Never downgrades.
+- `tools/migrate.py`: skeleton with a registry of migrations between major
+  versions (none yet); refuses a major upgrade whose migration is missing.
+  Copied into `.proavus/` with the other tools.
+- `START-HERE.md`: when the repository's copy is newer than the plugin it now
+  says to update the plugin instead of suggesting an upgrade.
+- References to `/proavus:upgrade` corrected in the family template
+  (`AGENTS.md` block, README, `repo.yaml`), `.proavus/README.md` and
+  `/proavus:start`: what it changes, when and where to run it.
+- Tested on a fictional repository as left by 0.1.0 (0.1.0 → 0.2.0 plan and
+  upgrade to the plugin version, including the map settings).
 - How to use `/proavus:init`, `/proavus:start` and `/proavus:end` – what
   each does, where to type it (the folder of the session) and what to do
   if you forget one: in the family repository template README (for family

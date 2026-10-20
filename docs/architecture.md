@@ -84,9 +84,9 @@ proavus/
 │   ├── guard_names.py                  kontrola jmen rodiny před commitem frameworku     [v0]
 │   ├── build_index.py · query.py       SQLite index a dotazy (fáze 3)
 │   ├── build_views.py                  mapa views/mapa.html (ADR 0027, 0028) [v0]; později GEDCOM
-│   └── migrate.py                      převod dat mezi hlavními verzemi schématu
+│   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
-├── skills/                             init · start · end [v0]; později setup · check · upgrade · claim · review · feedback
+├── skills/                             init · start · end · upgrade [v0]; později setup · check · claim · review · feedback
 ├── hooks/                              kontrola před uložením v rodinném repu (později)
 ├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu

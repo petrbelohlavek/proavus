@@ -186,6 +186,16 @@ class StartHere(unittest.TestCase):
         self.assertIn("**Check:** OK", text)
         self.assertIn("1 open questions", summary)
 
+    def test_upgrade_hint(self):
+        family_repo.install_tools(self.repo)
+        version = self.repo / ".proavus" / "VERSION"
+        version.write_text("0.1.0\n")
+        family_repo.start_here(self.repo, today=TODAY)
+        self.assertIn("older than the plugin – run `/proavus:upgrade`", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
+        version.write_text("9.0.0\n")
+        family_repo.start_here(self.repo, today=TODAY)
+        self.assertIn("the plugin is older", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
+
     def test_reports_errors(self):
         (self.repo / "repo.yaml").write_text("schema_version: 0.1.0\nmembers: []\n")
         summary, code = family_repo.start_here(self.repo, today=TODAY)

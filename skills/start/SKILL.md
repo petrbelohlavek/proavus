@@ -42,7 +42,9 @@ uv run .proavus/tools/family_repo.py start-here .
 ```
 
 Read `START-HERE.md` (generated, never edit or commit it). If it says the
-Proavus copy is older than the plugin, tell the user an upgrade is due.
+Proavus copy is older than the plugin, tell the user and offer
+`/proavus:upgrade` (they type it; it needs a clean state, so do it before
+starting new work).
 Read `AGENTS.md`, the family notes in `CLAUDE.md` and the binding rules
 `${CLAUDE_PLUGIN_ROOT}/method/rules.md` (Czech: `rules.cs.md`).
 

@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.2.1 -->
+<!-- source: README.md @ v0.3.0 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -11,7 +11,7 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.2.1).** Existuje schéma, validátor, závazná pravidla
+> **Rozpracováno (0.3.0).** Existuje schéma, validátor, závazná pravidla
 > a první příkazy (`/proavus:init`, `/proavus:start`, `/proavus:end`);
 > průvodce instalací (`/setup`) zatím ne. Zatím není k běžnému použití.
 
@@ -84,6 +84,7 @@ nebo `claude` v terminálu): napište `/proavus:` a vyberte. Rozhoduje,
 | `/proavus:init` | jednou | nové sezení ve složce, kde má repo rodiny vzniknout, nebo v jeho prázdném klonu | založí **soukromé** repo rodiny ze šablony, nainstaluje `.proavus/`, ochrání framework před úpravami, nahraje repo na GitHub a ověří, že je soukromé |
 | `/proavus:start` | první zpráva každého sezení bádání | sezení v repu rodiny | kontrola soukromí, stažení práce ostatních, přehled (`START-HERE.md`), výběr nebo zápis výzkumné otázky |
 | `/proavus:end` | poslední zpráva každého sezení bádání | totéž sezení | záznam sezení s dalším krokem, rozhodnutí, která dělá jen člověk, validace (0 chyb), uložení na GitHub |
+| `/proavus:upgrade` | když `/proavus:start` hlásí, že kopie Proavus je starší než plugin | sezení v repu rodiny, bez neuložených změn | ukáže, co se změní, zeptá se na nová nastavení (např. výchozí osobu mapy), aktualizuje `.proavus/`, bloky Proavus, kontrolní workflow a `schema_version`, při potřebě převede data, zvaliduje a uloží |
 
 Nikdy ve složce frameworku `proavus`: `/proavus:start` a `/proavus:end` se
 tam zastaví, `/proavus:init` odmítne složku, která není prázdná. Zapomněli

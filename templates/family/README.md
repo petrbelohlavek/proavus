@@ -21,7 +21,9 @@ Private family repository built with [Proavus](https://github.com/petrbelohlavek
 
 You never need to use git yourself. If something does not work, tell
 Claude what happened. (`/proavus:init` created this repository; it is not
-needed again.)
+needed again.) When `/proavus:start` says the Proavus copy is older than
+the plugin, type `/proavus:upgrade` in a session in this folder: it shows
+what changes, asks about new settings and updates the framework's files.
 
 ### If you forget
 
@@ -56,7 +58,7 @@ Full rules: `.proavus/method/rules.md`.
 | `people/`, `relationships/`, `assertions/` | the tree and the facts behind it |
 | `conflicts/`, `places/`, `sources/`, `oral/`, `decisions/`, `chronicle/` | disagreements, places, sources, oral testimony, family decisions, milestones |
 | `archive/` | older material, frozen |
-| `.proavus/` | pinned copy of the Proavus tools – do not edit (managed by `/proavus:upgrade`) |
+| `.proavus/` | pinned copy of the Proavus tools – do not edit (only `/proavus:upgrade` replaces it) |
 
 `START-HERE.md` and `views/` are generated on your computer and are not
 saved in git.

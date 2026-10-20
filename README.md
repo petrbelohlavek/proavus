@@ -11,7 +11,7 @@
 tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
-> **Work in progress (0.2.1).** The schema, the validator, the binding rules
+> **Work in progress (0.3.0).** The schema, the validator, the binding rules
 > and the first commands (`/proavus:init`, `/proavus:start`,
 > `/proavus:end`) exist; the guided setup (`/setup`) does not yet. Not ready
 > for general use.
@@ -86,6 +86,7 @@ the **folder the session runs in** – it is shown under the message box.
 | `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, puts it on GitHub and checks it is private |
 | `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
 | `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
+| `/proavus:upgrade` | when `/proavus:start` says the Proavus copy is older than the plugin | a session in the family repository, with nothing unsaved | shows what changes, asks about new settings (e.g. the map's starting person), updates `.proavus/`, the Proavus blocks, the check workflow and `schema_version`, migrates data if needed, validates and saves |
 
 Never in the `proavus` framework folder: `/proavus:start` and
 `/proavus:end` stop there, `/proavus:init` refuses a folder that is not

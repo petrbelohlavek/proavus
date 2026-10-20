@@ -1,5 +1,5 @@
 # Configuration of this family repository (Proavus).
-# schema_version is managed by /proavus:upgrade; the rest belongs to the family.
+# schema_version is set by /proavus:upgrade (never by hand); the rest belongs to the family.
 schema_version: "{{VERSION}}"
 title: "{{TITLE}}"
 regions: {{REGIONS}}
