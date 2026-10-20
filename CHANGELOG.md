@@ -20,6 +20,8 @@ major + `migrate.py`.
   itself and folders without `repo.yaml` (`.proavus/` was installed into the
   framework by mistake).
 - `/start` tells how to build the family map on request.
+- Name guard: names inside identifiers (`name_line`, `name2`, `nameFamily`)
+  are now hits; underscores, digits and camelCase no longer hide them.
 - Fictional fixture extended (seven persons over five generations, step and
   unknown parent, living persons, open conflict).
 

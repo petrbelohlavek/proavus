@@ -93,6 +93,13 @@ class Guard(unittest.TestCase):
         self.assertEqual(g.hits("x\nPOKUSNY y"), [(2, 1)])
         self.assertEqual(g.hits("pokusnýho"), [])  # whole words only
 
+    def test_names_inside_identifiers(self):
+        g = guard_names.Guard(["Pokusný"], [])
+        for text in ("matej_pokusny", "POKUSNY_LINE", "pokusny2", "matejPokusny", "PokusnyFamily", "pokusny-line"):
+            self.assertEqual(g.hits(text), [(1, 1)], text)
+        for text in ("pokusnyho", "nepokusny", "xpokusny_y"):
+            self.assertEqual(g.hits(text), [], text)
+
     def test_allowed_phrase(self):
         g = guard_names.Guard(["Pokusný"], ["Ada Pokusná-Pokusný"])
         self.assertEqual(g.hits("© Ada Pokusná-Pokusný"), [])

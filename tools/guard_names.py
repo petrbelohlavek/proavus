@@ -34,6 +34,16 @@ import unicodedata
 from pathlib import Path
 
 
+def split_camel(text: str) -> str:
+    """matejPokusny → matej Pokusny, so names inside identifiers are found."""
+    out = []
+    for i, c in enumerate(text):
+        if i and c.isupper() and text[i - 1].islower():
+            out.append(" ")
+        out.append(c)
+    return "".join(out)
+
+
 def normalize(text: str) -> str:
     decomposed = unicodedata.normalize("NFKD", text)
     stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
@@ -66,7 +76,9 @@ def guard_list_path(root: Path) -> Path:
 class Guard:
     def __init__(self, names: list[str], allowed: list[str]):
         self.patterns = [
-            (i + 1, re.compile(r"(?<!\w)" + re.escape(normalize(n)) + r"(?!\w)"))
+            # A name is a whole word between non-letters: underscores and
+            # digits separate words too (novak_line, novak2 are hits).
+            (i + 1, re.compile(r"(?<![^\W\d_])" + re.escape(normalize(n)) + r"(?![^\W\d_])"))
             for i, n in enumerate(names)
         ]
         # Longest first, so a longer allowed phrase wins over its prefix.
@@ -76,7 +88,7 @@ class Guard:
         """Return (line number, guard entry number) pairs."""
         found = []
         for lineno, line in enumerate(text.splitlines(), start=1):
-            norm = normalize(line)
+            norm = normalize(split_camel(line))
             for phrase in self.allowed:
                 norm = norm.replace(phrase, " ")
             for entry, pattern in self.patterns:
