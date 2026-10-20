@@ -22,7 +22,10 @@ become public. These rules apply to every agent and person working here.
   `.guard-allow`.
 - Tests: `uv run python -m unittest discover -s tests`
 - Licences: `uvx --from 'reuse[charset-normalizer]==6.2.0' reuse lint`
-- Do not push without an explicit instruction from the maintainer.
+- Push to `origin main` (private) after each finished step – one complete
+  task that passed all checks above (standing instruction of the
+  maintainer). Ask first before moving `stable` (a release), force-pushing,
+  changing the repository visibility, or pushing half-done work.
 
 ## Where things live
 
