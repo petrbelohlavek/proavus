@@ -47,5 +47,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0040](0040-validator-advice-and-duplicates.md) | Validátor: přijatý negativ z rejstříku, pohlaví u identity, duplicity, rady | přijato | — |
 | [0041](0041-archive-portals.md) | Snímky z archivních portálů: jen kde to provozovatel dovolí, po souhlasu | přijato | — |
 | [0042](0042-bulk-import.md) | Převod staršího bádání plánem: klíče, odkazy @klíč, kontrola celé dávky | přijato | — |
+| [0043](0043-pinned-actions.md) | Akce GitHubu připnuté na commit, minimální oprávnění, Dependabot | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

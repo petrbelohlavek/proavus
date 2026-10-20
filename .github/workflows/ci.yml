@@ -1,18 +1,22 @@
 # Framework checks: tests of the tools and licence information (REUSE).
 # The family-name guard runs only locally (the guard list never leaves the
-# author's computer).
+# author's computer). Actions are pinned to a commit SHA, the token can only
+# read (ADR 0043); Dependabot proposes updates (.github/dependabot.yml).
 name: ci
 on:
   push:
   pull_request:
-permissions:
-  contents: read
+permissions: {}
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
       - run: uv run python -m unittest discover -s tests -v
       - run: uvx --from 'reuse[charset-normalizer]==6.2.0' reuse lint
       - run: uv run tools/validate.py tests/fixtures/family

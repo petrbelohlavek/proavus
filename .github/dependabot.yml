@@ -1,0 +1,17 @@
+# Updates of the GitHub Actions pinned in .github/workflows/ (ADR 0043).
+# The family repository template (templates/family/.github/workflows/) uses
+# the same pins – update it in the same change; families get it with
+# /proavus:upgrade.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: CI

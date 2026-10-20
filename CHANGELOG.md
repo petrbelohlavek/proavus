@@ -6,6 +6,12 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- Workflows (ADR 0043): `actions/checkout` and `astral-sh/setup-uv` pinned to
+  a commit SHA (v4.4.0, v6.8.0) in the framework CI and the family
+  template; `permissions: {}` for the workflow, `contents: read` for the
+  job; `persist-credentials: false`; Dependabot for GitHub Actions in the
+  framework (weekly, 7-day cooldown). Families get the new pins with
+  `/proavus:upgrade`. `tests/test_workflows.py` keeps it that way.
 - Bringing older research in (ADR 0042, `docs/import.md` + Czech): plan
   files with symbolic keys and `@key` links (header, sentences, body), new
   IDs, files in the hand-written style and the right folders
