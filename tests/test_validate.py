@@ -255,7 +255,16 @@ class LivingPersons(FamilyRepoCase):
 
     def test_unknown_status_without_dates_warns(self):
         self.add_person("P-20261020-ab-e01")
-        self.assertWarning(self.validate(), "cannot tell if the person may be living")
+        report = self.validate()
+        self.assertWarning(report, "cannot tell if the person may be living")
+        self.assertWarning(report, "Add a birth or baptism assertion (an estimate is enough")   # ADR 0040: say what to add
+
+    def test_unknown_status_presumed_living_says_what_to_do(self):
+        self.add_person("P-20261020-ab-e01")
+        self.add_fact("A-20261020-ab-e02", "P-20261020-ab-e01", "birth", "1930")
+        report = self.validate()
+        self.assertWarning(report, "vital status unknown, born 1930–1930 – treated as living")
+        self.assertWarning(report, "set vital_status: deceased; if alive, set vital_status: living")
 
 
 class Dates(FamilyRepoCase):
@@ -292,6 +301,29 @@ class Coverage(FamilyRepoCase):
         report = self.validate()
         self.assertClean(report)
         self.assertWarning(report, "an index is not proof of absence")
+
+    def test_index_negatives_are_grouped(self):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(method="index"))
+        self.edit("C-20261020-ab-c03", lambda d: d.update(method="index"))
+        report = self.validate()
+        hits = [w for w in report.warnings if "from an index only" in w]
+        self.assertEqual(len(hits), 1, report.warnings)
+        self.assertIn("coverage/: 2 negative results from an index only (C-20261020-ab-c02, C-20261020-ab-c03)", hits[0])
+
+    def test_index_negative_can_be_accepted(self):
+        accepted = {"by": "ab", "on": "2026-10-20", "note": "the index of this register is complete (checked against 30 pages)"}
+        self.edit("C-20261020-ab-c02", lambda d: d.update(method="index", index_negative_accepted=accepted))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("from an index only", "\n".join(report.warnings))
+
+    def test_acceptance_needs_who_when_why(self):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(method="index", index_negative_accepted={"by": "ab", "on": "2026-10-20"}))
+        self.assertError(self.validate(), "note")
+
+    def test_acceptance_only_for_index_negatives(self):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(index_negative_accepted={"by": "ab", "on": "2026-10-20", "note": "x"}))
+        self.assertWarning(self.validate(), "index_negative_accepted only fits a negative result from an index")
 
     def test_found_without_records_warns(self):
         self.edit("C-20261020-ab-c01", lambda d: d.pop("found"))
@@ -472,3 +504,72 @@ class RelationshipCitations(FamilyRepoCase):
     def test_proved_needs_assertions_or_citations(self):
         self.edit("RL-20261020-ab-f02", lambda d: d.update(confidence="proved", confirmed={"by": "ab", "on": "2026-10-20"}))
         self.assertError(self.validate(), "proved relationship needs supporting assertions or citations")
+
+
+class IdentitySex(FamilyRepoCase):
+    """ADR 0040: the participant's sex (stated or from the role) must fit the person."""
+
+    def identity(self, aid, key, person, confidence="possible"):
+        self.add(f"assertions/{aid}.md", {"id": aid, "type": "assertion", "kind": "identity",
+                                          "participant": {"record": REC, "key": key}, "person": person,
+                                          "citations": [{"record": REC, "participant": key}], "confidence": confidence})
+
+    def test_strong_link_with_wrong_sex_is_an_error(self):
+        self.edit(MATEJ, lambda d: d.update(sex="female"))
+        self.assertError(self.validate(), f"{ID_FATHER}.md: participant p2 of {REC} (role father) does not fit {MATEJ}, who is female")
+
+    def test_stated_sex_wins_over_the_role(self):
+        self.identity("A-20261020-ab-s01", "p1", ANNA)                    # p1 is male in the record
+        self.assertWarning(self.validate(), f"participant p1 of {REC} (sex male) does not fit {ANNA}, who is female")
+
+    def test_weak_link_only_warns(self):
+        self.identity("A-20261020-ab-s02", "p3", JOSEF)                   # p3 is the mother
+        report = self.validate()
+        self.assertWarning(report, "(role mother) does not fit")
+        self.assertNotIn("A-20261020-ab-s02.md: participant", "\n".join(report.errors))
+
+    def test_matching_sex_is_fine(self):
+        self.identity("A-20261020-ab-s03", "p3", ANNA)
+        self.assertNotIn("does not fit", "\n".join(self.validate().warnings))
+
+
+class DuplicatePersons(FamilyRepoCase):
+    """ADR 0040: same name and overlapping birth – maybe one person in two files."""
+
+    def twin(self, pid="P-20261020-ab-m02", name="Matej Pokusny", birth="1851"):
+        self.add(f"people/{pid}.md", {"id": pid, "type": "person", "names": [{"value": name, "name_type": "czech"}],
+                                      "sex": "male", "vital_status": "deceased"})
+        self.add(f"assertions/A-20261020-ab-t{pid[-2:]}.md", {"id": f"A-20261020-ab-t{pid[-2:]}", "type": "assertion", "kind": "fact",
+                 "subject": pid, "fact_type": "birth", "date": birth, "citations": [{"source": SRC}], "confidence": "possible"})
+
+    def test_same_name_and_birth(self):
+        self.twin()   # without diacritics – still the same name
+        self.assertWarning(self.validate(), f"{MATEJ[:-3]}m01--matej-pokusny.md: may be the same person as P-20261020-ab-m02")
+
+    def test_birth_far_apart_is_no_duplicate(self):
+        self.twin(birth="1875")
+        self.assertNotIn("may be the same person", "\n".join(self.validate().warnings))
+
+    def test_namesakes_marked_distinct(self):
+        self.twin()
+        self.edit(MATEJ, lambda d: d.update(distinct_from=["P-20261020-ab-m02"]))
+        self.assertNotIn("may be the same person", "\n".join(self.validate().warnings))
+
+    def test_no_birth_no_warning(self):
+        self.add("people/P-20261020-ab-m03.md", {"id": "P-20261020-ab-m03", "type": "person",
+                 "names": [{"value": "Matěj Pokusný", "name_type": "czech"}], "sex": "male", "vital_status": "deceased"})
+        self.assertNotIn("may be the same person", "\n".join(self.validate().warnings))
+
+
+class DuplicateFacts(FamilyRepoCase):
+    """ADR 0040: the same fact twice about one person – join the citations."""
+
+    def test_same_type_and_date(self):
+        self.add("assertions/A-20261020-ab-b09.md", {"id": "A-20261020-ab-b09", "type": "assertion", "kind": "fact", "subject": JOSEF,
+                 "fact_type": "baptism", "date": "1878-03-14", "citations": [{"source": SRC}], "confidence": "possible"})
+        self.assertWarning(self.validate(), f"2 baptism assertions about {JOSEF} with the same date 1878-03-14 (A-20261020-ab-b01, A-20261020-ab-b09)")
+
+    def test_different_values_are_two_facts(self):
+        self.add("assertions/A-20261020-ab-o09.md", {"id": "A-20261020-ab-o09", "type": "assertion", "kind": "fact", "subject": MATEJ,
+                 "fact_type": "occupation", "value": "weaver", "date": "1878", "citations": [{"source": SRC}], "confidence": "possible"})
+        self.assertNotIn("with the same date", "\n".join(self.validate().warnings))

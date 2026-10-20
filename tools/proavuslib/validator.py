@@ -7,6 +7,7 @@ Each rule of method/rules.md that a machine can check is checked here
 from __future__ import annotations
 
 import datetime as _dt
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -23,6 +24,13 @@ BIRTH_FACTS = ("birth", "baptism")
 DEATH_FACTS = ("death", "burial")
 # Coverage ranges given only as a query (ADR 0035).
 QUERY_METHODS = {"database-search", "full-text-search", "index"}
+# Sex implied by a participant's role when the record does not state it (ADR 0040).
+ROLE_SEX = {
+    "father": "male", "groom": "male", "groom-father": "male", "bride-father": "male",
+    "paternal-grandfather": "male", "maternal-grandfather": "male", "godfather": "male",
+    "mother": "female", "bride": "female", "groom-mother": "female", "bride-mother": "female",
+    "paternal-grandmother": "female", "maternal-grandmother": "female", "godmother": "female",
+}
 
 
 @dataclass
@@ -86,6 +94,9 @@ class RepoValidator:
         self._check_identity_gate()
         self._check_living()
         self._check_dates()
+        self._check_identity_sex()
+        self._check_duplicate_persons()
+        self._check_duplicate_facts()
         self._check_coverage()
         self._check_sessions()
         self._check_inquiries()
@@ -381,8 +392,16 @@ class RepoValidator:
 
     def _check_living(self) -> None:
         for person in self.of_type("person"):
-            if person.data.get("vital_status") == "unknown" and self._span(person.id, BIRTH_FACTS) is None and not self._facts(person.id, DEATH_FACTS):
-                self.report.warn(person.path, "vital status unknown and no birth date – cannot tell if the person may be living")
+            unknown = person.data.get("vital_status") == "unknown"
+            birth, death = self._span(person.id, BIRTH_FACTS), self._facts(person.id, DEATH_FACTS)
+            if unknown and birth is None and not death:
+                self.report.warn(person.path, "vital status unknown and no birth date – cannot tell if the person may be living. "
+                                              "Add a birth or baptism assertion (an estimate is enough, e.g. 1880~ from an age at marriage), "
+                                              "a death or burial assertion, or set vital_status: deceased if the person is known to be dead")
+            elif unknown and not death and birth is not None and birth[1] > self.today.year - self.threshold:
+                self.report.warn(person.path, f"vital status unknown, born {birth[0]}–{birth[1]} – treated as living (only name, sex, birth "
+                                              "and relationships may be stored). If the person died, add a death or burial assertion or set "
+                                              "vital_status: deceased; if alive, set vital_status: living")
             if not self.is_living(person):
                 continue
             for a in self._all_facts(person.id):
@@ -429,19 +448,89 @@ class RepoValidator:
                 if sex != "female" and p_death[1] < c_birth[0] - 1:
                     self.report.error(rel.path, "father died more than a year before the child's birth")
 
+    # ------------------------------------------------- identity, duplicates
+    def _check_identity_sex(self) -> None:
+        """A participant's sex (stated, or implied by the role) must fit the person (ADR 0040)."""
+        for a in self.of_type("assertion"):
+            part = a.data.get("participant")
+            if a.data.get("kind") != "identity" or not isinstance(part, dict):
+                continue
+            rec, person = self._resolve(part.get("record", "")), self._resolve(a.data.get("person", ""))
+            if rec is None or person is None:
+                continue
+            p = next((x for x in rec.data.get("participants") or [] if isinstance(x, dict) and x.get("key") == part.get("key")), None)
+            if p is None:
+                continue
+            stated = p.get("sex") if p.get("sex") in ("male", "female") else None
+            sex = stated or ROLE_SEX.get(p.get("role"))
+            if sex and person.data.get("sex") in ("male", "female") and sex != person.data["sex"]:
+                why = f"sex {sex}" if stated else f"role {p.get('role')}"
+                msg = (f"participant {part.get('key')} of {rec.id} ({why}) does not fit {person.id}, who is {person.data['sex']} – "
+                       "check the reading and the link")
+                (self.report.error if a.data.get("confidence") in STRONG else self.report.warn)(a.path, msg)
+
+    @staticmethod
+    def _name_key(name: str) -> str:
+        decomposed = unicodedata.normalize("NFKD", name)
+        return " ".join("".join(c for c in decomposed if not unicodedata.combining(c)).casefold().split())
+
+    def _check_duplicate_persons(self) -> None:
+        """Same name and an overlapping birth: perhaps one person in two files (ADR 0040)."""
+        by_name: dict[str, list[Entity]] = {}
+        for person in sorted(self.of_type("person"), key=lambda p: p.id):
+            keys = {self._name_key(n.get("value", "")) for n in person.data.get("names") or [] if isinstance(n, dict) and n.get("value")}
+            for key in keys:
+                by_name.setdefault(key, []).append(person)
+        seen: set[tuple[str, str]] = set()
+        for key, people in by_name.items():
+            for i, a in enumerate(people):
+                for b in people[i + 1:]:
+                    pair = (a.id, b.id)
+                    if pair in seen or b.id in (a.data.get("distinct_from") or []) or a.id in (b.data.get("distinct_from") or []):
+                        continue
+                    sa, sb = self._span(a.id, BIRTH_FACTS), self._span(b.id, BIRTH_FACTS)
+                    if sa is None or sb is None or sa[0] > sb[1] or sb[0] > sa[1]:
+                        continue
+                    seen.add(pair)
+                    self.report.warn(a.path, f"may be the same person as {b.id} (same name, birth {sa[0]}–{sa[1]} and {sb[0]}–{sb[1]}) – "
+                                             "merge them with aliases after the identity gate, or add distinct_from if they are namesakes")
+
+    def _check_duplicate_facts(self) -> None:
+        """Two assertions of the same type, date and value about one person: join their citations (ADR 0040)."""
+        groups: dict[tuple, list[Entity]] = {}
+        for a in sorted(self.of_type("assertion"), key=lambda a: a.id):
+            d = a.data
+            if d.get("kind") != "fact" or d.get("date") is None or d.get("confidence") == "disproved":
+                continue
+            subject = self.aliases.get(d.get("subject"), d.get("subject"))
+            groups.setdefault((subject, d.get("fact_type"), str(d.get("date")), str(d.get("value", ""))), []).append(a)
+        for (subject, fact_type, date, _), same in groups.items():
+            if len(same) > 1:
+                self.report.warn(same[0].path, f"{len(same)} {fact_type} assertions about {subject} with the same date {date} "
+                                               f"({', '.join(a.id for a in same)}) – join their citations into one assertion")
+
     # ------------------------------------------------------------- coverage
     def _check_coverage(self) -> None:
-        for cov in self.of_type("coverage"):
+        index_only: list[Entity] = []
+        for cov in sorted(self.of_type("coverage"), key=lambda c: c.id):
             result, method = cov.data.get("result"), cov.data.get("method")
             for r in cov.data.get("ranges") or []:
                 if isinstance(r, dict) and r.get("query") and not (r.get("dates") or r.get("pages")) and method not in QUERY_METHODS:
                     self.report.error(cov.path, f"a range given only as a query fits a database search ({', '.join(sorted(QUERY_METHODS))}), not method {method!r} – add dates or pages")
-            if cov.data.get("inquiry") and method != "inquiry":
-                self.report.warn(cov.path, "links an inquiry but method is not 'inquiry'")
-            if result == "negative" and method == "index":
-                self.report.warn(cov.path, "negative from an index only – an index is not proof of absence; page through the book if it matters")
+            accepted = cov.data.get("index_negative_accepted")
+            if result == "negative" and method == "index" and not accepted:
+                index_only.append(cov)
+            elif accepted and not (result == "negative" and method == "index"):
+                self.report.warn(cov.path, "index_negative_accepted only fits a negative result from an index (method index, result negative)")
             if result in ("found", "partial") and not cov.data.get("found"):
                 self.report.warn(cov.path, f"result {result!r} but no records listed in 'found'")
+            if cov.data.get("inquiry") and method != "inquiry":
+                self.report.warn(cov.path, "links an inquiry but method is not 'inquiry'")
+        if index_only:
+            # One warning for all of them (ADR 0040): a list, not a wall of the same sentence.
+            self.report.warn("coverage/", f"{len(index_only)} negative result{'s' if len(index_only) > 1 else ''} from an index only "
+                             f"({', '.join(c.id for c in index_only)}) – an index is not proof of absence; page through the book if it "
+                             "matters, or record the decision in the file: index_negative_accepted: {by, on, note}")
 
     # ------------------------------------------------------------- sessions
     def _check_sessions(self) -> None:

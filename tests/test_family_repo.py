@@ -193,15 +193,44 @@ class StartHere(unittest.TestCase):
         self.assertIn("Order the marriage register Vzorkov 1870–1878 in the reading room of Archiv Vzorkov (fictional) (ab)", text)
         self.assertNotIn("Pay the copying fee", text)          # done
         self.assertIn("- inquiries not closed: 1", text)
-        self.assertIn("IN-20261020-ab-i01 Obecní úřad Vzorkov (fictional)", text)
+        self.assertIn("Obecní úřad Vzorkov (fictional): Domicile right (domovské právo) of Matěj Pokusný, 1870–1900 (IN-20261020-ab-i01) – sent 2026-10-20", text)
 
-    def test_plain_text_tasks_count_as_open(self):
+    def test_names_next_to_ids(self):
+        family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertIn("### Who were the parents of Matěj Pokusný? (Q-20261020-ab-q01)", text)
+        self.assertIn("- about: Matěj Pokusný (P-20261020-ab-m01)", text)
+        self.assertIn("baptism 14 March 1878, Vzorkov („Josephus“) (R-20261020-ab-r01)", text)
+        self.assertIn("conflict about Matěj Pokusný, birth about 1850 – Matěj Pokusný, birth about 1853 – Matěj Pokusný (X-20261020-ab-x01)", text)
+        self.assertIn("S-20261020-ab-s01 – Who were the parents of Matěj Pokusný?:", text)
+
+    def test_summary_per_question(self):
+        family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        section = text[text.index("### Who were"):text.index("## Last sessions")]
+        for line in ("- status: in-progress, claimed by ab", "- searched: 3 times (1 found, 2 negative), last 2026-10-20",
+                     "- last session 2026-10-20 (ab): next step – Search the marriage register",
+                     "- open task: Order the marriage register", "- planned sources: marriage register Vzorkov 1870–1878"):
+            self.assertIn(line, section)
+
+    def test_read_once_records_listed_by_title(self):
+        record = self.repo / "records" / "R-20261020-ab-r01.md"
+        text = record.read_text(encoding="utf-8")
+        record.write_text(text.replace("  status: confirmed\n", "  status: read-once\n"), encoding="utf-8")
+        family_repo.start_here(self.repo, today=TODAY)
+        self.assertIn("  - baptism 14 March 1878, Vzorkov („Josephus“) (R-20261020-ab-r01)", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
+
+    def test_plain_text_tasks_only_from_the_latest_session(self):
         session = next(self.repo.glob("sessions/*/S-*.md"))
         text = session.read_text(encoding="utf-8")
         start = text.index("human_tasks:\n")
         session.write_text(text[:start] + "human_tasks:\n  - Call the parish office\n---\n", encoding="utf-8")
         family_repo.start_here(self.repo, today=TODAY)
         self.assertIn("  - Call the parish office – S-20261020-ab-s01", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
+        later = session.parent / "S-20261020-ab-s02.md"
+        later.write_text("---\nid: S-20261020-ab-s02\ntype: session\ndate: 2026-10-20\nby: ab\nresult: nothing new\nnext_step: wait\n---\n", encoding="utf-8")
+        family_repo.start_here(self.repo, today=TODAY)
+        self.assertNotIn("Call the parish office", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
 
     def test_upgrade_hint(self):
         family_repo.install_tools(self.repo)

@@ -54,7 +54,17 @@ uv run .proavus/tools/validate.py .
 
 0 errors are required. Fix errors together with the user; explain warnings
 (an unknown vocabulary value may be a real new case – note it as
-`schema_gap` if unsure).
+`schema_gap` if unsure). Some warnings end with a decision only the user
+makes – write it only on their word:
+
+- a negative from an index only: page through the book later (human task),
+  or accept it – `index_negative_accepted: {by, on, note}` in the coverage
+  file with the reason;
+- "may be the same person": a merge goes through the identity gate
+  (`aliases`); namesakes get `distinct_from: [<P-ID>]` and the reason in the
+  body;
+- the same fact twice: join the citations into one assertion;
+- vital status unknown: add what the warning asks for, if it is known.
 
 ## 6. Privacy and save
 

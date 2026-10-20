@@ -28,7 +28,6 @@ import argparse
 import datetime as dt
 import html
 import os
-import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,6 +38,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 
 from family_repo import check_family_repo, open_tasks, waiting_inquiries  # noqa: E402
 from proavuslib import edtf, ids  # noqa: E402
+from proavuslib.dates import human_date, short_year  # noqa: E402,F401
 from proavuslib.frontmatter import load_yaml  # noqa: E402
 from proavuslib.quay import quay_for_citation  # noqa: E402
 from proavuslib.validator import BIRTH_FACTS, DEATH_FACTS, LIVING_ALLOWED_FACTS, Entity, RepoValidator  # noqa: E402
@@ -59,59 +59,6 @@ EVIDENCE_RANK = {"direct": 0, "indirect": 1, "negative": 2}
 # Language of the map when map.lang is missing: from the first known region.
 REGION_LANG = {"cz": "cs"}
 CLIP_OCCUPATION, CLIP_PLACE = 32, 30   # characters on a card; full text in the tooltip and detail
-
-MONTHS = {
-    "en": ["January", "February", "March", "April", "May", "June", "July", "August",
-           "September", "October", "November", "December"],
-    "cs": ["leden", "únor", "březen", "duben", "květen", "červen", "červenec", "srpen",
-           "září", "říjen", "listopad", "prosinec"],
-}
-DATE_WORDS = {"en": {"about": "about", "before": "before", "after": "after"},
-              "cs": {"about": "kolem", "before": "před", "after": "po"}}
-_EDTF = re.compile(r"^([0-9]{4}|[0-9]{3}X|[0-9]{2}XX)(?:-([0-9]{2}|XX)(?:-([0-9]{2}|XX))?)?([?~%])?$")
-
-
-def human_date(value, lang: str = "en") -> str:
-    """EDTF (subset) or ISO date in words: cs 13. 5. 1958, kolem 1868, před 26. 1. 1836, 1946/1947."""
-    if value is None:
-        return ""
-    text = str(value).strip()
-    words = DATE_WORDS.get(lang, DATE_WORDS["en"])
-    if "/" in text:
-        start, _, end = text.partition("/")
-        if start in ("", "..") and end not in ("", ".."):
-            return f"{words['before']} {human_date(end, lang)}"
-        if end in ("", "..") and start not in ("", ".."):
-            return f"{words['after']} {human_date(start, lang)}"
-        return f"{human_date(start, lang)}/{human_date(end, lang)}"
-    m = _EDTF.match(text)
-    if not m:
-        return text
-    year, month, day, qual = m.groups()
-    months = MONTHS.get(lang, MONTHS["en"])
-    if "X" in year:
-        core = f"{year.replace('X', '0')}–{year.replace('X', '9')}"
-    elif month and month != "XX" and 1 <= int(month) <= 12:
-        if day and day != "XX":
-            core = f"{int(day)}. {int(month)}. {year}" if lang == "cs" else f"{int(day)} {months[int(month) - 1]} {year}"
-        else:
-            core = f"{months[int(month) - 1]} {year}"
-    else:
-        core = year
-    if qual in ("~", "%"):
-        core = f"{words['about']} {core}"
-    return core + ("?" if qual in ("?", "%") else "")
-
-
-def short_year(value) -> str:
-    """Compact year for the marriage label: ~1877, 1877?, <1836, >1900."""
-    text = str(value)
-    m = re.search(r"[0-9]{4}|[0-9]{3}X|[0-9]{2}XX", text)
-    if not m:
-        return ""
-    prefix = "<" if text.startswith(("../", "/")) else ">" if text.endswith(("/..", "/")) else "~" if re.search(r"[~%]", text) else ""
-    return prefix + m.group(0) + ("?" if re.search(r"[?%]", text) else "")
-
 
 def clip(text: str, n: int) -> str:
     return text if len(text) <= n else text[: n - 1].rstrip() + "…"

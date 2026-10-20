@@ -33,6 +33,11 @@
       "enum": ["deceased", "living", "unknown"]
     },
     "lines": { "type": "array", "items": { "type": "string" }, "description": "family line labels from lines.yaml" },
+    "distinct_from": {
+      "description": "Persons with the same name and birth who are known to be different people (namesakes, ADR 0040); the reason goes into the body.",
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/ref_person" }
+    },
     "aliases": {
       "description": "IDs of person files merged into this one. The merge is a tree change and passes the identity gate.",
       "type": "array",

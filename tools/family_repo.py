@@ -50,6 +50,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 import migrate  # noqa: E402
 from proavuslib import ids, versions  # noqa: E402
 from proavuslib.frontmatter import load_yaml  # noqa: E402
+from proavuslib.labels import Labeler  # noqa: E402
 from proavuslib.validator import RepoValidator  # noqa: E402
 
 TEMPLATE = FRAMEWORK / "templates" / "family"
@@ -197,12 +198,22 @@ def protect_plugin(repo: Path, also: list[Path] | None = None) -> list[str]:
 
 
 # ------------------------------------------------------------- START-HERE
+def _session_key(s):
+    return (str(s.data.get("date", "")), s.id)
+
+
 def open_tasks(sessions) -> list[tuple[str, str, str | None]]:
-    """Open human tasks of all sessions (ADR 0037): (session ID, task, for whom). A plain string is open."""
+    """Open human tasks (ADR 0037, 0039): (session ID, task, for whom).
+
+    Tasks with a state: the open ones from all sessions. Plain-text tasks cannot
+    be closed, so only those of the latest session count.
+    """
+    sessions = sorted(sessions, key=_session_key)
+    latest = sessions[-1].id if sessions else None
     out = []
-    for s in sorted(sessions, key=lambda s: (str(s.data.get("date", "")), s.id)):
+    for s in sessions:
         for task in s.data.get("human_tasks") or []:
-            if isinstance(task, str):
+            if isinstance(task, str) and s.id == latest:
                 out.append((s.id, task, None))
             elif isinstance(task, dict) and task.get("status") == "open":
                 out.append((s.id, str(task.get("task", "")), task.get("for")))
@@ -214,12 +225,70 @@ def waiting_inquiries(inquiries) -> list:
     return sorted((i for i in inquiries if i.data.get("status") != "closed"), key=lambda i: (str(i.data.get("sent", "")), i.id))
 
 
+def inquiry_state(i) -> str:
+    status, sent = i.data.get("status"), i.data.get("sent")
+    return f"sent {sent}" if status == "sent" else f"{status} (sent {sent})"
+
+
+def _related(v: RepoValidator, person_ids: set[str]) -> set[str]:
+    """The persons and the assertions and relationships about them."""
+    out = set(person_ids)
+    for a in v.of_type("assertion"):
+        if v.aliases.get(a.data.get("subject"), a.data.get("subject")) in person_ids or a.data.get("person") in person_ids:
+            out.add(a.id)
+    for rel in v.of_type("relationship"):
+        if any(p.get("person") in person_ids for p in rel.data.get("parties") or [] if isinstance(p, dict)):
+            out.add(rel.id)
+    return out
+
+
+def question_summary(v: RepoValidator, lab: Labeler, q) -> list[str]:
+    """What is known and open about one research question (ADR 0039)."""
+    d = q.data
+    head = f"### {d.get('title', q.id)} ({q.id})"
+    lines = [head, "", f"- status: {d.get('status')}" + (f", claimed by {d['claimed_by']}" if d.get("claimed_by") else "")]
+    subjects = [s for s in d.get("subjects") or [] if isinstance(s, str)]
+    if subjects:
+        lines.append("- about: " + ", ".join(lab.ref(s) for s in subjects))
+    searches = [c for c in v.of_type("coverage") if q.id in (c.data.get("questions") or [])]
+    if searches:
+        results: dict[str, int] = {}
+        for c in searches:
+            results[c.data.get("result", "?")] = results.get(c.data.get("result", "?"), 0) + 1
+        last = max(str(c.data.get("on", "")) for c in searches)
+        lines.append(f"- searched: {len(searches)} times ({', '.join(f'{n} {r}' for r, n in sorted(results.items()))}), last {last}")
+    records = list(dict.fromkeys(([d["anchor"]] if d.get("anchor") else [])
+                                 + [r for c in searches for r in c.data.get("found") or []]))
+    if records:
+        lines.append("- records: " + "; ".join(lab.ref(r) for r in records))
+    sessions = sorted((s for s in v.of_type("session") if q.id in (s.data.get("questions") or [])), key=_session_key)
+    if sessions:
+        s = sessions[-1]
+        lines.append(f"- last session {s.data.get('date')} ({s.data.get('by')}): next step – {s.data.get('next_step', '')}")
+    related = _related(v, set(subjects))
+    conflicts = [x for x in v.of_type("conflict") if x.data.get("status") in ("open", "unresolved")
+                 and related & set(x.data.get("about") or [])]
+    for x in conflicts:
+        lines.append(f"- open conflict: {lab.ref(x)}")
+    for i in waiting_inquiries(v.of_type("inquiry")):
+        if q.id in (i.data.get("questions") or []):
+            lines.append(f"- inquiry: {lab.ref(i)} – {inquiry_state(i)}")
+    session_ids = {s.id for s in sessions}
+    for sid, task, who in open_tasks(v.of_type("session")):
+        if sid in session_ids:
+            lines.append(f"- open task: {task}" + (f" ({who})" if who else ""))
+    next_sources = (d.get("plan") or {}).get("next_sources") or []
+    if next_sources:
+        lines.append("- planned sources: " + "; ".join(str(x) for x in next_sources))
+    return lines + [""]
+
+
 def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     today = today or dt.date.today()
     v = RepoValidator(repo, FRAMEWORK, today=today)
     report = v.run()
-    e = v.entities
     of = v.of_type
+    lab = Labeler(v, FRAMEWORK)
     lines = [
         "<!-- GENERATED by /start – do not edit, not saved in git -->",
         f"# START HERE – {today.isoformat()}",
@@ -236,28 +305,29 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
 
     status = "OK" if report.ok else f"{len(report.errors)} ERRORS – fix before saving"
     lines += [f"**Check:** {status} · {report.files} files · {len(report.warnings)} warnings · {len(report.notes)} schema gaps", ""]
-    for msg in report.errors[:10]:
-        lines.append(f"- ERROR {msg}")
-    if len(report.errors) > 10:
-        lines.append(f"- … and {len(report.errors) - 10} more (`uv run .proavus/tools/validate.py .`)")
-    if report.errors:
+    for kind, messages in (("ERROR", report.errors), ("WARN", report.warnings)):
+        for msg in messages[:10]:
+            lines.append(f"- {kind} {msg}")
+        if len(messages) > 10:
+            lines.append(f"- … and {len(messages) - 10} more (`uv run .proavus/tools/validate.py .`)")
+    if report.errors or report.warnings:
         lines.append("")
 
-    open_q = [q for q in of("question") if q.data.get("status") in ("open", "in-progress")]
+    open_q = sorted((q for q in of("question") if q.data.get("status") in ("open", "in-progress")), key=lambda q: q.id)
     lines += ["## Open questions", ""]
     if open_q:
-        lines += ["| ID | Question | Status | Who |", "|---|---|---|---|"]
-        for q in sorted(open_q, key=lambda q: q.id):
-            lines.append(f"| {q.id} | {q.data.get('title', '')} | {q.data.get('status')} | {q.data.get('claimed_by', '–')} |")
+        for q in open_q:
+            lines += question_summary(v, lab, q)
     else:
-        lines.append("No open questions yet – start by writing one.")
-    lines.append("")
+        lines += ["No open questions yet – start by writing one.", ""]
 
-    sessions = sorted(of("session"), key=lambda s: (s.data.get("date", ""), s.id), reverse=True)[:5]
+    sessions = sorted(of("session"), key=_session_key, reverse=True)[:5]
     lines += ["## Last sessions and next steps", ""]
     if sessions:
         for s in sessions:
-            lines.append(f"- **{s.data.get('date')}** ({s.data.get('by')}) {s.id}: {s.data.get('next_step', '')}")
+            about = ", ".join(lab.label(x) for x in s.data.get("questions") or [])
+            lines.append(f"- **{s.data.get('date')}** ({s.data.get('by')}) {s.id}" + (f" – {about}" if about else "")
+                         + f": {s.data.get('next_step', '')}")
     else:
         lines.append("No sessions yet.")
     lines.append("")
@@ -265,19 +335,18 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     read_once = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "read-once"]
     disputed = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "disputed"]
     conflicts = [c for c in of("conflict") if c.data.get("status") in ("open", "unresolved")]
-    lines += ["## Waiting for a human", ""]
-    lines.append(f"- records read once (second reading needed before identity): {len(read_once)}"
-                 + (" – " + ", ".join(r.id for r in read_once[:10]) if read_once else ""))
-    lines.append(f"- disputed readings: {len(disputed)}" + (" – " + ", ".join(r.id for r in disputed) if disputed else ""))
-    lines.append(f"- open conflicts: {len(conflicts)}" + (" – " + ", ".join(c.id for c in conflicts) if conflicts else ""))
     tasks = open_tasks(of("session"))
-    lines.append(f"- open human tasks: {len(tasks)}")
-    for sid, task, who in tasks:
-        lines.append(f"  - {task}" + (f" ({who})" if who else "") + f" – {sid}")
     inquiries = waiting_inquiries(of("inquiry"))
-    lines.append(f"- inquiries not closed: {len(inquiries)}")
-    for i in inquiries:
-        lines.append(f"  - {i.id} {i.data.get('addressee', '')}: {i.data.get('subject', '')} – {i.data.get('status')} since {i.data.get('sent')}")
+    lines += ["## Waiting for a human", ""]
+    for title, items in (("records read once (second reading needed before identity)", [lab.ref(r) for r in read_once]),
+                         ("disputed readings", [lab.ref(r) for r in disputed]),
+                         ("open conflicts", [lab.ref(c) for c in conflicts]),
+                         ("open human tasks", [f"{task}" + (f" ({who})" if who else "") + f" – {sid}" for sid, task, who in tasks]),
+                         ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries])):
+        lines.append(f"- {title}: {len(items)}")
+        lines += [f"  - {item}" for item in items[:10]]
+        if len(items) > 10:
+            lines.append(f"  - … and {len(items) - 10} more")
     lines.append("")
 
     counts = {t: len(of(t)) for t in ("person", "record", "assertion", "relationship", "coverage", "source")}

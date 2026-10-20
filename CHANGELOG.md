@@ -6,6 +6,20 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- START-HERE (ADR 0039): name, question title, record in words, conflict
+  and inquiry labels next to every ID (`proavuslib/labels.py`); a summary
+  per open question (who, searches and results, records, last next step,
+  conflicts, inquiries, open tasks, planned sources) instead of a table;
+  open human tasks with a state from all sessions, plain-text tasks only
+  from the latest session (also in the map); the first ten warnings.
+- Validator (ADR 0040): negatives from an index only in one grouped warning,
+  and `coverage.index_negative_accepted: {by, on, note}` to accept one;
+  the participant's sex (stated or from the role) must fit the person of an
+  identity link (error for probable / proved, warning below); possible
+  duplicate persons (same name without diacritics, overlapping birth) with
+  `person.distinct_from` for known namesakes; the same fact twice (type,
+  date, value); advice what to add for `vital_status: unknown`.
+- `proavuslib/dates.py` (dates in words, moved from `build_views.py`).
 - **Schema 0.3** (core, additive – old forms stay valid; ADR 0031–0038):
   `record.crops` (path + caption; `crop` stays as the short form);
   `record.annotations` (later notes in the margin: text, position, hand,

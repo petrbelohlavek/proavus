@@ -68,7 +68,9 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
 - coverage ranges given as a `query` for database searches (ADR 0035);
 - entity `inquiry` – requests to offices with a state (ADR 0036);
 - human tasks with a state `open` / `done` / `dropped` (ADR 0037);
-- `relationship.citations` (ADR 0038).
+- `relationship.citations` (ADR 0038);
+- `coverage.index_negative_accepted: {by, on, note}` and `person.distinct_from`
+  – decisions about warnings of the validator (ADR 0040).
 
 Old forms stay valid; `/proavus:upgrade` rewrites them with the 0.3.0
 migration (`tools/migrate.py`, ADR 0030).

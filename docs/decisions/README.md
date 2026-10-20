@@ -43,5 +43,7 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0036](0036-inquiry-entity.md) | Dotazy na úřady jako entita `inquiry` | přijato | — |
 | [0037](0037-human-tasks-with-status.md) | Úkoly pro člověka se stavem | přijato | — |
 | [0038](0038-relationship-citations.md) | Přímé citace u vztahu | přijato | — |
+| [0039](0039-start-here-readable.md) | START-HERE: jména místo ID, souhrn po otázkách, jen otevřené úkoly | přijato | — |
+| [0040](0040-validator-advice-and-duplicates.md) | Validátor: přijatý negativ z rejstříku, pohlaví u identity, duplicity, rady | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

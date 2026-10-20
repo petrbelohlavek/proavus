@@ -41,7 +41,18 @@
     "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
     "by": { "$ref": "common.schema.json#/$defs/member" },
     "on": { "$ref": "common.schema.json#/$defs/date" },
-    "access_note": { "type": "string" }
+    "access_note": { "type": "string" },
+    "index_negative_accepted": {
+      "description": "A negative from an index only, accepted on purpose (ADR 0040): who decided, when and why the index is enough here.",
+      "type": "object",
+      "required": ["by", "on", "note"],
+      "additionalProperties": false,
+      "properties": {
+        "by": { "$ref": "common.schema.json#/$defs/member" },
+        "on": { "$ref": "common.schema.json#/$defs/date" },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    }
   },
   "unevaluatedProperties": false
 }
