@@ -68,6 +68,14 @@ class Init(unittest.TestCase):
         with self.assertRaises(SystemExit):
             family_repo.init(Path(self._tmp.name) / "other", "x", ["Ada"], [])
 
+    def test_init_into_empty_clone(self):
+        """An existing empty repository (only .git) may be used (/proavus:init)."""
+        clone = Path(self._tmp.name) / "proavus-clone"
+        subprocess.run(["git", "init", "-q", str(clone)], check=True)
+        family_repo.init(clone, "x", ["ab:A"], [])
+        self.assertTrue((clone / "repo.yaml").is_file())
+        self.assertTrue((clone / ".git").is_dir())
+
     def test_no_remote(self):
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         self.assertEqual(family_repo.check_private(self.repo), 5)

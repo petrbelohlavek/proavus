@@ -35,37 +35,56 @@ Git.Git GitHub.cli astral-sh.uv`; then `gh auth login` in the browser and
   iCloud Drive, Dropbox, OneDrive or Google Drive (they damage `.git`) and
   must not be inside the `proavus` framework folder.
 
+**Existing empty repository.** If the user already created the repository on
+GitHub (or the current folder is its empty clone), use it: the folder must
+contain only `.git` and have a remote `origin`. Check it **before writing any
+file**:
+
+```
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private "<folder>"
+```
+
+Exit 0 = private, continue. Exit 3 = public or a fork: stop and help make it
+private first. Exit 4 = cannot tell: fix `gh` first. If the folder has
+commits or files other than `.git`, stop – never overwrite an existing
+repository.
+
 ## 3. Confirm the plan
 
 Show: folder, repository name, owner (`gh api user --jq .login`), visibility
-**private**, member, regions. Continue only after a clear yes.
+**private**, new or existing repository, member, regions. Continue only after
+a clear yes.
 
 ## 4. Create the files
 
 ```
-uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" init "<folder>/proavus-<family>" --title "<title>" --member <abbr>:"<Full name>" --region cz
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" init "<folder>" --title "<title>" --member <abbr>:"<Full name>" --region cz
 ```
 
-The tool refuses a non-empty folder – then ask for another one.
+The tool refuses a folder with anything but `.git` in it – then ask for
+another one.
 
 ## 5. Save locally
 
-In the new folder: `git init -b main`, `git add -A`,
+In the folder: if there is no `.git` yet, `git init -b main`; otherwise
+`git branch -M main` (an empty clone may start on another branch name). Then
+`git add -A` and
 `git commit -m "Create family repository (Proavus <version>)"`
 (version from `.proavus/VERSION`).
 
-## 6. Create the private repository on GitHub
+## 6. Put it on GitHub (private)
 
 After the user's yes:
 
-```
-gh repo create <owner>/proavus-<family> --private --source "<folder>/proavus-<family>" --remote origin --push
-```
+- **new repository:**
+  `gh repo create <owner>/proavus-<family> --private --source "<folder>" --remote origin --push`
+- **existing empty repository** (already checked in step 2):
+  `git push -u origin main`
 
 ## 7. Verify it is private
 
 ```
-uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private "<folder>/proavus-<family>"
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private "<folder>"
 ```
 
 Exit 0 = private. Anything else: stop, tell the user plainly, and help make
