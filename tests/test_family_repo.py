@@ -79,6 +79,18 @@ class Init(unittest.TestCase):
         self.assertTrue((clone / "repo.yaml").is_file())
         self.assertTrue((clone / ".git").is_dir())
 
+    def test_install_tools_refuses_framework_and_other_folders(self):
+        with self.assertRaises(SystemExit) as cm:
+            family_repo.install_tools(ROOT)
+        self.assertIn("is the Proavus framework", str(cm.exception))
+        self.assertFalse((ROOT / ".proavus").exists())
+        other = Path(self._tmp.name) / "other"
+        other.mkdir()
+        with self.assertRaises(SystemExit) as cm:
+            family_repo.install_tools(other)
+        self.assertIn("no repo.yaml", str(cm.exception))
+        self.assertFalse((other / ".proavus").exists())
+
     def test_no_remote(self):
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         self.assertEqual(family_repo.check_private(self.repo), 5)

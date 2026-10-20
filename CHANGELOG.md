@@ -16,6 +16,10 @@ major + `migrate.py`.
 - Schema: `map` in `repo.yaml` now has defined fields `root` (starting
   person) and `lang` (`en`, `cs`); the validator checks that `map.root` is
   a person.
+- `family_repo.py install-tools` and `build_views.py` refuse the framework
+  itself and folders without `repo.yaml` (`.proavus/` was installed into the
+  framework by mistake).
+- `/start` tells how to build the family map on request.
 - Fictional fixture extended (seven persons over five generations, step and
   unknown parent, living persons, open conflict).
 

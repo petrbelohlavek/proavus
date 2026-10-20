@@ -103,6 +103,16 @@ class Root(MapCase):
         self.assertNotIn(NELA, self.in_tree())
         self.assertIn("not in the tree", self.card(NELA))
 
+    def test_refuses_framework_and_other_folders(self):
+        with self.assertRaises(SystemExit) as cm:
+            build_views.build_map(ROOT, today=TODAY)
+        self.assertIn("is the Proavus framework", str(cm.exception))
+        self.assertFalse((ROOT / "views").exists())
+        self.path("repo.yaml").unlink()
+        with self.assertRaises(SystemExit) as cm:
+            self.build()
+        self.assertIn("no repo.yaml", str(cm.exception))
+
     def test_missing_root(self):
         text = self.path("repo.yaml").read_text(encoding="utf-8")
         self.path("repo.yaml").write_text(text.replace(f"map:\n  root: {NELA}\n", ""), encoding="utf-8")

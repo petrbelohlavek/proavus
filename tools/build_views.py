@@ -33,6 +33,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 from proavuslib import edtf, ids  # noqa: E402
 from proavuslib.frontmatter import load_yaml  # noqa: E402
 from proavuslib.quay import quay_for_citation  # noqa: E402
+from family_repo import check_family_repo  # noqa: E402
 from proavuslib.validator import BIRTH_FACTS, DEATH_FACTS, LIVING_ALLOWED_FACTS, Entity, RepoValidator  # noqa: E402
 
 CONFIDENCE = ["proved", "probable", "possible", "not-proved", "disproved"]
@@ -675,6 +676,7 @@ footer section {{ margin-bottom:12px; }} footer h2 {{ font-size:1.1rem; color:va
 
 def build_map(repo: Path, out: Path | None = None, root: str | None = None, today: dt.date | None = None) -> tuple[Path, MapBuilder]:
     repo = repo.resolve()
+    check_family_repo(repo, "build_views")
     out = (out or repo / "views" / "mapa.html").resolve()
     builder = MapBuilder(repo, out, today or dt.date.today(), root)
     page = builder.render()

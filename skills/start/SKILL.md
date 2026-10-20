@@ -84,5 +84,14 @@ Follow the method:
 - Three empty searches in a row → suggest a different kind of source.
 - Tasks only a human can do (log-ins, fees, letters) – note them with the
   exact address for the session record.
+- Family map on request (tree, "show me the ancestors"):
+  `uv run .proavus/tools/build_views.py .` writes `views/mapa.html` (never
+  committed) – tell the user to open it in a browser. It starts from
+  `map.root` in `repo.yaml`; if that is missing, ask whose ancestors to show
+  and add `map: {root: <P-ID>}` with their yes (or use `--root <P-ID>` once).
+  If `.proavus/tools/build_views.py` is missing, the copy is older than 0.2.0:
+  with the user's yes run
+  `uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" install-tools .`
+  and save the updated `.proavus/` in the next commit.
 
 End with `/end`.

@@ -66,7 +66,16 @@ def installed_version(repo: Path) -> str | None:
 
 
 # ---------------------------------------------------------------- install
+def check_family_repo(repo: Path, cmd: str) -> None:
+    """Refuse the framework itself and folders that are not family repositories."""
+    if (repo / ".claude-plugin" / "marketplace.json").is_file():
+        raise SystemExit(f"{cmd}: {repo} is the Proavus framework, not a family repository – run it in the family repository's folder")
+    if not (repo / "repo.yaml").is_file():
+        raise SystemExit(f"{cmd}: {repo} has no repo.yaml – not a Proavus family repository (create one with /proavus:init)")
+
+
 def install_tools(repo: Path) -> None:
+    check_family_repo(repo, "install-tools")
     target = repo / ".proavus"
     if target.exists():
         shutil.rmtree(target)
