@@ -6,6 +6,16 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- Bringing older research in (ADR 0042, `docs/import.md` + Czech): plan
+  files with symbolic keys and `@key` links (header, sentences, body), new
+  IDs, files in the hand-written style and the right folders
+  (`proavuslib/bulk.py`, `tools/bulk_import.py --dry-run`, copied into
+  `.proavus/`); the whole batch is written only if it validates, no file
+  exists and every entry of the old diary is linked (`diary:` /
+  `from_diary:`, the original text quoted in the body); keys kept in
+  `archive/import-keys.yaml` for later plans. Order: archive → pilot
+  question → the rest → daily sessions from the diary → check the diary
+  links. Fictional example in `examples/import/`.
 - `tools/archive_fetch.py` (ADR 0041): ARON – `book` (metadata), `list`
   (images and sizes, downloads nothing), `link`, `get --dry-run` / `get`
   (only into a folder outside any repository, at most `--max` images per

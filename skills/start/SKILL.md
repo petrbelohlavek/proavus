@@ -88,6 +88,10 @@ Follow the method:
   address for the session record. A letter or request to an office, archive
   or parish becomes an `inquiry` (`uv run .proavus/tools/new_id.py inquiry
   <abbr>`); when an answer arrives, update its state and link the records.
+- **Older research** (notebook, notes, an old tree): follow
+  `${CLAUDE_PLUGIN_ROOT}/docs/import.md` – archive first, then a plan for one
+  pilot question, `bulk_import.py --dry-run`, and write only after the user's
+  yes; never raise confidence above what the old notes and the records show.
 - **Images from archive portals:** first show the list –
   `uv run .proavus/tools/archive_fetch.py get <book URL> --images <n-m> --out <folder outside the repository> --dry-run`
   (images, sizes, where they go) – and download only after the user's

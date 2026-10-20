@@ -1,0 +1,194 @@
+# Pilot: one question and the diary entries that belong to it (docs/import.md, step 2).
+# Fictional data. Run:  uv run .proavus/tools/bulk_import.py 01-pilot.yaml --dry-run
+member: ab
+
+diary:
+  - ref: diary 1998-04-11
+    text: Archiv Vzorkov, matrika N 1880–1890 (sv. 9), str. 12 – křest Jana, otec Václav Ukázka, chalupník Vzorkov 7.
+  - ref: diary 1998-04-12
+    text: matrika O 1880–1900 (sv. 10) prolistována celá, Václav Ukázka nezemřel.
+
+entities:
+  - key: src-n9
+    type: source
+    kind: parish-register
+    form: original
+    title: Římskokatolická farnost Vzorkov, matrika N 1880–1890 (fictional)
+    repository: Archiv Vzorkov (fictional)
+    collection: Sbírka matrik, farnost Vzorkov
+    call_number: Vzorkov 9
+    period: 1880/1890
+    citation: "Archiv Vzorkov (fictional), Sbírka matrik, farnost Vzorkov, sv. 9: N 1880–1890."
+
+  - key: src-o10
+    type: source
+    kind: parish-register
+    form: original
+    title: Římskokatolická farnost Vzorkov, matrika O 1880–1900 (fictional)
+    repository: Archiv Vzorkov (fictional)
+    collection: Sbírka matrik, farnost Vzorkov
+    call_number: Vzorkov 10
+    period: 1880/1900
+    citation: "Archiv Vzorkov (fictional), Sbírka matrik, farnost Vzorkov, sv. 10: O 1880–1900."
+
+  - key: jan
+    type: person
+    slug: jan-ukazka
+    names:
+      - value: Jan Ukázka
+        name_type: czech
+    sex: male
+    vital_status: deceased
+
+  - key: vaclav
+    type: person
+    slug: vaclav-ukazka
+    names:
+      - value: Václav Ukázka
+        name_type: czech
+    sex: male
+    vital_status: deceased
+
+  - key: bapt-jan
+    type: record
+    source: "@src-n9"
+    locator:
+      page: 12
+    event:
+      type: baptism
+      date: 1884-02-03
+      place_as_written: Vzorkov
+    language: la
+    reading:
+      status: read-once
+      read_by: [ab]
+    participants:
+      - key: p1
+        name_as_written: Joannes
+        role: principal
+        sex: male
+      - key: p2
+        name_as_written: Wenceslaus Ukazka
+        role: father
+        occupation_as_written: inquilinus
+        house_number: "7"
+    from_diary: [diary 1998-04-11]
+    body: |
+      ## Transcript
+
+      [transcribed again from the image – the diary note of 1998 is below]
+
+      ## Interpretation
+
+      Jan, son of Václav Ukázka, cottager in Vzorkov No. 7, baptised 3 February 1884.
+      Linked as @jan and @vaclav (identity still possible – the record is read once).
+
+  - key: id-jan
+    type: assertion
+    kind: identity
+    participant: {record: "@bapt-jan", key: p1}
+    person: "@jan"
+    citations:
+      - record: "@bapt-jan"
+        participant: p1
+        information: primary
+        evidence: direct
+    confidence: possible
+
+  - key: id-vaclav
+    type: assertion
+    kind: identity
+    participant: {record: "@bapt-jan", key: p2}
+    person: "@vaclav"
+    citations:
+      - record: "@bapt-jan"
+        participant: p2
+        information: primary
+        evidence: direct
+    confidence: possible
+
+  - key: bapt-jan-fact
+    type: assertion
+    kind: fact
+    subject: "@jan"
+    fact_type: baptism
+    date: 1884-02-03
+    citations:
+      - record: "@bapt-jan"
+        participant: p1
+        information: primary
+        evidence: direct
+    confidence: probable
+
+  - key: rel-vaclav-jan
+    type: relationship
+    rel_type: parent-child
+    subtype: biological
+    parties:
+      - role: parent
+        person: "@vaclav"
+      - role: child
+        person: "@jan"
+    assertions: ["@id-jan", "@id-vaclav"]
+    confidence: possible
+
+  - key: q-vaclav
+    type: question
+    title: When and where did Václav Ukázka die?
+    status: open
+    subjects: ["@vaclav"]
+    anchor: "@bapt-jan"
+    plan:
+      will_answer:
+        - his death in Vzorkov after 1900
+      next_sources:
+        - matrika O Vzorkov 1900–1930
+
+  - key: cov-n9
+    type: coverage
+    source: "@src-n9"
+    method: page-through
+    ranges:
+      - dates: 1884
+        pages: "12"
+    names: [Ukázka, Ukazka]
+    result: found
+    found: ["@bapt-jan"]
+    questions: ["@q-vaclav"]
+    by: ab
+    on: 1998-04-11
+    from_diary: [diary 1998-04-11]
+
+  - key: cov-o10
+    type: coverage
+    source: "@src-o10"
+    method: page-through
+    ranges:
+      - dates: 1880/1900
+    names: [Ukázka, Ukazka]
+    result: negative
+    questions: ["@q-vaclav"]
+    by: ab
+    on: 1998-04-12
+    from_diary: [diary 1998-04-12]
+
+  - key: s-1998-04-11
+    type: session
+    date: 1998-04-11
+    by: ab
+    questions: ["@q-vaclav"]
+    coverage: ["@cov-n9"]
+    records: ["@bapt-jan"]
+    result: Baptism of Jan found; father Václav, cottager in Vzorkov No. 7.
+    next_step: Page through the death register 1880–1900 for Václav.
+    from_diary: [diary 1998-04-11]
+
+  - key: s-1998-04-12
+    type: session
+    date: 1998-04-12
+    by: ab
+    questions: ["@q-vaclav"]
+    coverage: ["@cov-o10"]
+    result: Václav Ukázka did not die in Vzorkov 1880–1900.
+    next_step: Search the death register Vzorkov 1900–1930.
+    from_diary: [diary 1998-04-12]

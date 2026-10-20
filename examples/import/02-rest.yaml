@@ -1,0 +1,73 @@
+# The rest: the other diary entries and the old tree (docs/import.md, step 3).
+# Links @jan from the pilot through archive/import-keys.yaml. Fictional data.
+member: ab
+
+diary:
+  - ref: diary 2003-09-02
+    text: teta Marie – děda Jan býval kovářem.
+  - ref: tree 1
+    text: Jan Ukázka × Anna, rozená Příkladná (uncle's drawing, no source)
+
+entities:
+  - key: consent-marie
+    type: decision
+    kind: consent
+    title: Consent of aunt Marie to keep notes of her memories (fictional)
+    date: 2003-09-02
+    status: accepted
+
+  - key: oral-marie
+    type: oral
+    speaker: aunt Marie (fictional)
+    date: 2003-09-02
+    interviewer: ab
+    consent: "@consent-marie"
+    from_diary: [diary 2003-09-02]
+    body: |
+      Notes of a conversation; no recording in git.
+
+  - key: occ-jan
+    type: assertion
+    kind: fact
+    subject: "@jan"
+    fact_type: occupation
+    value: kovář (blacksmith)
+    citations:
+      - oral: "@oral-marie"
+        information: secondary
+        evidence: direct
+    confidence: possible
+
+  - key: anna
+    type: person
+    slug: anna-ukazkova
+    names:
+      - value: Anna Ukázková
+        name_type: married
+      - value: Anna Příkladná
+        name_type: birth
+    sex: female
+    vital_status: deceased
+    from_diary: [tree 1]
+
+  - key: marriage-jan-anna
+    type: relationship
+    rel_type: partnership
+    subtype: marriage
+    parties:
+      - role: partner
+        person: "@jan"
+      - role: partner
+        person: "@anna"
+    confidence: possible
+    schema_gap:
+      - from the family tree only – no source yet
+    from_diary: [tree 1]
+
+  - key: s-2003-09-02
+    type: session
+    date: 2003-09-02
+    by: ab
+    result: Aunt Marie remembers Jan as a blacksmith (@oral-marie).
+    next_step: Look for Jan's occupation in the baptisms of his children.
+    from_diary: [diary 2003-09-02]
