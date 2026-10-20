@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.1.0 -->
+<!-- source: README.md @ v0.2.0 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -11,7 +11,7 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.1.0).** Existuje schéma, validátor, závazná pravidla
+> **Rozpracováno (0.2.0).** Existuje schéma, validátor, závazná pravidla
 > a první příkazy (`/proavus:init`, `/start`, `/end`); průvodce instalací
 > (`/setup`) zatím ne. Zatím není k běžnému použití.
 
@@ -34,6 +34,7 @@ a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 | Čtení zápisů | [method/reading-records.md](method/reading-records.md) (anglicky) |
 | Datové schéma v0 | [schema/](schema/README.md) |
 | Validátor | `uv run tools/validate.py <repo-rodiny>` |
+| Mapa rodiny | `uv run tools/build_views.py <repo-rodiny>` → `views/mapa.html` |
 | Architektura a rozhodnutí | [docs/architecture.md](docs/architecture.md), [docs/decisions/](docs/decisions/) |
 
 ## Licence

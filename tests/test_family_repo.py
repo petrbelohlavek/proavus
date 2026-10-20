@@ -58,7 +58,10 @@ class Init(unittest.TestCase):
         shutil.copytree(FIXTURE, target)
         out = subprocess.run([sys.executable, str(copy / "tools" / "validate.py"), str(target)], capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
-        self.assertIn("16 files, 0 errors", out.stdout)
+        self.assertIn("30 files, 0 errors", out.stdout)
+        out = subprocess.run([sys.executable, str(copy / "tools" / "build_views.py"), str(target)], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn("Matěj Pokusný", (target / "views" / "mapa.html").read_text(encoding="utf-8"))
 
     def test_refuses_non_empty_folder(self):
         with self.assertRaises(SystemExit):

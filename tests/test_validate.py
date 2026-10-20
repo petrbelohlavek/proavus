@@ -22,7 +22,7 @@ class ValidFixture(FamilyRepoCase):
         report = self.validate()
         self.assertClean(report)
         self.assertEqual(report.warnings, [])
-        self.assertEqual(report.files, 16)
+        self.assertEqual(report.files, 30)
 
     def test_cli_exit_code(self):
         ok = subprocess.run([sys.executable, str(ROOT / "tools/validate.py"), str(self.repo)], capture_output=True, text=True)
@@ -43,6 +43,18 @@ class RepoConfig(FamilyRepoCase):
         self.path("repo.yaml").write_text(text)
         self.assertError(self.validate(), "extension 'xx' not found")
 
+
+    def test_map_root_must_be_a_person(self):
+        text = (self.repo / "repo.yaml").read_text(encoding="utf-8")
+        (self.repo / "repo.yaml").write_text(text.replace("root: P-20261020-ab-n01", f"root: {REL}"), encoding="utf-8")
+        self.assertError(self.validate(), "map.root")
+        (self.repo / "repo.yaml").write_text(text.replace("root: P-20261020-ab-n01", "root: P-20261020-ab-zzz"), encoding="utf-8")
+        self.assertError(self.validate(), "map.root: P-20261020-ab-zzz is not a person")
+
+    def test_unknown_map_setting_is_an_error(self):
+        with open(self.repo / "repo.yaml", "a", encoding="utf-8") as f:
+            f.write("  colour: red\n")
+        self.assertError(self.validate(), "repo.yaml", "colour")
 
 class Headers(FamilyRepoCase):
     def test_missing_header(self):

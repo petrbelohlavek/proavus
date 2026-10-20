@@ -7,3 +7,7 @@ extensions: {{EXTENSIONS}}
 members:
 {{MEMBERS}}
 living_threshold_years: 110
+# Family map views/mapa.html (uv run .proavus/tools/build_views.py .):
+# map:
+#   root: P-…        # starting person: the map shows their ancestors
+#   lang: cs         # labels: en (default) or cs

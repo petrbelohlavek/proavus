@@ -31,5 +31,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0024](0024-collision-free-ids.md) | ID bez kolizí | přijato | — |
 | [0025](0025-living-persons.md) | Žijící osoby | přijato | — |
 | [0026](0026-separating-development-from-family-data.md) | Oddělení vývoje frameworku od dat rodiny | přijato | kap. 14 návrhu |
+| [0027](0027-family-map.md) | Mapa rodiny jako jeden soběstačný soubor HTML | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

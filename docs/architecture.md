@@ -83,7 +83,7 @@ proavus/
 │   ├── new_id.py                       ID bez kolizí                                    [v0]
 │   ├── guard_names.py                  kontrola jmen rodiny před commitem frameworku     [v0]
 │   ├── build_index.py · query.py       SQLite index a dotazy (fáze 3)
-│   ├── build_views.py                  START-HERE, mapa, GEDCOM
+│   ├── build_views.py                  mapa views/mapa.html (ADR 0027) [v0]; později GEDCOM
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
 ├── skills/                             init · start · end [v0]; později setup · check · upgrade · claim · review · feedback
@@ -161,7 +161,7 @@ proavus-<rodina>/
 ├── CLAUDE.md · AGENTS.md            pravidla rodiny + vyžadovaná verze pluginu (blok proavus:begin/end spravuje /upgrade)
 ├── README.md                        návod pro nové členy (1 strana)
 ├── START-HERE.md                    GENEROVANÉ lokálně při /start, není v gitu (ADR 0019)
-├── repo.yaml                        schema_version, regiony a rozšíření, členové (zkratky), práh žijících, nastavení mapy
+├── repo.yaml                        schema_version, regiony a rozšíření, členové (zkratky), práh žijících, nastavení mapy (map.root, map.lang)
 ├── lines.yaml                       linie rodiny
 ├── .proavus/                        KOPIE nástrojů, schématu a slovníků, připnutá na verzi (spravuje /upgrade; ADR 0014)
 │
@@ -229,7 +229,7 @@ Markdown + YAML (zdroj pravdy, v gitu)
 SQLite (lokální, odvozený, není v gitu): dotazy · fulltext · fonetika
       │  tools/build_views.py
       ▼
-START-HERE.md · mapa.html · rodokmen.ged  (lokálně, ne v gitu)  →  případně import do webtrees
+START-HERE.md · views/mapa.html · rodokmen.ged  (lokálně, ne v gitu)  →  případně import do webtrees
 ```
 
 | Prvek | Standard | Přínos |

@@ -69,6 +69,7 @@ class RepoValidator:
         self.aliases: dict[str, str] = {}
         self.members: set[str] = set()
         self.threshold = DEFAULT_LIVING_THRESHOLD
+        self.config: dict = {}
 
     # ------------------------------------------------------------------ run
     def run(self) -> Report:
@@ -85,6 +86,7 @@ class RepoValidator:
         self._check_dates()
         self._check_coverage()
         self._check_sessions()
+        self._check_map()
         return self.report
 
     # --------------------------------------------------------------- config
@@ -109,6 +111,7 @@ class RepoValidator:
             return None
         self.members = {m.get("abbr") for m in config.get("members") or [] if isinstance(m, dict)}
         self.threshold = config.get("living_threshold_years", DEFAULT_LIVING_THRESHOLD)
+        self.config = config
         return config
 
     # ------------------------------------------------------------- entities
@@ -341,6 +344,13 @@ class RepoValidator:
         birth = self._span(person.id, BIRTH_FACTS)
         return birth is not None and birth[1] > self.today.year - self.threshold
 
+    def is_minor(self, person: Entity) -> bool:
+        """Living and born less than 18 years ago (by the latest reading of the date)."""
+        if not self.is_living(person):
+            return False
+        birth = self._span(person.id, BIRTH_FACTS)
+        return birth is not None and birth[1] > self.today.year - MINOR_YEARS
+
     def _check_living(self) -> None:
         for person in self.of_type("person"):
             if person.data.get("vital_status") == "unknown" and self._span(person.id, BIRTH_FACTS) is None and not self._facts(person.id, DEATH_FACTS):
@@ -350,8 +360,7 @@ class RepoValidator:
             for a in self._all_facts(person.id):
                 if a.data.get("fact_type") not in LIVING_ALLOWED_FACTS:
                     self.report.error(a.path, f"{person.id} is (presumed) living: only {', '.join(sorted(LIVING_ALLOWED_FACTS))} may be stored")
-            birth = self._span(person.id, BIRTH_FACTS)
-            if birth is not None and birth[1] > self.today.year - MINOR_YEARS:
+            if self.is_minor(person):
                 for a in self._facts(person.id, BIRTH_FACTS):
                     if a.data.get("date") is not None:
                         self.report.error(a.path, f"{person.id} is (presumed) a living minor: store the relationship only, no birth date")
@@ -410,6 +419,15 @@ class RepoValidator:
                 self.report.error(s.path, f"session dated {date} belongs in sessions/{date[:4]}/")
             if len(parts) < 3:
                 self.report.error(s.path, "sessions are stored by year: sessions/YYYY/")
+
+    # ------------------------------------------------------------------ map
+    def _check_map(self) -> None:
+        root = (self.config.get("map") or {}).get("root") if isinstance(self.config.get("map"), dict) else None
+        if not isinstance(root, str) or not ids.parse(root):
+            return
+        person = self._resolve(root)
+        if person is None or person.type != "person":
+            self.report.error("repo.yaml", f"map.root: {root} is not a person in people/")
 
 
 def _strings(data, prefix=""):

@@ -11,7 +11,7 @@
 tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
-> **Work in progress (0.1.0).** The schema, the validator, the binding rules
+> **Work in progress (0.2.0).** The schema, the validator, the binding rules
 > and the first commands (`/proavus:init`, `/start`, `/end`) exist; the guided
 > setup (`/setup`) does not yet. Not ready for general use.
 
@@ -34,6 +34,7 @@ Genealogical Proof Standard.
 | Reading records | [method/reading-records.md](method/reading-records.md) |
 | Data schema v0 | [schema/](schema/README.md) |
 | Validator | `uv run tools/validate.py <family-repo>` |
+| Family map | `uv run tools/build_views.py <family-repo>` → `views/mapa.html` |
 | Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |
 
 ## Licence

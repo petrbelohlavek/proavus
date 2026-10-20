@@ -33,7 +33,21 @@
       "minimum": 90,
       "maximum": 150
     },
-    "map": { "type": "object", "description": "Settings of the generated family map (title, lines, sections)." }
+    "map": {
+      "description": "Settings of the generated family map views/mapa.html (tools/build_views.py, ADR 0027).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "description": "Starting person: the tree shows the ancestors of this person.",
+          "$ref": "common.schema.json#/$defs/ref_person"
+        },
+        "lang": {
+          "description": "Language of the map labels (default en).",
+          "enum": ["en", "cs"]
+        }
+      }
+    }
   },
   "additionalProperties": false
 }

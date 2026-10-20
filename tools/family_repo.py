@@ -40,7 +40,7 @@ from proavuslib.validator import RepoValidator  # noqa: E402
 TEMPLATE = FRAMEWORK / "templates" / "family"
 # What goes into .proavus/ (ADR 0014). guard_names.py is framework-only.
 COPY_DIRS = ["schema"]
-COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py"]
+COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py"]
 COPY_METHOD = ["rules.md", "rules.cs.md", "reading-records.md"]
 
 PROAVUS_README = """# .proavus – pinned copy of the Proavus framework

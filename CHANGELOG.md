@@ -4,6 +4,21 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
+## 0.2.0 – unreleased
+
+- `tools/build_views.py`: family map `views/mapa.html` – one self-contained
+  HTML file without CDN (ADR 0027). Ancestor tree of the starting person,
+  lines by relationship confidence (proved / probable / possible / not
+  proved), non-biological and unknown parents; person cards with names,
+  facts with confidence and sources, relationships, open conflicts and
+  questions. Living persons only as rule 9 allows. Copied into `.proavus/`
+  by `family_repo.py install-tools`.
+- Schema: `map` in `repo.yaml` now has defined fields `root` (starting
+  person) and `lang` (`en`, `cs`); the validator checks that `map.root` is
+  a person.
+- Fictional fixture extended (seven persons over five generations, step and
+  unknown parent, living persons, open conflict).
+
 ## 0.1.0 – unreleased
 
 First minimal framework (build step 2).
