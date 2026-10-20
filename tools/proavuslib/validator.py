@@ -21,6 +21,8 @@ STRONG = ("proved", "probable")
 LIVING_ALLOWED_FACTS = {"name", "sex", "birth"}
 BIRTH_FACTS = ("birth", "baptism")
 DEATH_FACTS = ("death", "burial")
+# Coverage ranges given only as a query (ADR 0035).
+QUERY_METHODS = {"database-search", "full-text-search", "index"}
 
 
 @dataclass
@@ -86,6 +88,7 @@ class RepoValidator:
         self._check_dates()
         self._check_coverage()
         self._check_sessions()
+        self._check_inquiries()
         self._check_map()
         return self.report
 
@@ -197,9 +200,22 @@ class RepoValidator:
                 self.report.error(rec.path, f"participant key {k} is used twice")
             if "## Transcript" not in rec.body:
                 self.report.error(rec.path, "body needs a '## Transcript' section (verbatim transcript first)")
-            crop = rec.data.get("crop")
-            if isinstance(crop, str) and not (self.root / rec.path.parent / crop).is_file():
-                self.report.error(rec.path, f"crop {crop} not found")
+            for crop in self.crops(rec):
+                if not (self.root / rec.path.parent / crop).is_file():
+                    self.report.error(rec.path, f"crop {crop} not found")
+            reading = rec.data.get("reading") if isinstance(rec.data.get("reading"), dict) else {}
+            confirmed = reading.get("confirmed") if isinstance(reading.get("confirmed"), dict) else {}
+            if reading.get("status") == "confirmed" and confirmed.get("by") not in (reading.get("read_by") or []):
+                self.report.error(rec.path, f"reading confirmed by {confirmed.get('by')!r}, who is not among the members who read it (read_by) – "
+                                            "only a person who read the entry may confirm it (ADR 0033)")
+
+    @staticmethod
+    def crops(rec: Entity) -> list[str]:
+        """Paths of the evidence crops: crops (ADR 0031) or the short form crop."""
+        out = [c.get("path") for c in rec.data.get("crops") or [] if isinstance(c, dict) and isinstance(c.get("path"), str)]
+        if isinstance(rec.data.get("crop"), str):
+            out.append(rec.data["crop"])
+        return out
 
     def _participant_exists(self, record_id: str, key: str) -> bool:
         rec = self._resolve(record_id)
@@ -208,6 +224,7 @@ class RepoValidator:
         return any(isinstance(p, dict) and p.get("key") == key for p in rec.data.get("participants") or [])
 
     def _cited_records(self, assertion: Entity) -> list[Entity]:
+        """Records cited by an assertion (or directly by a relationship, ADR 0038)."""
         out = []
         for c in assertion.data.get("citations") or []:
             if isinstance(c, dict) and c.get("record"):
@@ -223,12 +240,20 @@ class RepoValidator:
 
     @staticmethod
     def _reading(rec: Entity) -> str:
+        """Reading state; 'confirmed' only if a member who read the entry confirmed it (ADR 0033)."""
         reading = rec.data.get("reading")
-        return reading.get("status", "") if isinstance(reading, dict) else ""
+        if not isinstance(reading, dict):
+            return ""
+        status = reading.get("status", "")
+        if status == "confirmed":
+            by = reading.get("confirmed", {}).get("by") if isinstance(reading.get("confirmed"), dict) else None
+            if by not in (reading.get("read_by") or []):
+                return "confirmed by someone who did not read it"
+        return status
 
     # ----------------------------------------------------------- assertions
     def _check_assertions(self) -> None:
-        for a in self.of_type("assertion"):
+        for a in self.of_type("assertion") + self.of_type("relationship"):
             for c in a.data.get("citations") or []:
                 if isinstance(c, dict) and c.get("participant"):
                     if not c.get("record"):
@@ -236,7 +261,7 @@ class RepoValidator:
                     elif not self._participant_exists(c["record"], c["participant"]):
                         self.report.error(a.path, f"participant {c['participant']} not found in {c['record']}")
             part = a.data.get("participant")
-            if a.data.get("kind") == "identity" and isinstance(part, dict):
+            if a.type == "assertion" and a.data.get("kind") == "identity" and isinstance(part, dict):
                 if not self._participant_exists(part.get("record", ""), part.get("key", "")):
                     self.report.error(a.path, f"identity: participant {part.get('key')} not found in {part.get('record')}")
 
@@ -274,15 +299,18 @@ class RepoValidator:
                 self.report.error(a.path, f"{what} needs 'confirmed' (by, on) – the identity gate is passed by a human in the session")
             for rec in self._cited_records(a):
                 if self._reading(rec) != "confirmed":
-                    self.report.error(a.path, f"{what} relies on {rec.id}, which is {self._reading(rec) or 'not'} read – needs a confirmed second reading")
+                    self.report.error(a.path, f"{what} relies on {rec.id}, whose reading is {self._reading(rec) or 'missing'} – needs a second reading confirmed by a member who read it")
         for rel in self.of_type("relationship"):
             if rel.data.get("confidence") != "proved":
                 continue
             if "confirmed" not in rel.data:
                 self.report.error(rel.path, "proved relationship needs 'confirmed' (by, on)")
             support = rel.data.get("assertions") or []
-            if not support:
-                self.report.error(rel.path, "proved relationship needs supporting assertions")
+            if not support and not rel.data.get("citations"):
+                self.report.error(rel.path, "proved relationship needs supporting assertions or citations")
+            for rec in self._cited_records(rel):
+                if self._reading(rec) != "confirmed":
+                    self.report.error(rel.path, f"proved relationship cites {rec.id}, which is not confirmed by a second reading")
             for a_id in support:
                 a = self._resolve(a_id)
                 if a is None or a.type != "assertion":
@@ -405,6 +433,11 @@ class RepoValidator:
     def _check_coverage(self) -> None:
         for cov in self.of_type("coverage"):
             result, method = cov.data.get("result"), cov.data.get("method")
+            for r in cov.data.get("ranges") or []:
+                if isinstance(r, dict) and r.get("query") and not (r.get("dates") or r.get("pages")) and method not in QUERY_METHODS:
+                    self.report.error(cov.path, f"a range given only as a query fits a database search ({', '.join(sorted(QUERY_METHODS))}), not method {method!r} – add dates or pages")
+            if cov.data.get("inquiry") and method != "inquiry":
+                self.report.warn(cov.path, "links an inquiry but method is not 'inquiry'")
             if result == "negative" and method == "index":
                 self.report.warn(cov.path, "negative from an index only – an index is not proof of absence; page through the book if it matters")
             if result in ("found", "partial") and not cov.data.get("found"):
@@ -419,6 +452,16 @@ class RepoValidator:
                 self.report.error(s.path, f"session dated {date} belongs in sessions/{date[:4]}/")
             if len(parts) < 3:
                 self.report.error(s.path, "sessions are stored by year: sessions/YYYY/")
+
+    # ------------------------------------------------------------ inquiries
+    def _check_inquiries(self) -> None:
+        for inq in self.of_type("inquiry"):
+            dates = [(k, inq.data.get(k)) for k in ("sent", "acknowledged", "answered") if isinstance(inq.data.get(k), str)]
+            for (k1, d1), (k2, d2) in zip(dates, dates[1:]):
+                if d2 < d1:
+                    self.report.error(inq.path, f"{k2} {d2} is before {k1} {d1}")
+            if isinstance(inq.data.get("sent"), str) and inq.data["sent"] > self.today.isoformat():
+                self.report.error(inq.path, f"sent {inq.data['sent']} is in the future")
 
     # ------------------------------------------------------------------ map
     def _check_map(self) -> None:

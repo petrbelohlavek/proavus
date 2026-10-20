@@ -28,7 +28,7 @@
     "id": {
       "description": "<PREFIX>-<YYYYMMDD>-<member>-<3 random chars>, e.g. Q-20261019-jn-k7m",
       "type": "string",
-      "pattern": "^(Q|S|C|R|SO|P|RL|A|X|PL|O|D|CH)-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$"
+      "pattern": "^(Q|S|C|R|SO|P|RL|A|X|PL|O|D|CH|IN)-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$"
     },
     "any_ref": { "$ref": "#/$defs/id" },
     "ref_question": { "type": "string", "pattern": "^Q-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
@@ -43,6 +43,7 @@
     "ref_place": { "type": "string", "pattern": "^PL-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
     "ref_oral": { "type": "string", "pattern": "^O-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
     "ref_decision": { "type": "string", "pattern": "^D-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
+    "ref_inquiry": { "type": "string", "pattern": "^IN-[0-9]{8}-[a-z]{2,4}-[a-z0-9]{3}$" },
     "member": {
       "description": "Member abbreviation from repo.yaml (2–4 lowercase letters).",
       "type": "string",

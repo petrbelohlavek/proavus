@@ -59,7 +59,7 @@ class Init(unittest.TestCase):
         shutil.copytree(FIXTURE, target)
         out = subprocess.run([sys.executable, str(copy / "tools" / "validate.py"), str(target)], capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
-        self.assertIn("32 files, 0 errors", out.stdout)
+        self.assertIn("37 files, 0 errors", out.stdout)
         out = subprocess.run([sys.executable, str(copy / "tools" / "build_views.py"), str(target)], capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("Matěj Pokusný", (target / "views" / "mapa.html").read_text(encoding="utf-8"))
@@ -185,6 +185,23 @@ class StartHere(unittest.TestCase):
         self.assertIn("Search the marriage register", text)
         self.assertIn("**Check:** OK", text)
         self.assertIn("1 open questions", summary)
+
+    def test_only_open_human_tasks_and_inquiries(self):
+        family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertIn("- open human tasks: 1", text)
+        self.assertIn("Order the marriage register Vzorkov 1870–1878 in the reading room of Archiv Vzorkov (fictional) (ab)", text)
+        self.assertNotIn("Pay the copying fee", text)          # done
+        self.assertIn("- inquiries not closed: 1", text)
+        self.assertIn("IN-20261020-ab-i01 Obecní úřad Vzorkov (fictional)", text)
+
+    def test_plain_text_tasks_count_as_open(self):
+        session = next(self.repo.glob("sessions/*/S-*.md"))
+        text = session.read_text(encoding="utf-8")
+        start = text.index("human_tasks:\n")
+        session.write_text(text[:start] + "human_tasks:\n  - Call the parish office\n---\n", encoding="utf-8")
+        family_repo.start_here(self.repo, today=TODAY)
+        self.assertIn("  - Call the parish office – S-20261020-ab-s01", (self.repo / "START-HERE.md").read_text(encoding="utf-8"))
 
     def test_upgrade_hint(self):
         family_repo.install_tools(self.repo)

@@ -172,6 +172,7 @@ proavus-<rodina>/
 │   └── evidence/                    jen výřezy (malé JPEG)
 ├── people/ · relationships/ · assertions/
 ├── conflicts/ · places/ · sources/ · oral/ · decisions/
+├── inquiries/                       dotazy na úřady, archivy a fary se stavem (ADR 0036)
 ├── chronicle/                       KRONIKA VÝZKUMU: 1 milník = 1 soubor (ADR 0020)
 ├── archive/                         zmrazené podklady z doby před přechodem
 ├── views/                           GENEROVANÉ na požádání, není v gitu: mapa, GEDCOM, history.md
@@ -261,18 +262,21 @@ ukládáme jen minimum, nešifruje se a citlivé údaje do repa nepatří.
 
 Podrobně v [`schema/README.md`](../schema/README.md). Klíčové body:
 
-- 13 typů entit (8 úplně, 5 minimálně); fakta jako tvrzení s typem
+- 14 typů entit (9 úplně, 5 minimálně; od 0.3 `inquiry`); fakta jako tvrzení s typem
   ([ADR 0015](decisions/0015-extensible-schema.md));
 - **účastník zápisu není osoba**; propojení je tvrzení o identitě
   ([ADR 0017](decisions/0017-record-participants.md));
 - dvě osy: forma zdroje + informace + důkaz u citace, jistota u závěru; QUAY
   se odvozuje ([ADR 0022](decisions/0022-evidence-axes-and-confidence.md));
 - citace s povinným lokátorem ([ADR 0023](decisions/0023-citation-locator.md));
-- žijící osoby ([ADR 0025](decisions/0025-living-persons.md)).
+- žijící osoby ([ADR 0025](decisions/0025-living-persons.md));
+- schéma 0.3: více výřezů a poznámky na okraji u zápisu, čtení agentem a
+  člověkem, více mluvčích, hledání dotazem, dotazy na úřady, úkoly se stavem,
+  citace u vztahu (ADR 0031–0038); migrace i v menších verzích (ADR 0030).
 
 | Vrstva | Obsah | Jak se mění |
 |---|---|---|
-| 1. Pevné jádro | entity, ID, odkazy, tvrzení, účastníci, jistota, lokátor | velmi zřídka; hlavní verze + `migrate.py` |
+| 1. Pevné jádro | entity, ID, odkazy, tvrzení, účastníci, jistota, lokátor | přidání = menší verze (smí mít sjednocující migraci, ADR 0030); zásadní změna = hlavní verze + `migrate.py` |
 | 2. Slovníky | typy událostí a faktů, typy jmen, role, podtypy vztahů, vyznání… | přidáním hodnoty (menší verze) |
 | 3. Regionální rozšíření | `regions/cz/schema-ext.yaml` (číslo popisné, panství) | zapne rodina v `repo.yaml` |
 | 4. Záchranná síť | `schema_gap:` u věci, kterou schéma neumí | kdykoli; výzkum se nezastaví |

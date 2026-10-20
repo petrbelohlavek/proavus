@@ -33,6 +33,12 @@
       "type": "array",
       "items": { "$ref": "common.schema.json#/$defs/ref_assertion" }
     },
+    "citations": {
+      "description": "Evidence for the relationship itself, without an assertion about it (ADR 0038).",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.schema.json#/$defs/citation" }
+    },
     "confidence": { "$ref": "common.schema.json#/$defs/confidence" },
     "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" }
   },

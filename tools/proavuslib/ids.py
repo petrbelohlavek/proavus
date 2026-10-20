@@ -21,6 +21,7 @@ ENTITIES: dict[str, tuple[str, str]] = {
     "oral": ("O", "oral"),
     "decision": ("D", "decisions"),
     "chronicle": ("CH", "chronicle"),
+    "inquiry": ("IN", "inquiries"),
 }
 TYPE_BY_PREFIX = {prefix: t for t, (prefix, _) in ENTITIES.items()}
 TYPE_BY_DIR = {d: t for t, (_, d) in ENTITIES.items()}

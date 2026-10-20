@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/petrbelohlavek/proavus/schema/inquiry.schema.json",
+  "title": "inquiry – a written request to an office, archive or parish (ADR 0036)",
+  "description": "What was asked, of whom, when, and what came back. The letter and the answer go into the body.",
+  "type": "object",
+  "required": ["type", "addressee", "subject", "sent", "by", "status"],
+  "properties": {
+    "type": { "const": "inquiry" },
+    "addressee": { "type": "string", "minLength": 1, "description": "office, archive, parish …" },
+    "address": { "type": "string", "description": "postal address, e-mail or web form it was sent to" },
+    "subject": { "type": "string", "minLength": 1, "description": "what was asked" },
+    "sent": { "$ref": "common.schema.json#/$defs/date" },
+    "by": { "$ref": "common.schema.json#/$defs/member" },
+    "reference": { "type": "string", "description": "the office's reference number" },
+    "status": { "description": "sent → acknowledged → answered → closed", "enum": ["sent", "acknowledged", "answered", "closed"] },
+    "acknowledged": { "$ref": "common.schema.json#/$defs/date" },
+    "answered": { "$ref": "common.schema.json#/$defs/date" },
+    "result": { "type": "string", "description": "what the answer says, in a sentence or two" },
+    "records": { "description": "records transcribed from the answer", "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
+    "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
+    "sources": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_source" } }
+  },
+  "allOf": [
+    { "$ref": "common.schema.json#/$defs/base" },
+    { "if": { "properties": { "status": { "const": "acknowledged" } } }, "then": { "required": ["acknowledged"] } },
+    { "if": { "properties": { "status": { "const": "answered" } } }, "then": { "required": ["answered", "result"] } },
+    { "if": { "properties": { "status": { "const": "closed" } } }, "then": { "required": ["result"] } }
+  ],
+  "unevaluatedProperties": false
+}

@@ -197,6 +197,23 @@ def protect_plugin(repo: Path, also: list[Path] | None = None) -> list[str]:
 
 
 # ------------------------------------------------------------- START-HERE
+def open_tasks(sessions) -> list[tuple[str, str, str | None]]:
+    """Open human tasks of all sessions (ADR 0037): (session ID, task, for whom). A plain string is open."""
+    out = []
+    for s in sorted(sessions, key=lambda s: (str(s.data.get("date", "")), s.id)):
+        for task in s.data.get("human_tasks") or []:
+            if isinstance(task, str):
+                out.append((s.id, task, None))
+            elif isinstance(task, dict) and task.get("status") == "open":
+                out.append((s.id, str(task.get("task", "")), task.get("for")))
+    return out
+
+
+def waiting_inquiries(inquiries) -> list:
+    """Inquiries not closed yet (ADR 0036), oldest first."""
+    return sorted((i for i in inquiries if i.data.get("status") != "closed"), key=lambda i: (str(i.data.get("sent", "")), i.id))
+
+
 def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     today = today or dt.date.today()
     v = RepoValidator(repo, FRAMEWORK, today=today)
@@ -241,8 +258,6 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     if sessions:
         for s in sessions:
             lines.append(f"- **{s.data.get('date')}** ({s.data.get('by')}) {s.id}: {s.data.get('next_step', '')}")
-            for task in s.data.get("human_tasks") or []:
-                lines.append(f"  - human task: {task}")
     else:
         lines.append("No sessions yet.")
     lines.append("")
@@ -255,6 +270,14 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
                  + (" – " + ", ".join(r.id for r in read_once[:10]) if read_once else ""))
     lines.append(f"- disputed readings: {len(disputed)}" + (" – " + ", ".join(r.id for r in disputed) if disputed else ""))
     lines.append(f"- open conflicts: {len(conflicts)}" + (" – " + ", ".join(c.id for c in conflicts) if conflicts else ""))
+    tasks = open_tasks(of("session"))
+    lines.append(f"- open human tasks: {len(tasks)}")
+    for sid, task, who in tasks:
+        lines.append(f"  - {task}" + (f" ({who})" if who else "") + f" – {sid}")
+    inquiries = waiting_inquiries(of("inquiry"))
+    lines.append(f"- inquiries not closed: {len(inquiries)}")
+    for i in inquiries:
+        lines.append(f"  - {i.id} {i.data.get('addressee', '')}: {i.data.get('subject', '')} – {i.data.get('status')} since {i.data.get('sent')}")
     lines.append("")
 
     counts = {t: len(of(t)) for t in ("person", "record", "assertion", "relationship", "coverage", "source")}

@@ -19,10 +19,11 @@
         "properties": {
           "dates": { "$ref": "common.schema.json#/$defs/edtf" },
           "pages": { "type": "string", "description": "e.g. 12-140, or images 5-88" },
+          "query": { "type": "string", "minLength": 1, "description": "the search as typed into a database, full-text search or index (ADR 0035)" },
           "note": { "type": "string" }
         },
-        "x-hint": "each range needs dates or pages",
-      "anyOf": [{ "required": ["dates"] }, { "required": ["pages"] }]
+        "x-hint": "each range needs dates, pages or – for a database search – query",
+        "anyOf": [{ "required": ["dates"] }, { "required": ["pages"] }, { "required": ["query"] }]
       }
     },
     "names": {
@@ -35,6 +36,7 @@
       "description": "found / negative (searched, not there) / partial / inaccessible (access state, NOT a negative).",
       "enum": ["found", "negative", "partial", "inaccessible"]
     },
+    "inquiry": { "$ref": "common.schema.json#/$defs/ref_inquiry", "description": "method inquiry: the inquiry this search was made through (ADR 0036)" },
     "found": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
     "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
     "by": { "$ref": "common.schema.json#/$defs/member" },

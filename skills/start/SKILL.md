@@ -84,8 +84,13 @@ Follow the method:
   proved relationship) without the user's explicit yes in this session after
   looking at the crop.
 - Three empty searches in a row → suggest a different kind of source.
-- Tasks only a human can do (log-ins, fees, letters) – note them with the
-  exact address for the session record.
+- Tasks only a human can do (log-ins, fees) – note them with the exact
+  address for the session record. A letter or request to an office, archive
+  or parish becomes an `inquiry` (`uv run .proavus/tools/new_id.py inquiry
+  <abbr>`); when an answer arrives, update its state and link the records.
+- Your own first reading of a record: `reading: {status: read-once,
+  read_by_agent: <your model>}`. Add the member to `read_by` only after they
+  read the crop themselves.
 - Family map on request (tree, "show me the ancestors"):
   `uv run .proavus/tools/build_views.py .` writes `views/mapa.html` (never
   committed) – tell the user to open it in a browser. It starts from

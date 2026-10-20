@@ -37,7 +37,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 FRAMEWORK = TOOLS_DIR.parent
 sys.path.insert(0, str(TOOLS_DIR))
 
-from family_repo import check_family_repo  # noqa: E402
+from family_repo import check_family_repo, open_tasks, waiting_inquiries  # noqa: E402
 from proavuslib import edtf, ids  # noqa: E402
 from proavuslib.frontmatter import load_yaml  # noqa: E402
 from proavuslib.quay import quay_for_citation  # noqa: E402
@@ -150,7 +150,7 @@ LABELS = {
         "alt_mark": "other version of a fact", "alt_equal": "equally strong other version",
         "alt_conflict": "another version disagrees", "alt_more": "other versions",
         "chosen": "shown on the card", "alternative": "other version",
-        "conflict_label": "Conflict", "identity_of": "identity", "session": "session",
+        "conflict_label": "Conflict", "identity_of": "identity", "session": "session", "inquiry": "inquiry",
         "living_person": "Living person", "hidden_share": "living – hidden in this version for sharing",
         "shared": "version for sharing outside the family – living persons hidden",
         "male": "male", "female": "female", "unknown": "sex unknown",
@@ -186,7 +186,7 @@ LABELS = {
         "alt_mark": "jiná verze údaje", "alt_equal": "stejně silná jiná verze",
         "alt_conflict": "jiná verze se liší", "alt_more": "další verze",
         "chosen": "zobrazeno na kartě", "alternative": "jiná verze",
-        "conflict_label": "Rozpor", "identity_of": "identita", "session": "sezení",
+        "conflict_label": "Rozpor", "identity_of": "identita", "session": "sezení", "inquiry": "dotaz",
         "living_person": "Žijící osoba", "hidden_share": "žijící – v této verzi pro sdílení skryto",
         "shared": "verze pro sdílení mimo rodinu – žijící osoby skryté",
         "male": "muž", "female": "žena", "unknown": "pohlaví neznámé",
@@ -199,6 +199,7 @@ LABELS = {
 TERMS = {
     "cs": {
         "open": "otevřený", "unresolved": "nevyřešený", "in-progress": "rozpracovaná",
+        "sent": "odesláno", "acknowledged": "potvrzen příjem", "answered": "zodpovězeno",
         "primary": "prvotní", "secondary": "druhotná", "undetermined": "neurčená",
         "direct": "přímý", "indirect": "nepřímý", "negative": "negativní",
         "page": "str.", "folio": "fol.", "entry": "zápis", "image": "snímek",
@@ -457,6 +458,8 @@ class MapBuilder:
             return self.record_title(e)
         if e.type in ("source", "question"):
             return str(d.get("title") or e.id)
+        if e.type == "inquiry":
+            return str(d.get("addressee") or e.id)
         if e.type == "place":
             names = [n for n in d.get("names") or [] if isinstance(n, dict)]
             return str(names[0].get("value")) if names else e.id
@@ -879,12 +882,15 @@ class MapBuilder:
         return out
 
     def next_steps(self) -> list[str]:
+        """Next steps of the last sessions, then open human tasks and inquiries not closed (ADR 0036, 0037)."""
         sessions = sorted(self.v.of_type("session"), key=lambda s: (str(s.data.get("date", "")), s.id), reverse=True)[:5]
-        out = []
-        for s in sessions:
-            text = f'<b>{esc(human_date(s.data.get("date"), self.lang))}</b> ({esc(s.data.get("by", ""))}) {esc(s.data.get("next_step", ""))} {self.id_link(s)}'
-            tasks = [f'<li>{esc(self.L["human_task"])}: {esc(t)}</li>' for t in s.data.get("human_tasks") or []]
-            out.append(text + (f"<ul>{''.join(tasks)}</ul>" if tasks else ""))
+        out = [f'<b>{esc(human_date(s.data.get("date"), self.lang))}</b> ({esc(s.data.get("by", ""))}) {esc(s.data.get("next_step", ""))} {self.id_link(s)}'
+               for s in sessions]
+        for sid, task, who in open_tasks(self.v.of_type("session")):
+            out.append(f'{esc(self.L["human_task"])}: {esc(task)}' + (f" ({esc(who)})" if who else "") + f" {self.id_link(self.get(sid))}")
+        for inq in waiting_inquiries(self.v.of_type("inquiry")):
+            out.append(f'{esc(self.L["inquiry"])}: {self.ref(inq.id)} – {esc(inq.data.get("subject", ""))} '
+                       f'({esc(self.term(inq.data.get("status")))} {esc(human_date(inq.data.get("sent"), self.lang))})')
         return out
 
     # ------------------------------------------------------------------ page

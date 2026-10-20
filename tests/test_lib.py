@@ -87,6 +87,32 @@ class Pins(unittest.TestCase):
         self.assertEqual(norm(header), norm(project))
 
 
+class HeaderRoundTrip(unittest.TestCase):
+    """join() writes headers back the way people write them (used by migrate.py)."""
+
+    def test_fixture_headers_survive_unchanged(self):
+        from proavuslib.frontmatter import join, split
+        same = 0
+        files = [f for f in (ROOT / "tests" / "fixtures" / "family").rglob("*.md") if f.name != "README.md"]
+        for f in files:
+            text = f.read_text(encoding="utf-8")
+            data, body = split(text)
+            out = join(data, body)
+            self.assertEqual(split(out), (data, body), f)
+            same += out == text
+        self.assertGreaterEqual(same, len(files) - 5)   # only optional quotes are not kept
+
+    def test_style(self):
+        from proavuslib.frontmatter import join
+        out = join({"id": "X", "on": "2026-10-20", "read_by": ["ab", "cd"], "house": "12", "items": [{"path": "a.jpg"}],
+                    "note": "two words, a comma", "plan": ["a whole sentence here"]}, "\n")
+        self.assertIn("on: 2026-10-20\n", out)
+        self.assertIn("read_by: [ab, cd]\n", out)
+        self.assertIn('house: "12"\n', out)
+        self.assertIn("items:\n  - path: a.jpg\n", out)
+        self.assertIn("plan:\n  - a whole sentence here\n", out)
+
+
 class Guard(unittest.TestCase):
     def test_matching_ignores_case_and_diacritics(self):
         g = guard_names.Guard(["Pokusný"], [])

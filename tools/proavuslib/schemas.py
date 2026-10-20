@@ -83,7 +83,7 @@ class SchemaSet:
         errors, warnings = [], []
         for err in validator.iter_errors(data):
             where = err.json_path.removeprefix("$").lstrip(".") or "(header)"
-            if err.validator in ("anyOf", "oneOf"):
+            if err.validator in ("anyOf", "oneOf", "not"):
                 # The default message dumps the whole value; say what is expected.
                 hint = err.schema.get("x-hint", "does not match any allowed form")
                 msg = f"{where}: {hint}"

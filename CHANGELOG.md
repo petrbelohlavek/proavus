@@ -6,6 +6,31 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- **Schema 0.3** (core, additive – old forms stay valid; ADR 0031–0038):
+  `record.crops` (path + caption; `crop` stays as the short form);
+  `record.annotations` (later notes in the margin: text, position, hand,
+  when written, the event and its date); `reading.read_by` = members who
+  read it, `reading.read_by_agent` = AI reading – a confirmed reading needs
+  a member in `read_by` who confirmed it, and only such a reading passes the
+  identity gate; `oral.speakers` (`speaker` stays for one); coverage ranges
+  as a `query` for database searches; new entity `inquiry` (`IN-…`,
+  `inquiries/`: addressee, sent, state sent / acknowledged / answered /
+  closed, result, records) and `session.inquiries`; human tasks
+  `{task, status: open / done / dropped, for, by, on}`; `relationship.citations`
+  (also in the identity gate).
+- START-HERE and the map show only open human tasks (from all sessions) and
+  inquiries not closed.
+- `migrate.py` runs migrations by the version that brought them (ADR 0030):
+  required for a major version, allowed for a minor one to rewrite data into
+  the new form. 0.3.0: `crop` → `crops`, human tasks as text → open tasks.
+  `proavuslib.frontmatter.join` writes headers back in the hand-written
+  style (short lists `[a, b]`, indented items, plain dates), so a migration
+  changes only the lines it converts.
+- Method and skills: who read a record (person or agent), margin notes,
+  inquiries, closing human tasks.
+- Fictional fixture: two crops and a margin note, an agent reading, an
+  inquiry, a database search, oral testimony with two speakers, a
+  relationship with direct citations, open and done human tasks.
 - Family map (ADR 0029): dates in the map's language and EDTF in words
   (cs `13. 5. 1958`, `kolem 1868`, `před 26. 1. 1836`, `1946/1947`);
   `map.lang` defaults to the region's language (`cz` → `cs`); of several

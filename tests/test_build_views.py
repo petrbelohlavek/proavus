@@ -242,6 +242,20 @@ class Cards(MapCase):
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", self.page)
 
 
+class NextSteps(MapCase):
+    """ADR 0036, 0037: only open human tasks and inquiries not closed."""
+
+    def test_open_tasks_and_inquiries(self):
+        self.build()
+        box = self.box("Next steps")
+        self.assertIn("human task: Order the marriage register Vzorkov 1870–1878", box)
+        self.assertNotIn("copying fee", box)
+        self.assertIn(">Obecní úřad Vzorkov (fictional)</a> – Domicile right", box)
+        self.edit("IN-20261020-ab-i01", lambda d: d.update(status="closed", result="no record of domicile right"))
+        self.build()
+        self.assertNotIn("Obecní úřad Vzorkov", self.box("Next steps"))
+
+
 class LivingPersons(MapCase):
     """Rule 9: living persons only with name, sex, birth and relationships."""
 

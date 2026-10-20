@@ -22,7 +22,7 @@ class ValidFixture(FamilyRepoCase):
         report = self.validate()
         self.assertClean(report)
         self.assertEqual(report.warnings, [])
-        self.assertEqual(report.files, 32)
+        self.assertEqual(report.files, 37)
 
     def test_cli_exit_code(self):
         ok = subprocess.run([sys.executable, str(ROOT / "tools/validate.py"), str(self.repo)], capture_output=True, text=True)
@@ -178,7 +178,7 @@ class IdentityGate(FamilyRepoCase):
     def test_read_once_cannot_support_proved(self):
         self.edit(REC, self.read_once)
         report = self.validate()
-        self.assertError(report, f"{ID_FATHER}.md: identity link relies on {REC}, which is read-once read")
+        self.assertError(report, f"{ID_FATHER}.md: identity link relies on {REC}, whose reading is read-once")
         self.assertError(report, f"{REL}.md: proved relationship rests on {REC}")
 
     def test_read_once_may_support_possible(self):
@@ -310,3 +310,165 @@ class Sessions(FamilyRepoCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+INQ = "IN-20261020-ab-i01"
+SESSION = "S-20261020-ab-s01"
+ORAL = "O-20261020-ab-o01"
+
+
+class Crops(FamilyRepoCase):
+    """ADR 0031: several crops; crop stays as the short form."""
+
+    def test_every_crop_must_exist(self):
+        self.edit(REC, lambda d: d["crops"].append({"path": "evidence/missing.jpg"}))
+        self.assertError(self.validate(), "crop evidence/missing.jpg not found")
+
+    def test_crop_short_form(self):
+        self.edit(REC, lambda d: (d.pop("crops"), d.update(crop="evidence/R-20261020-ab-r01-entry.jpg")))
+        self.assertClean(self.validate())
+
+    def test_not_both(self):
+        self.edit(REC, lambda d: d.update(crop="evidence/R-20261020-ab-r01-entry.jpg"))
+        self.assertError(self.validate(), "crop or crops")
+
+
+class Annotations(FamilyRepoCase):
+    """ADR 0032: later notes on a record."""
+
+    def test_annotation_needs_text(self):
+        self.edit(REC, lambda d: d["annotations"].append({"hand": "later hand"}))
+        self.assertError(self.validate(), "text")
+
+    def test_unknown_field_in_annotation(self):
+        self.edit(REC, lambda d: d["annotations"][0].update(colour="red"))
+        self.assertError(self.validate(), "colour")
+
+    def test_annotation_date_is_edtf(self):
+        self.edit(REC, lambda d: d["annotations"][0].update(event_date="12/11/1902"))
+        self.assertError(self.validate(), "event_date")
+
+
+class Readings(FamilyRepoCase):
+    """ADR 0033: readings by the agent and by people; only a person who read it confirms."""
+
+    def test_agent_alone_may_read_once(self):
+        self.edit(REC, lambda d: d.update(reading={"status": "read-once", "read_by_agent": True}))
+        report = self.validate()
+        self.assertNotIn("R-20261020-ab-r01.md: reading", "\n".join(report.errors))
+
+    def test_agent_alone_cannot_confirm(self):
+        self.edit(REC, lambda d: d.update(reading={"status": "confirmed", "read_by_agent": "claude-opus-5-5",
+                                                   "confirmed": {"by": "ab", "on": "2026-10-20"}}))
+        self.assertError(self.validate(), "R-20261020-ab-r01.md", "read_by")
+
+    def test_confirmed_only_by_a_human_reader(self):
+        def change(d):
+            d["reading"]["read_by"] = ["cd"]
+        self.edit(REC, change)
+        text = self.path("repo.yaml").read_text(encoding="utf-8")
+        self.path("repo.yaml").write_text(text.replace("    role: researcher\n", "    role: researcher\n  - abbr: cd\n    name: Cyril Druhý\n"), encoding="utf-8")
+        report = self.validate()
+        self.assertError(report, "confirmed by 'ab', who is not among the members who read it")
+        self.assertError(report, f"{ID_FATHER}.md: identity link relies on {REC}, whose reading is confirmed by someone who did not read it")
+
+    def test_reading_needs_a_reader(self):
+        self.edit(REC, lambda d: d.update(reading={"status": "read-once"}))
+        self.assertError(self.validate(), "read_by")
+
+
+class Speakers(FamilyRepoCase):
+    """ADR 0034: several speakers; speaker stays for one."""
+
+    def test_two_speakers_in_the_fixture(self):
+        from proavuslib.frontmatter import split
+        data, _ = split(self.find(ORAL).read_text(encoding="utf-8"))
+        self.assertEqual(data["speakers"], ["P-20261020-ab-l01", "Jan Sousedský (neighbour, fictional)"])
+
+    def test_speaker_short_form(self):
+        self.edit(ORAL, lambda d: (d.pop("speakers"), d.update(speaker="Jan Sousedský")))
+        self.assertClean(self.validate())
+
+    def test_one_of_speaker_and_speakers(self):
+        self.edit(ORAL, lambda d: d.update(speaker="Jan Sousedský"))
+        self.assertError(self.validate(), "speaker")
+        self.edit(ORAL, lambda d: (d.pop("speaker"), d.pop("speakers")))
+        self.assertError(self.validate(), "speaker")
+
+    def test_speaker_person_must_exist(self):
+        self.edit(ORAL, lambda d: d["speakers"].append("P-20261020-ab-zzz"))
+        self.assertError(self.validate(), "link to P-20261020-ab-zzz, which does not exist")
+
+
+class QueryRanges(FamilyRepoCase):
+    """ADR 0035: database searches as a query instead of dates or pages."""
+
+    def test_query_only_for_database_searches(self):
+        self.edit("C-20261020-ab-c03", lambda d: d.update(method="page-through"))
+        self.assertError(self.validate(), "a range given only as a query fits a database search")
+
+    def test_query_with_dates_is_fine_for_any_method(self):
+        self.edit("C-20261020-ab-c03", lambda d: (d.update(method="page-through"), d["ranges"][0].update(dates="1840/1880")))
+        self.assertClean(self.validate())
+
+
+class Inquiries(FamilyRepoCase):
+    """ADR 0036: inquiries to offices as their own entity."""
+
+    def test_answered_needs_date_and_result(self):
+        self.edit(INQ, lambda d: d.update(status="answered"))
+        self.assertError(self.validate(), "answered", "result")
+
+    def test_dates_in_order(self):
+        self.edit(INQ, lambda d: d.update(status="acknowledged", acknowledged="2026-10-01"))
+        self.assertError(self.validate(), "acknowledged 2026-10-01 is before sent 2026-10-20")
+
+    def test_not_sent_in_the_future(self):
+        self.edit(INQ, lambda d: d.update(sent="2026-11-30"))
+        self.assertError(self.validate(), "in the future")
+
+    def test_unknown_status(self):
+        self.edit(INQ, lambda d: d.update(status="lost"))
+        self.assertError(self.validate(), "status")
+
+    def test_new_id_for_inquiries(self):
+        from proavuslib import ids
+        self.assertTrue(ids.new_id("inquiry", "ab").startswith("IN-"))
+        self.assertEqual(ids.TYPE_BY_PREFIX["IN"], "inquiry")
+
+
+class HumanTasks(FamilyRepoCase):
+    """ADR 0037: human tasks with a state."""
+
+    def test_closed_task_needs_who_and_when(self):
+        self.edit(SESSION, lambda d: d["human_tasks"][1].pop("on"))
+        self.assertError(self.validate(), "on")
+
+    def test_plain_text_task_still_valid(self):
+        self.edit(SESSION, lambda d: d["human_tasks"].append("Call the parish office"))
+        self.assertClean(self.validate())
+
+    def test_unknown_state(self):
+        self.edit(SESSION, lambda d: d["human_tasks"][0].update(status="waiting"))
+        self.assertError(self.validate(), "human_tasks")
+
+
+class RelationshipCitations(FamilyRepoCase):
+    """ADR 0038: citations directly on a relationship."""
+
+    def test_participant_of_cited_record_must_exist(self):
+        self.edit("RL-20261020-ab-f04", lambda d: d["citations"].append({"record": REC, "participant": "p9"}))
+        self.assertError(self.validate(), "participant p9 not found in R-20261020-ab-r01")
+
+    def test_proved_on_citations_needs_confirmed_reading(self):
+        def change(d):
+            d.update(confidence="proved", confirmed={"by": "ab", "on": "2026-10-20"},
+                     citations=[{"record": REC, "participant": "p2", "information": "primary", "evidence": "direct"}])
+        self.edit("RL-20261020-ab-f02", change)
+        self.assertClean(self.validate())            # citations alone may support a proved relationship
+        self.edit(REC, lambda d: d.update(reading={"status": "read-once", "read_by": ["ab"]}))
+        self.assertError(self.validate(), "RL-20261020-ab-f02.md: proved relationship cites R-20261020-ab-r01")
+
+    def test_proved_needs_assertions_or_citations(self):
+        self.edit("RL-20261020-ab-f02", lambda d: d.update(confidence="proved", confirmed={"by": "ab", "on": "2026-10-20"}))
+        self.assertError(self.validate(), "proved relationship needs supporting assertions or citations")

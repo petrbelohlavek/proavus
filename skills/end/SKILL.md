@@ -15,8 +15,11 @@ are what protect the data.
 Write `sessions/<YYYY>/<S-ID>.md` (new ID with
 `uv run .proavus/tools/new_id.py session <abbr>`): date, researcher, the
 questions, coverage and records of this session, the result in one or two
-sentences, **the next step** and human tasks with exact addresses. Show the
-result and next step to the user and adjust if they want.
+sentences, **the next step**, `inquiries` sent or answered, and human
+tasks with exact addresses as `{task, status: open, for: <abbr>}`. Ask
+whether open tasks of earlier sessions (START-HERE lists them) were done:
+set `status: done` or `dropped` with `by` and `on` – only on the user's
+word. Show the result and next step to the user and adjust if they want.
 
 ## 2. Nothing searched is lost
 
@@ -30,9 +33,10 @@ List, in plain words, what in this session needs the researcher's decision:
 - records that decide an identity but are still `read-once`;
 - new identity links, merges of persons, new parents, anything `proved`.
 
-For each one ask explicitly. Only on a clear yes after a second look at the
-crop set `confirmed: {by: <abbr>, on: <today>}` (and `reading.status:
-confirmed`). Otherwise keep it `read-once` / lower the confidence – that is a
+For each one ask explicitly. Only on a clear yes after the user's own look
+at the crop add them to `reading.read_by`, set `confirmed: {by: <abbr>, on:
+<today>}` (and `reading.status: confirmed`). Your own reading never
+confirms anything. Otherwise keep it `read-once` / lower the confidence – that is a
 perfectly good result.
 
 ## 4. Chronicle

@@ -12,13 +12,32 @@
     "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
     "coverage": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_coverage" } },
     "records": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
+    "inquiries": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_inquiry" } },
     "result": { "type": "string", "minLength": 1 },
     "next_step": { "type": "string", "minLength": 1, "description": "Every session ends with the next step." },
     "human_tasks": {
-      "description": "Tasks only a human can do (log-in portals, fees, letters) with exact addresses.",
+      "description": "Tasks only a human can do (log-in portals, fees, letters) with exact addresses (ADR 0037). A plain string is an open task.",
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "anyOf": [{ "type": "string", "minLength": 1 }, { "$ref": "#/$defs/task" }] }
     }
   },
-  "unevaluatedProperties": false
+  "unevaluatedProperties": false,
+  "$defs": {
+    "task": {
+      "type": "object",
+      "required": ["task", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "task": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["open", "done", "dropped"] },
+        "for": { "$ref": "common.schema.json#/$defs/member", "description": "who should do it" },
+        "by": { "$ref": "common.schema.json#/$defs/member", "description": "who closed it" },
+        "on": { "$ref": "common.schema.json#/$defs/date", "description": "when it was closed" },
+        "note": { "type": "string" }
+      },
+      "x-hint": "a done or dropped task needs by and on",
+      "if": { "properties": { "status": { "enum": ["done", "dropped"] } } },
+      "then": { "required": ["by", "on"] }
+    }
+  }
 }

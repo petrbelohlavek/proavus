@@ -34,5 +34,14 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0027](0027-family-map.md) | Mapa rodiny jako jeden soběstačný soubor HTML | přijato (rozvržení nahrazeno 0028) | — |
 | [0028](0028-family-map-layout.md) | Rozvržení mapy rodiny: sloupce generací, karty a detail v dialogu | přijato | — |
 | [0029](0029-family-map-facts-and-sharing.md) | Mapa rodiny: data slovy, výběr údaje, žijící a sdílení | přijato | — |
+| [0030](0030-migrations-in-minor-versions.md) | Migrace i v menších verzích: sjednocení dat | přijato | — |
+| [0031](0031-record-crops.md) | Více výřezů u zápisu | přijato | — |
+| [0032](0032-record-annotations.md) | Pozdější poznámky na okraji zápisu | přijato | — |
+| [0033](0033-reading-by-agent-and-human.md) | Čtení agentem a člověkem; potvrzuje jen člověk, který zápis četl | přijato | — |
+| [0034](0034-oral-speakers.md) | Více mluvčích ústního svědectví | přijato | — |
+| [0035](0035-coverage-query.md) | Hledání v databázi zapsané dotazem | přijato | — |
+| [0036](0036-inquiry-entity.md) | Dotazy na úřady jako entita `inquiry` | přijato | — |
+| [0037](0037-human-tasks-with-status.md) | Úkoly pro člověka se stavem | přijato | — |
+| [0038](0038-relationship-citations.md) | Přímé citace u vztahu | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

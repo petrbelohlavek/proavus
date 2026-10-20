@@ -57,6 +57,7 @@ Full rules: `.proavus/method/rules.md`.
 | `records/` | transcripts of register entries; `evidence/` small image crops |
 | `people/`, `relationships/`, `assertions/` | the tree and the facts behind it |
 | `conflicts/`, `places/`, `sources/`, `oral/`, `decisions/`, `chronicle/` | disagreements, places, sources, oral testimony, family decisions, milestones |
+| `inquiries/` | letters and requests to offices, archives and parishes, with their state and answer |
 | `archive/` | older material, frozen |
 | `.proavus/` | pinned copy of the Proavus tools – do not edit (only `/proavus:upgrade` replaces it) |
 

@@ -3,13 +3,26 @@
   "$id": "https://github.com/petrbelohlavek/proavus/schema/oral.schema.json",
   "title": "oral – processed oral testimony (minimal in v0; raw recordings never go into git)",
   "type": "object",
-  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
-  "required": ["type", "speaker", "date", "consent"],
+  "allOf": [
+    { "$ref": "common.schema.json#/$defs/base" },
+    { "x-hint": "needs speaker or speakers (one of them)", "oneOf": [{ "required": ["speaker"] }, { "required": ["speakers"] }] }
+  ],
+  "required": ["type", "date", "consent"],
   "properties": {
     "type": { "const": "oral" },
     "speaker": {
+      "description": "Short form for one speaker (same as speakers: [<it>], ADR 0034).",
       "x-hint": "a person ID or a name",
       "anyOf": [{ "$ref": "common.schema.json#/$defs/ref_person" }, { "type": "string", "minLength": 1 }]
+    },
+    "speakers": {
+      "description": "Everyone who speaks in the testimony (ADR 0034).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "x-hint": "a person ID or a name",
+        "anyOf": [{ "$ref": "common.schema.json#/$defs/ref_person" }, { "type": "string", "minLength": 1 }]
+      }
     },
     "date": { "$ref": "common.schema.json#/$defs/edtf" },
     "interviewer": { "$ref": "common.schema.json#/$defs/member" },

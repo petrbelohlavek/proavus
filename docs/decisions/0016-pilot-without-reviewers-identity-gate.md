@@ -1,6 +1,6 @@
 # 0016 Pilot bez schvalovatelů; brána identity v sezení
 
-- **Stav:** přijato (2026-10-20)
+- **Stav:** přijato (2026-10-20); čtení agentem a člověkem upřesňuje [ADR 0033](0033-reading-by-agent-and-human.md)
 - **Původně:** R21, R4
 
 ## Kontext

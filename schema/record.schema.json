@@ -4,7 +4,10 @@
   "title": "record – one entry in a source (baptism, marriage, burial, registration …)",
   "description": "Verbatim transcript and interpretation live in the Markdown body (## Transcript, ## Interpretation). Participants are personas exactly as written – NOT persons in the tree (ADR 0017).",
   "type": "object",
-  "allOf": [{ "$ref": "common.schema.json#/$defs/base" }],
+  "allOf": [
+    { "$ref": "common.schema.json#/$defs/base" },
+    { "x-hint": "use either crop or crops, not both", "not": { "required": ["crop", "crops"] } }
+  ],
   "required": ["type", "source", "locator", "event", "reading", "participants"],
   "properties": {
     "type": { "const": "record" },
@@ -25,8 +28,27 @@
     "script": { "type": "string", "description": "e.g. kurrent, latin, print" },
     "reading": { "$ref": "#/$defs/reading" },
     "crop": {
-      "description": "Path to the evidence crop (small JPEG) relative to the record file, e.g. evidence/R-….jpg",
+      "description": "Short form for a single crop: path relative to the record file, e.g. evidence/R-….jpg (same as crops: [{path: …}], ADR 0031).",
       "type": "string"
+    },
+    "crops": {
+      "description": "Evidence crops (small JPEG) of this entry, e.g. the entry and a margin note (ADR 0031).",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path"],
+        "additionalProperties": false,
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "description": "relative to the record file, e.g. evidence/R-….jpg" },
+          "caption": { "type": "string", "description": "what the crop shows: entry, margin note, signature …" }
+        }
+      }
+    },
+    "annotations": {
+      "description": "Later notes on the entry – in the margin or added afterwards, often by another hand (ADR 0032).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/annotation" }
     },
     "participants": {
       "type": "array",
@@ -58,13 +80,17 @@
       "dependentRequired": { "url": ["accessed"] }
     },
     "reading": {
-      "description": "Reading state: read-once until a second, careful reading of the crop (ADR 0016).",
+      "description": "Reading state: read-once until a second, careful reading of the crop (ADR 0016). read_by = members (humans) who read it from the image; read_by_agent = read by an AI agent. Only a member who read it may confirm it (ADR 0033).",
       "type": "object",
-      "required": ["status", "read_by"],
+      "required": ["status"],
       "additionalProperties": false,
       "properties": {
         "status": { "enum": ["read-once", "confirmed", "disputed"] },
-        "read_by": { "type": "array", "minItems": 1, "items": { "$ref": "common.schema.json#/$defs/member" } },
+        "read_by": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/member" } },
+        "read_by_agent": {
+          "description": "Read by an AI agent: true, or the model name.",
+          "anyOf": [{ "const": true }, { "type": "string", "minLength": 1 }]
+        },
         "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" },
         "uncertain": {
           "description": "Readings marked uncertain in the transcript with [ ].",
@@ -72,8 +98,29 @@
           "items": { "type": "string" }
         }
       },
+      "x-hint": "needs read_by (members) or read_by_agent",
+      "anyOf": [
+        { "required": ["read_by"], "properties": { "read_by": { "minItems": 1 } } },
+        { "required": ["read_by_agent"] }
+      ],
       "if": { "properties": { "status": { "const": "confirmed" } } },
-      "then": { "required": ["confirmed"] }
+      "then": { "required": ["confirmed", "read_by"], "properties": { "read_by": { "minItems": 1 } } }
+    },
+    "annotation": {
+      "description": "One later note on the entry (ADR 0032). Text as written, with [ ] for uncertain readings.",
+      "type": "object",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string", "minLength": 1 },
+        "position": { "type": "string", "description": "margin, below the entry, another page …" },
+        "hand": { "type": "string", "description": "same hand as the entry, later hand, parish priest …" },
+        "written": { "$ref": "common.schema.json#/$defs/edtf", "description": "when the note was written, if dated or known" },
+        "event": { "type": "string", "x-vocab": "event_types", "description": "the event the note reports" },
+        "event_date": { "$ref": "common.schema.json#/$defs/edtf" },
+        "event_place": { "$ref": "common.schema.json#/$defs/ref_place" },
+        "interpretation": { "type": "string" }
+      }
     },
     "participant": {
       "description": "A person as written in this record (persona).",

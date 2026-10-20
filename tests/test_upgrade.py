@@ -20,6 +20,8 @@ import family_repo
 import migrate
 
 NELA = "P-20261020-ab-n01"
+RECORD = "records/R-20261020-ab-r01.md"
+SESSION = "sessions/2026/S-20261020-ab-s01.md"
 TEMPLATE = ROOT / "templates" / "family"
 OLD_BLOCK = "<!-- proavus:begin -->\nOld Proavus rules.\n<!-- proavus:end -->"
 FAMILY_NOTE = "## Family notes\n\nOur own rule: Grandma's letters stay in the archive box.\n"
@@ -40,6 +42,7 @@ class OldRepoCase(unittest.TestCase):
         self.path(".github/workflows").mkdir(parents=True)
         self.path(".github/workflows/validate.yml").write_text("name: old\n", encoding="utf-8")
         self.path("README.md").write_text("# Our family\n", encoding="utf-8")
+        self.old_forms()
         family_repo.install_tools(self.repo)
         copy = self.path(".proavus")
         (copy / "VERSION").write_text("0.1.0\n", encoding="utf-8")
@@ -51,6 +54,17 @@ class OldRepoCase(unittest.TestCase):
         data = yaml.safe_load(vocab.read_text(encoding="utf-8"))
         data["values"] = [v for v in data["values"] if v["id"] != "other"]
         vocab.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    def old_forms(self):
+        """Data as written before schema 0.3: one crop, human tasks as plain text."""
+        record = self.path(RECORD)
+        text = record.read_text(encoding="utf-8")
+        start, end = text.index("crops:\n"), text.index("annotations:\n")
+        record.write_text(text[:start] + "crop: evidence/R-20261020-ab-r01-entry.jpg\n" + text[end:], encoding="utf-8")
+        session = self.path(SESSION)
+        text = session.read_text(encoding="utf-8")
+        start = text.index("human_tasks:\n")
+        session.write_text(text[:start] + "human_tasks:\n  - Order the marriage register Vzorkov 1870–1878\n  - Ask the parish about the burial register\n---\n", encoding="utf-8")
 
     def tearDown(self):
         self._tmp.cleanup()
@@ -90,7 +104,7 @@ class Plan(OldRepoCase):
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
         self.assertIn("0.1.0 · plugin:", out.stdout)
         self.assertIn(f"{NELA}  Nela Pokusná", out.stdout)
-        self.assertIn("Migration (migrate.py): not needed", out.stdout)
+        self.assertIn("Migration (migrate.py): needed", out.stdout)   # 0.3.0 rewrites crop and human tasks
 
     def test_newer_copy_is_never_downgraded(self):
         self.path(".proavus/VERSION").write_text("9.0.0\n")
@@ -126,7 +140,7 @@ class Upgrade(OldRepoCase):
         self.assertIn(f'schema_version: "{current}"', text)
         self.assertIn(f"map:\n  root: {NELA}\n  lang: cs\n", text)
         self.assertIn("# family comment, must stay", text)
-        self.assertEqual(sorted(result.changed), sorted([".proavus/", "CLAUDE.md", "AGENTS.md", ".github/workflows/validate.yml", "repo.yaml"]))
+        self.assertEqual(sorted(result.changed), sorted([".proavus/", RECORD, SESSION, "CLAUDE.md", "AGENTS.md", ".github/workflows/validate.yml", "repo.yaml"]))
 
     def test_framework_files_refreshed_family_files_kept(self):
         family_repo.upgrade(self.repo, NELA, "cs")
@@ -194,15 +208,38 @@ class MapSettings(unittest.TestCase):
 
 
 class Migration(OldRepoCase):
-    def test_minor_versions_need_no_migration(self):
-        self.assertFalse(migrate.needed("0.1.0", "0.9.3"))
-        self.assertEqual(migrate.migrate(self.repo, "0.1.0", "0.9.3"), [])
+    def test_which_upgrades_migrate(self):
+        self.assertTrue(migrate.needed("0.2.0", "0.3.0"))      # 0.3.0 has a migration
+        self.assertTrue(migrate.needed("0.1.0", "0.3.4"))
+        self.assertFalse(migrate.needed("0.3.0", "0.3.4"))     # nothing registered after 0.3.0
+        self.assertFalse(migrate.needed("0.1.0", "0.2.0"))
+        self.assertEqual(migrate.steps("0.1.0", "0.3.0"), ["0.3.0"])
+        self.assertEqual(migrate.migrate(self.repo, "0.3.0", "0.3.4"), [])
+
+    def test_0_3_0_rewrites_old_forms(self):
+        changed = migrate.migrate(self.repo, "0.2.0", "0.3.0")
+        self.assertEqual(changed, [RECORD, SESSION])
+        record = self.path(RECORD).read_text(encoding="utf-8")
+        self.assertIn("crops:\n  - path: evidence/R-20261020-ab-r01-entry.jpg\n", record)
+        self.assertIn("read_by: [ab]\n", record)            # the rest of the header keeps its style
+        self.assertNotIn("\ncrop:", record)
+        self.assertIn("## Transcript", record)                 # the body stays as it was
+        self.assertIn("on: 2026-10-20", record)                # no quotes added to dates or keys
+        session = yaml.safe_load(self.path(SESSION).read_text(encoding="utf-8").split("---")[1])
+        self.assertEqual(session["human_tasks"][0], {"task": "Order the marriage register Vzorkov 1870–1878", "status": "open"})
+        self.assertEqual(migrate.migrate(self.repo, "0.2.0", "0.3.0"), [])   # safe to run twice
+        from proavuslib.validator import RepoValidator
+        self.assertEqual(RepoValidator(self.repo, ROOT, today=TODAY).run().errors, [])
+
+    def test_old_forms_stay_valid(self):
+        from proavuslib.validator import RepoValidator
+        self.assertEqual(RepoValidator(self.repo, ROOT, today=TODAY).run().errors, [])
 
     def test_major_without_migration_is_refused(self):
         plan = family_repo.plan_upgrade(self.repo, target="1.0.0")
         self.assertTrue(plan.migration)
         self.assertEqual(plan.status, "migration-missing")
-        self.assertIn("0→1", plan.message)
+        self.assertIn("major version 1.0.0 without a migration", plan.message)
         with mock.patch.object(family_repo, "framework_version", return_value="1.0.0"):
             with self.assertRaises(SystemExit):
                 family_repo.upgrade(self.repo)
@@ -213,7 +250,7 @@ class Migration(OldRepoCase):
             (repo / "assertions" / "MIGRATED").write_text("v1\n")
             return ["assertions/MIGRATED"]
 
-        with mock.patch.dict(migrate.MIGRATIONS, {0: zero_to_one}), \
+        with mock.patch.dict(migrate.MIGRATIONS, {"1.0.0": zero_to_one}), \
                 mock.patch.object(family_repo, "framework_version", return_value="1.0.0"):
             plan = family_repo.plan_upgrade(self.repo)
             self.assertEqual((plan.status, plan.migration), ("upgrade", True))
@@ -224,7 +261,7 @@ class Migration(OldRepoCase):
 
     def test_cli(self):
         tool = str(ROOT / "tools" / "migrate.py")
-        same = subprocess.run([sys.executable, tool, str(self.repo), "--from", "0.1.0", "--to", "0.3.0"], capture_output=True, text=True)
+        same = subprocess.run([sys.executable, tool, str(self.repo), "--from", "0.3.0", "--to", "0.3.1"], capture_output=True, text=True)
         self.assertEqual(same.returncode, 0, same.stdout + same.stderr)
         self.assertIn("nothing to migrate", same.stdout)
         major = subprocess.run([sys.executable, tool, str(self.repo), "--from", "0.3.0", "--to", "1.0.0"], capture_output=True, text=True)

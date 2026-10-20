@@ -1,6 +1,6 @@
 # 0018 Jedna sémantická verze pro celé repo
 
-- **Stav:** přijato (2026-10-20)
+- **Stav:** přijato (2026-10-20); migrace v menších verzích doplňuje [ADR 0030](0030-migrations-in-minor-versions.md)
 - **Původně:** R23
 
 ## Kontext

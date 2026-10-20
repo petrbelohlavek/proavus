@@ -45,18 +45,24 @@ record them all, not only the family.
 
 ## 5. Reading state
 
-A new record is `read-once`. A reading that decides identity (a name, a
-house number, a date that separates two candidates) must be read a second
-time, carefully, from the crop – by the same researcher in a later moment or
-by another member. Then set `status: confirmed` with `confirmed: {by, on}`.
-If two readings disagree, set `disputed` and open a conflict.
+A new record is `read-once`. Record who read it: members (people) in
+`read_by`, a reading by an AI agent as `read_by_agent` (the model) – never
+write a member into `read_by` for a reading they did not do themselves. A
+reading that decides identity (a name, a house number, a date that separates
+two candidates) must be read a second time, carefully, from the crop – by a
+person: the same researcher in a later moment or another member. Then add
+them to `read_by` and set `status: confirmed` with `confirmed: {by, on}`;
+only a member who read the entry may confirm it. If two readings disagree,
+set `disputed` and open a conflict.
 
 Typical traps:
 
 - Kurrent letters that look alike (`e`/`n`, `h`/`f`, `s` forms) and digits
   (`1`/`7`, `4`/`9`);
 - a name in the margin added years later (a marriage, death or legitimation
-  note) – it is a separate statement with its own date;
+  note) – it is a separate statement with its own date: transcribe it and
+  add it to `annotations` (text, hand, event and its date), with its own
+  crop in `crops`;
 - the index of a book missing an entry that exists – read the pages;
 - similar names in the same village and decade (namesakes) – compare house
   numbers, parents and godparents before linking.
@@ -65,5 +71,8 @@ Typical traps:
 
 Record the search in coverage (found or not), link the record from the
 session, and write the next step. Tasks a machine cannot do (logging in to a
-portal, paying a fee, writing to an archive) go to `human_tasks` with the
-exact address of the record.
+portal, paying a fee) go to `human_tasks` with the exact address of the
+record, as `{task, status: open}`; close them later with `status: done` or
+`dropped`, `by` and `on`. A letter or request to an office, archive or
+parish is an `inquiry` (`inquiries/`) – addressee, date sent, state, and
+later the answer and the records made from it.
