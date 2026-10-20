@@ -7,8 +7,9 @@ major + `migrate.py`.
 ## 0.3.0 – unreleased
 
 - Workflows (ADR 0043): `actions/checkout` and `astral-sh/setup-uv` pinned to
-  a commit SHA (v4.4.0, v6.8.0) in the framework CI and the family
-  template; `permissions: {}` for the workflow, `contents: read` for the
+  a commit SHA in the framework CI and the family template (v4.4.0 and
+  v6.8.0, then raised by Dependabot to v7.0.1 and v10.3.0 – no breaking
+  change applies: Node 24 on GitHub runners, no removed inputs used); `permissions: {}` for the workflow, `contents: read` for the
   job; `persist-credentials: false`; Dependabot for GitHub Actions in the
   framework (weekly, 7-day cooldown). Families get the new pins with
   `/proavus:upgrade`. `tests/test_workflows.py` keeps it that way.
