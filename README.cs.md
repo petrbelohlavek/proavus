@@ -115,6 +115,7 @@ Kliknutím na kartu se otevře detail se všemi údaji, jejich jistotou a zdroje
 | Datové schéma v0 | [schema/](schema/README.md) |
 | Validátor | `uv run tools/validate.py <repo-rodiny>` |
 | Mapa rodiny | `uv run tools/build_views.py <repo-rodiny>` → `views/mapa.html` |
+| Snímky z archivů | `uv run tools/archive_fetch.py list <odkaz na knihu>` (ARON; Acta Publica a Matricula jen odkazy, ADR 0041) |
 | Architektura a rozhodnutí | [docs/architecture.md](docs/architecture.md), [docs/decisions/](docs/decisions/) |
 
 ## Licence

@@ -10,9 +10,24 @@ shown by the portal, folio with side (`23r`, `23v`), entry number, image
 number, URL and access date. Page and folio often drift apart inside one book
 – record both; never compute one from the other without calibration points.
 
-Save a small crop of the entry (JPEG, about 300 kB) as evidence. Full pages
-stay in the archive and are cited, not copied (check the terms of use of the
-source).
+- **An index number is often a page (pag.), not a folio.** Check the header
+  of the index and a page or two of the book before you go to the entry.
+- **Page → image needs two anchors.** The offset between the printed page
+  and the image number in the viewer changes (inserted sheets, missing or
+  double scans). Verify it at two points – near the entry and further away –
+  before trusting it; write the anchors into the session.
+
+Save a small crop of the entry (JPEG, about 300 kB) as evidence, with about
+10 % margin around the entry so that the column headings or the neighbour
+lines that prove where it sits stay visible. Full pages stay in the archive
+and are cited, not copied (check the terms of use of the source). A download
+of the whole book (ZIP) is often in a lower resolution than the viewer –
+crop from the single image.
+
+Downloading images with `tools/archive_fetch.py` (ADR 0041) only after the
+researcher has said yes to the list of images (`get --dry-run`), into a
+folder outside the repository; some portals allow no automated access at all
+– then the tool only gives the link.
 
 ## 2. Transcribe verbatim
 
@@ -58,14 +73,31 @@ set `disputed` and open a conflict.
 Typical traps:
 
 - Kurrent letters that look alike (`e`/`n`, `h`/`f`, `s` forms) and digits
-  (`1`/`7`, `4`/`9`);
-- a name in the margin added years later (a marriage, death or legitimation
-  note) – it is a separate statement with its own date: transcribe it and
-  add it to `annotations` (text, hand, event and its date), with its own
-  crop in `crops`;
+  (`1`/`7`, `4`/`9`); capitals of surnames are mistaken for each other
+  (in Czech registers `P`/`Š`/`Ř`/`R`, see `regions/cz/pitfalls.md`) – search
+  the variants;
+- a note in the margin is **later** than the entry (a marriage, death or
+  legitimation note, often in another hand) – it is a separate statement with
+  its own date: transcribe it and add it to `annotations` (text, hand, event
+  and its date), with its own crop in `crops`; never date the entry by it;
+- an age column: the unit is in the column heading (years / months / weeks /
+  days); a number above 30 can only be years – a number like 2 or 6 needs
+  the heading;
 - the index of a book missing an entry that exists – read the pages;
 - similar names in the same village and decade (namesakes) – compare house
   numbers, parents and godparents before linking.
+
+Where else to look:
+
+- **married women** appear under the husband's surname in later records
+  (children's baptisms, death) – search both the birth and the married name;
+- **the parents' marriage** may be in the following book, not in the one
+  of the first child's baptism (marriages are entered where they took place,
+  and books overlap) – search the next book of the marriage series and the
+  bride's parish;
+- **graves**: cemetery maps and registers of graves are often incomplete,
+  and a shared grave does not prove a parent–child relationship – use them
+  as a clue, cite them with information `secondary` or `undetermined`.
 
 ## 6. Hand over
 

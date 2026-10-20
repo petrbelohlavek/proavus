@@ -45,5 +45,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0038](0038-relationship-citations.md) | Přímé citace u vztahu | přijato | — |
 | [0039](0039-start-here-readable.md) | START-HERE: jména místo ID, souhrn po otázkách, jen otevřené úkoly | přijato | — |
 | [0040](0040-validator-advice-and-duplicates.md) | Validátor: přijatý negativ z rejstříku, pohlaví u identity, duplicity, rady | přijato | — |
+| [0041](0041-archive-portals.md) | Snímky z archivních portálů: jen kde to provozovatel dovolí, po souhlasu | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

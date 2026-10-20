@@ -16,6 +16,10 @@ be a fork of `proavus`.
   yes in this session.
 - Living persons: only name, sex, birth and relationships; living minors
   without birth date.
+- Images from archive portals: `.proavus/tools/archive_fetch.py` only after
+  the user's yes to the list from `get --dry-run`, into a folder outside this
+  repository (only small crops go into `records/evidence/`); Matricula and
+  Acta Publica: link only.
 - `START-HERE.md` and `views/` are generated, never edited or committed.
   Family map on request: `uv run .proavus/tools/build_views.py .` →
   `views/mapa.html` (starting person: `map.root` in `repo.yaml`). To show it

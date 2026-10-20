@@ -6,6 +6,21 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- `tools/archive_fetch.py` (ADR 0041): ARON – `book` (metadata), `list`
+  (images and sizes, downloads nothing), `link`, `get --dry-run` / `get`
+  (only into a folder outside any repository, at most `--max` images per
+  call, default 10, limit 50, a pause between images, checks content type,
+  size and a complete JPEG). Acta Publica and Matricula Online: `link` only –
+  their terms of use / robots.txt do not allow automated access; nothing is
+  fetched from them. Standard library only; copied into `.proavus/`.
+- `/proavus:start` and the family `AGENTS.md`: images only after the user's
+  explicit yes to the list from `get --dry-run`.
+- Method (`reading-records.md`) and new `regions/cz/pitfalls.md`: index
+  numbers are often pages, two anchors for page → image, crops with ~10 %
+  margin, whole-book ZIPs in lower resolution, `P`/`Š`/`Ř`/`R`, margin notes
+  are later, age column above 30 is years, married women under the husband's
+  name, the parents' marriage also in the next book, cemetery maps incomplete
+  and a grave proves no parenthood.
 - START-HERE (ADR 0039): name, question title, record in words, conflict
   and inquiry labels next to every ID (`proavuslib/labels.py`); a summary
   per open question (who, searches and results, records, last next step,

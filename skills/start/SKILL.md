@@ -88,6 +88,15 @@ Follow the method:
   address for the session record. A letter or request to an office, archive
   or parish becomes an `inquiry` (`uv run .proavus/tools/new_id.py inquiry
   <abbr>`); when an answer arrives, update its state and link the records.
+- **Images from archive portals:** first show the list –
+  `uv run .proavus/tools/archive_fetch.py get <book URL> --images <n-m> --out <folder outside the repository> --dry-run`
+  (images, sizes, where they go) – and download only after the user's
+  explicit yes to exactly that list; then the same command without
+  `--dry-run`. Never into the repository (only small crops go into
+  `records/evidence/`), never more than the user agreed to. For Matricula and
+  Acta Publica the tool only gives the link (`link <URL> --image N`) – the
+  user opens it and saves the image; do not fetch those portals in any other
+  way (browser automation included).
 - Your own first reading of a record: `reading: {status: read-once,
   read_by_agent: <your model>}`. Add the member to `read_by` only after they
   read the crop themselves.

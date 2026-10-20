@@ -119,6 +119,7 @@ source:
 | Data schema v0 | [schema/](schema/README.md) |
 | Validator | `uv run tools/validate.py <family-repo>` |
 | Family map | `uv run tools/build_views.py <family-repo>` → `views/mapa.html` |
+| Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
 | Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |
 
 ## Licence

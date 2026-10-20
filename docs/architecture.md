@@ -75,7 +75,7 @@ proavus/
 ├── schema/                             DATOVÝ MODEL: JSON Schema pro záhlaví souborů (kap. 5) [v0]
 │   └── vocab/                          slovníky hodnot
 ├── regions/                            REGIONÁLNÍ BALÍČKY (rozšiřuje komunita)
-│   ├── cz/       schema-ext.yaml [v0] · sources.yaml · law.md · pitfalls.md · glossary.md · scripts.md
+│   ├── cz/       schema-ext.yaml [v0] · pitfalls.md [v0] · sources.yaml · law.md · glossary.md · scripts.md
 │   ├── at-wien/  sources.yaml · pitfalls.md
 │   └── _template/
 ├── tools/                              Python přes `uv run` (ADR 0011, 0021); family_repo.py: init, .proavus, START-HERE, kontrola soukromí [v0]
@@ -84,6 +84,7 @@ proavus/
 │   ├── guard_names.py                  kontrola jmen rodiny před commitem frameworku     [v0]
 │   ├── build_index.py · query.py       SQLite index a dotazy (fáze 3)
 │   ├── build_views.py                  mapa views/mapa.html (ADR 0027–0029) [v0]; později GEDCOM
+│   ├── archive_fetch.py                snímky z portálů: ARON plně, Acta Publica a Matricula jen odkaz (ADR 0041) [v0]
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
 ├── skills/                             init · start · end · upgrade [v0]; později setup · check · claim · review · feedback
