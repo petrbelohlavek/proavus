@@ -66,8 +66,8 @@ LABELS = {
         "repeat": "already in the tree", "living_short": "living",
         "living": "living – only name, sex, birth and relationships are shown (rule 9)",
         "minor_date": "date not shown (living minor)", "hidden": "details not shown (living person)",
-        "chip_tree": "{n} persons in the tree", "chip_doc": "{n} with primary evidence",
-        "chip_warn": "{n} with an open conflict", "chip_q": "{n} open questions",
+        "chip_tree": ("{n} person in the tree", "{n} persons in the tree"), "chip_doc": ("{n} with primary evidence",),
+        "chip_warn": ("{n} with an open conflict",), "chip_q": ("{n} open question", "{n} open questions"),
         "tree": "Tree of ancestors", "tree_sub": "Click a card for the detail with sources.",
         "gen": ["Starting person", "Parents", "Grandparents", "Great-grandparents"],
         "gen_n": "{n}× great-grandparents",
@@ -95,8 +95,9 @@ LABELS = {
         "repeat": "ve stromu už je", "living_short": "žijící",
         "living": "žijící – zobrazeno jen jméno, pohlaví, narození a vztahy (pravidlo 9)",
         "minor_date": "datum neuvedeno (žijící nezletilá osoba)", "hidden": "podrobnosti neuvedeny (žijící osoba)",
-        "chip_tree": "{n} osob ve stromu", "chip_doc": "{n} s prvotním dokladem",
-        "chip_warn": "{n} s otevřeným rozporem", "chip_q": "{n} otevřených otázek",
+        "chip_tree": ("{n} osoba ve stromu", "{n} osoby ve stromu", "{n} osob ve stromu"),
+        "chip_doc": ("{n} s prvotním dokladem",), "chip_warn": ("{n} s otevřeným rozporem",),
+        "chip_q": ("{n} otevřená otázka", "{n} otevřené otázky", "{n} otevřených otázek"),
         "tree": "Strom předků", "tree_sub": "Klikněte na kartu – otevře se detail se zdroji.",
         "gen": ["Výchozí osoba", "Rodiče", "Prarodiče", "Praprarodiče", "Prapraprarodiče"],
         "gen_n": "{n}. generace předků",
@@ -110,6 +111,17 @@ LABELS = {
         "human_task": "úkol pro člověka", "bapt": "křt.", "bur": "pohř.",
         "male": "muž", "female": "žena", "unknown": "pohlaví neznámé",
         "deceased": "zemřelý/á", "unknown_status": "není známo, zda žije", "candidate": "kandidát",
+    },
+}
+
+
+# Schema enum values shown in the map; English shows them as they are.
+TERMS = {
+    "cs": {
+        "open": "otevřený", "unresolved": "nevyřešený", "in-progress": "rozpracovaná",
+        "primary": "prvotní", "secondary": "druhotná", "undetermined": "neurčená",
+        "direct": "přímý", "indirect": "nepřímý", "negative": "negativní",
+        "page": "str.", "folio": "fol.", "entry": "zápis", "image": "snímek",
     },
 }
 
@@ -292,6 +304,19 @@ class MapBuilder:
             return f"<code>{esc(id_)}</code>"
         return f'<a href="{esc(self.file_href(e))}"><code>{esc(id_)}</code></a>'
 
+    def count(self, key: str, n: int) -> str:
+        """Label with the right plural form: en one/other, cs 1 / 2–4 / 5+."""
+        forms = self.L[key]
+        if self.lang == "cs":
+            i = 0 if n == 1 else 1 if 2 <= n <= 4 else 2
+        else:
+            i = 0 if n == 1 else 1
+        return forms[min(i, len(forms) - 1)].format(n=n)
+
+    def term(self, value) -> str:
+        """Translate a schema enum value (status, information, evidence, locator part)."""
+        return TERMS.get(self.lang, {}).get(value, str(value))
+
     def id_link(self, e: Entity) -> str:
         return f'<a class="id" href="{esc(self.file_href(e))}">{esc(e.id)}</a>'
 
@@ -466,7 +491,7 @@ class MapBuilder:
                 if src is not None:
                     parts.append(esc(src.data.get("title", "")))
                 loc = rec.data.get("locator") or {}
-                where = ", ".join(f"{k} {loc[k]}" for k in ("page", "folio", "entry", "image") if loc.get(k) is not None)
+                where = ", ".join(f"{self.term(k)} {loc[k]}" for k in ("page", "folio", "entry", "image") if loc.get(k) is not None)
                 if where:
                     parts.append(esc(where))
                 url = loc.get("url")
@@ -488,7 +513,7 @@ class MapBuilder:
             parts.append(esc(c["detail"]))
         if url and str(url).startswith(("http://", "https://")):
             parts.append(f'<a href="{esc(url)}" rel="noopener noreferrer" target="_blank">↗</a>')
-        quality = [x for x in (c.get("information"), c.get("evidence")) if x]
+        quality = [self.term(x) for x in (c.get("information"), c.get("evidence")) if x]
         if quality:
             q = quay_for_citation(self.citation_form(c), c.get("information"), c.get("evidence"))
             parts.append(f'<span class="muted">{esc(" · ".join(quality))} · QUAY {q}</span>')
@@ -616,7 +641,7 @@ class MapBuilder:
         return sorted((q for q in self.v.of_type("question") if q.data.get("status") in OPEN_QUESTION), key=lambda q: q.id)
 
     def conflict(self, x: Entity) -> str:
-        head = f'<a href="{esc(self.file_href(x))}"><code>{esc(x.id)}</code></a> ({esc(x.data.get("status"))})'
+        head = f'<a href="{esc(self.file_href(x))}"><code>{esc(x.id)}</code></a> ({esc(self.term(x.data.get("status")))})'
         about = x.data.get("about") or []
         if any(self.touches_living(r) for r in about):
             return f'{head} <span class="muted">{esc(self.L["hidden"])}</span>'
@@ -629,7 +654,7 @@ class MapBuilder:
         return out
 
     def question(self, q: Entity) -> str:
-        head = f'<a href="{esc(self.file_href(q))}"><code>{esc(q.id)}</code></a> ({esc(q.data.get("status"))})'
+        head = f'<a href="{esc(self.file_href(q))}"><code>{esc(q.id)}</code></a> ({esc(self.term(q.data.get("status")))})'
         subjects = q.data.get("subjects") or []
         if any(self.touches_living(s) for s in subjects):
             return f'{head} <span class="muted">{esc(self.L["hidden"])}</span>'
@@ -654,10 +679,10 @@ class MapBuilder:
         L = self.L
         tree, in_tree = self.tree_html(self.tree())
         check = L["check_ok"] if self.report.ok else L["check_err"].format(n=len(self.report.errors))
-        chips = [L["chip_tree"].format(n=len(in_tree)),
-                 L["chip_doc"].format(n=sum(1 for p in in_tree if self.doc_level(p) == 3)),
-                 L["chip_warn"].format(n=sum(1 for p in in_tree if self.warn(p))),
-                 L["chip_q"].format(n=len(self.open_questions()))]
+        chips = [self.count("chip_tree", len(in_tree)),
+                 self.count("chip_doc", sum(1 for p in in_tree if self.doc_level(p) == 3)),
+                 self.count("chip_warn", sum(1 for p in in_tree if self.warn(p))),
+                 self.count("chip_q", len(self.open_questions()))]
         legend_cards = "".join(f'<span><i class="sw src-{d}"></i>{esc(L[f"doc{d}"])}</span>' for d in DOC_LEVELS)
         legend_cards += f'<span><span class="warn">!</span>{esc(L["warn"])}</span>'
         legend_lines = "".join(f"<span>{self.conf(c)}</span>" for c in CONFIDENCE[:4])
@@ -771,6 +796,7 @@ a {{ color:var(--d2); }} a.id {{ font-size:11px; color:var(--muted); }}
 .mar-bg {{ fill:var(--card); stroke:var(--line); stroke-width:1; }}
 .mar {{ font-size:11px; fill:var(--fg); text-anchor:middle; dominant-baseline:central; }}
 .conf {{ white-space:nowrap; }} .conf svg {{ vertical-align:middle; margin-right:4px; }}
+dialog:focus {{ outline:none; }}
 dialog {{ border:0; border-radius:14px; padding:0; width:min(640px, calc(100% - 32px)); max-height:calc(100vh - 32px);
   background:var(--card); color:var(--fg); box-shadow:0 20px 50px rgba(0,0,0,.35); }}
 dialog::backdrop {{ background:rgba(0,0,0,.45); }}
@@ -808,7 +834,7 @@ dialog::backdrop {{ background:rgba(0,0,0,.45); }}
 {boxes}
 </div>
 </main>
-<dialog id="dlg"><div class="dlg"></div></dialog>
+<dialog id="dlg" tabindex="-1"><div class="dlg"></div></dialog>
 {details}
 <script>
 (function () {{
@@ -819,6 +845,7 @@ dialog::backdrop {{ background:rgba(0,0,0,.45); }}
     box.replaceChildren(t.content.cloneNode(true));
     box.scrollTop = 0;
     if (!dlg.open) dlg.showModal();
+    dlg.focus();
     history.replaceState(null, "", "#" + id);
   }}
   document.addEventListener("click", function (e) {{

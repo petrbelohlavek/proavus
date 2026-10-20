@@ -96,6 +96,12 @@ class Output(MapCase):
         self.assertIn("Výchozí osoba", self.page)
         self.assertIn("<b>křest</b>", self.card(JOSEF))
         self.assertIn("nevlastní", self.card(KAREL))
+        self.assertIn("str. 41, fol. 21r, zápis 12", self.card(JOSEF))
+        self.assertIn("prvotní · přímý · QUAY 3", self.card(JOSEF))
+        self.assertIn("(rozpracovaná)", self.card(MATEJ))
+        self.assertIn("(otevřený)", self.card(MATEJ))
+        self.assertIn("7 osob ve stromu", self.page)
+        self.assertIn("1 otevřená otázka", self.page)
 
 
 class Root(MapCase):
@@ -156,6 +162,8 @@ class Tree(MapCase):
         self.assertEqual(level[KAREL], 2)    # secondary information
         self.assertEqual(level[ANNA], 0)     # nothing yet
         self.assertIn("1 with an open conflict", self.page)
+        self.assertIn("1 open question<", self.page)
+        self.assertIn("7 persons in the tree", self.page)
         self.assertIn('<span class="warn" title="open conflict">!</span>', self.tree())
 
     def test_unknown_parent(self):

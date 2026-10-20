@@ -26,6 +26,19 @@ a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
    čtením zápisů.
 5. Napište `/end`: výsledky se uloží s citacemi zdrojů a zkontrolují.
 
+## Mapa rodiny
+
+`tools/build_views.py` vytvoří z repa rodiny jednu soběstačnou stránku HTML:
+funguje offline, nic nenačítá z internetu a do gitu se neukládá. Ukázka je
+z fiktivní testovací rodiny v `tests/fixtures/family/`. Barva karty ukazuje,
+jak je osoba doložená, čára, jak jistý je vztah.
+
+<p align="center"><img src="docs/images/map-tree.cs.png" alt="Mapa rodiny: strom předků ve sloupcích generací, karty obarvené podle doložení a čáry podle jistoty" width="800"></p>
+
+Kliknutím na kartu se otevře detail se všemi údaji, jejich jistotou a zdrojem:
+
+<p align="center"><img src="docs/images/map-detail.cs.png" alt="Detail osoby: údaje se zdroji, vztahy, otevřený rozpor a otázka" width="700"></p>
+
 ## Co tu je
 
 | Část | Kde |

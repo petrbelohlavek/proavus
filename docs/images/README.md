@@ -1,0 +1,17 @@
+# Images for the README
+
+Screenshots of `views/mapa.html` built from the **fictional** test family
+(`tests/fixtures/family/`). Never use a real family's map here.
+
+Made again when the map changes (macOS, Google Chrome; `$T` is any empty
+temporary folder):
+
+1. Czech copy of the fixture: copy `tests/fixtures/family` to `$T/family-cs`
+   and add `  lang: cs` under `map:` in its `repo.yaml`.
+2. Maps with Karel as the starting person (four generations fit the width):
+   `uv run tools/build_views.py tests/fixtures/family --root P-20261020-ab-k01 --out $T/en.html`
+   and the same for `$T/family-cs` → `$T/cs.html`.
+3. Screenshots with headless Chrome, 1120 px wide, scale 1:
+   `--headless=new --hide-scrollbars --force-device-scale-factor=1`
+   - tree: `--window-size=1120,1036 --screenshot=docs/images/map-tree.<lang>.png file://$T/<lang>.html`
+   - detail: `--window-size=1120,940 --virtual-time-budget=2000 --screenshot=docs/images/map-detail.<lang>.png "file://$T/<lang>.html#P-20261020-ab-m01"`

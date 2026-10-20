@@ -26,6 +26,21 @@ Genealogical Proof Standard.
    plan the search and read the records.
 5. Type `/end`: findings are saved with source citations and checked.
 
+## The family map
+
+`tools/build_views.py` turns a family repository into one self-contained
+HTML page: it works offline, loads nothing from the internet and is never
+saved in git. Below is the fictional test family from `tests/fixtures/family/`.
+Card colour shows how well each person is documented, the line shows how
+sure each relationship is.
+
+<p align="center"><img src="docs/images/map-tree.en.png" alt="Family map: ancestor tree in generation columns with cards coloured by evidence and lines by confidence" width="800"></p>
+
+A click on a card opens the detail with every fact, its confidence and its
+source:
+
+<p align="center"><img src="docs/images/map-detail.en.png" alt="Person detail: facts with sources, relationships, open conflict and question" width="700"></p>
+
 ## What is here
 
 | Part | Where |

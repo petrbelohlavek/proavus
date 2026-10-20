@@ -20,6 +20,10 @@ major + `migrate.py`.
   how well the person is documented (best QUAY), open-conflict mark,
   marriage label on the lines, person detail in a dialog, boxes with open
   conflicts, questions, next steps and persons outside the tree.
+- Czech map labels for statuses, evidence and locator parts; plural forms in
+  the counts.
+- README (EN, CS): screenshots of the map on the fictional family
+  (`docs/images/`, how to make them again in `docs/images/README.md`).
 - `family_repo.py install-tools` and `build_views.py` refuse the framework
   itself and folders without `repo.yaml` (`.proavus/` was installed into the
   framework by mistake).
