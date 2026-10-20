@@ -48,13 +48,19 @@ class MapCase(FamilyRepoCase):
         return self.page
 
     def tree(self) -> str:
-        return self.page[self.page.index('<svg class="tree"'):self.page.index("</svg>\n</div>")]
+        start = self.page.index('<div id="tree"')
+        return self.page[start:self.page.index('<div class="grid">', start)]
 
     def in_tree(self) -> list[str]:
-        return re.findall(r'data-person="([^"]+)"', self.tree())
+        return re.findall(r'<button type="button" class="card[^"]*" data-id="([^"]+)"', self.tree())
 
     def card(self, pid: str) -> str:
-        start = self.page.index(f'<section class="card" id="{pid}">')
+        """The detail of a person (dialog template)."""
+        start = self.page.index(f'<template id="d-{pid}">')
+        return self.page[start:self.page.index("</template>", start)]
+
+    def box(self, heading: str) -> str:
+        start = self.page.index(f"<h2>{heading}</h2>")
         return self.page[start:self.page.index("</section>", start)]
 
     def edge(self, rel_id: str) -> str:
@@ -101,7 +107,7 @@ class Root(MapCase):
         self.build(root=JOSEF)
         self.assertEqual(self.in_tree()[0], JOSEF)
         self.assertNotIn(NELA, self.in_tree())
-        self.assertIn("not in the tree", self.card(NELA))
+        self.assertIn(f'data-id="{NELA}"', self.box("Persons outside the tree"))
 
     def test_refuses_framework_and_other_folders(self):
         with self.assertRaises(SystemExit) as cm:
@@ -134,18 +140,34 @@ class Tree(MapCase):
         self.assertIn("c-probable", self.edge("RL-20261020-ab-f02"))
         self.assertIn("c-possible", self.edge("RL-20261020-ab-f03"))
         for style in ("c-proved", "c-probable", "c-possible"):
-            self.assertIn(f".edge.{style}", self.page)
+            self.assertIn(f".link.{style}", self.page)
+
+    def test_generation_columns_and_marriage(self):
+        self.build()
+        for label in ("Starting person", "Parents", "Grandparents", "Great-grandparents", "2× great-grandparents"):
+            self.assertIn(f">{label}</div>", self.tree())
+        self.assertIn('data-rel="RL-20261020-ab-m01"', self.tree())
+        self.assertIn("⚭ 1877", self.tree())
+
+    def test_card_colour_follows_evidence(self):
+        self.build()
+        level = {pid: int(d) for d, pid in re.findall(r'class="card src-(\d)[^"]*" data-id="([^"]+)"', self.tree())}
+        self.assertEqual(level[MATEJ], 3)    # primary direct burial register
+        self.assertEqual(level[KAREL], 2)    # secondary information
+        self.assertEqual(level[ANNA], 0)     # nothing yet
+        self.assertIn("1 with an open conflict", self.page)
+        self.assertIn('<span class="warn" title="open conflict">!</span>', self.tree())
 
     def test_unknown_parent(self):
         self.build()
-        self.assertEqual(self.tree().count('class="node unknown"'), 1)
+        self.assertEqual(self.tree().count('class="card ph src-n"'), 1)
         self.assertIn("unknown parent", self.card(ANNA))
 
     def test_step_parent_shown_but_not_followed(self):
         self.add("people/P-20261020-ab-o01.md", person("P-20261020-ab-o01", "Ondřej Krokovský"))
         self.add("relationships/RL-20261020-ab-f08.md", parent_child("RL-20261020-ab-f08", "P-20261020-ab-o01", VACLAV))
         self.build()
-        self.assertIn("nonown", self.edge("RL-20261020-ab-f06"))
+        self.assertIn("n", self.edge("RL-20261020-ab-f06").split())
         self.assertNotIn("P-20261020-ab-o01", self.in_tree())
         self.assertIn("step", self.card(KAREL))
 
@@ -153,14 +175,14 @@ class Tree(MapCase):
         self.edit("RL-20261020-ab-f03", lambda d: d.update(confidence="disproved"))
         self.build()
         self.assertNotIn(JOSEF, self.in_tree())
-        self.assertIn('<li class="disproved">', self.card(KAREL))
+        self.assertIn('<div class="disproved">', self.card(KAREL))
 
     def test_pedigree_collapse_and_cycle(self):
         self.add("relationships/RL-20261020-ab-f09.md", parent_child("RL-20261020-ab-f09", MATEJ, LUCIE, "possible"))
         self.add("relationships/RL-20261020-ab-f10.md", parent_child("RL-20261020-ab-f10", NELA, MATEJ, "possible"))
         self.build()
         self.assertEqual(self.in_tree().count(MATEJ), 2)
-        self.assertEqual(self.tree().count("repeat"), 2)  # Matěj again, Nela at the top of the cycle
+        self.assertEqual(self.tree().count("↺"), 2)  # Matěj again, Nela at the top of the cycle
 
 
 class Cards(MapCase):

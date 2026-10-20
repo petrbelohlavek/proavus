@@ -16,6 +16,10 @@ major + `migrate.py`.
 - Schema: `map` in `repo.yaml` now has defined fields `root` (starting
   person) and `lang` (`en`, `cs`); the validator checks that `map.root` is
   a person.
+- Family map layout (ADR 0028): generation columns with cards coloured by
+  how well the person is documented (best QUAY), open-conflict mark,
+  marriage label on the lines, person detail in a dialog, boxes with open
+  conflicts, questions, next steps and persons outside the tree.
 - `family_repo.py install-tools` and `build_views.py` refuse the framework
   itself and folders without `repo.yaml` (`.proavus/` was installed into the
   framework by mistake).

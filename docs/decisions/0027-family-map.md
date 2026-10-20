@@ -1,6 +1,6 @@
 # 0027 Mapa rodiny jako jeden soběstačný soubor HTML
 
-- **Stav:** přijato (2026-10-20)
+- **Stav:** přijato (2026-10-20); rozvržení stránky nahrazeno [ADR 0028](0028-family-map-layout.md)
 - **Původně:** —
 
 ## Kontext

@@ -7,11 +7,14 @@
 
 Usage:  uv run .proavus/tools/build_views.py [REPO_DIR] [--root P-…] [--out FILE]
 
-Writes REPO_DIR/views/mapa.html (ADR 0027): one self-contained HTML file
-without any external resources – the ancestor tree of the starting person
-(`map.root` in repo.yaml, or --root) and a card for every person with names,
-facts with confidence and sources, relationships with their confidence,
-non-biological and unknown parents, open conflicts and open questions.
+Writes REPO_DIR/views/mapa.html (ADR 0027, 0028): one self-contained HTML file
+without any external resources. Header with counts and a legend; the
+ancestor tree of the starting person (`map.root` in repo.yaml, or --root) in
+generation columns – cards coloured by how well the person is documented,
+lines by the confidence of the relationship, marriages on the lines; a
+detail dialog for every person (facts with confidence and sources,
+relationships, open conflicts and questions); boxes with open conflicts,
+open questions, next steps and persons outside the tree.
 Living persons show only what rule 9 allows: name, sex, birth and
 relationships; living minors without the birth date.
 """
@@ -30,10 +33,10 @@ TOOLS_DIR = Path(__file__).resolve().parent
 FRAMEWORK = TOOLS_DIR.parent
 sys.path.insert(0, str(TOOLS_DIR))
 
+from family_repo import check_family_repo  # noqa: E402
 from proavuslib import edtf, ids  # noqa: E402
 from proavuslib.frontmatter import load_yaml  # noqa: E402
 from proavuslib.quay import quay_for_citation  # noqa: E402
-from family_repo import check_family_repo  # noqa: E402
 from proavuslib.validator import BIRTH_FACTS, DEATH_FACTS, LIVING_ALLOWED_FACTS, Entity, RepoValidator  # noqa: E402
 
 CONFIDENCE = ["proved", "probable", "possible", "not-proved", "disproved"]
@@ -42,8 +45,12 @@ CONFIDENCE = ["proved", "probable", "possible", "not-proved", "disproved"]
 OWN_SUBTYPES = (None, "biological", "legitimated", "presumed")
 OPEN_CONFLICT = ("open", "unresolved")
 OPEN_QUESTION = ("open", "in-progress")
+# Card colour = how well the person is documented: best QUAY of their
+# visible facts and record identifications (ADR 0022). 0 = no evidence.
+DOC_LEVELS = (3, 2, 1, 0)
 
-BOX_W, BOX_H, GAP_X, GAP_Y, PAD = 210, 54, 46, 14, 8
+W, H, GX, GY, LEFT, TOP = 210, 160, 64, 16, 14, 46
+COLW, SLOT = W + GX, H + GY
 
 LABELS = {
     "en": {
@@ -51,40 +58,58 @@ LABELS = {
         "check_ok": "check: no errors", "check_err": "check: {n} errors – run validate.py",
         "proved": "proved", "probable": "probable", "possible": "possible",
         "not-proved": "not proved", "disproved": "disproved",
-        "lines": "Lines show the confidence of the relationship",
-        "nonown": "non-biological", "unknown_parent": "unknown parent", "repeat": "shown elsewhere in the tree",
+        "legend": "Legend", "cards": "Card colour – how well the person is documented",
+        "lines": "Line – confidence of the relationship",
+        "doc3": "primary direct evidence", "doc2": "secondary or indirect evidence",
+        "doc1": "weak evidence (undetermined, authored, negative)", "doc0": "no evidence yet",
+        "warn": "open conflict", "nonown": "non-biological", "unknown_parent": "unknown parent",
+        "repeat": "already in the tree", "living_short": "living",
         "living": "living – only name, sex, birth and relationships are shown (rule 9)",
-        "minor_date": "date not shown (living minor)",
-        "hidden": "details not shown (living person)",
-        "names": "Names", "facts": "Facts", "identity": "In records", "parents": "Parents",
-        "partners": "Partners", "children": "Children", "conflicts": "Open conflicts",
-        "questions": "Open questions", "people": "People", "none": "none",
+        "minor_date": "date not shown (living minor)", "hidden": "details not shown (living person)",
+        "chip_tree": "{n} persons in the tree", "chip_doc": "{n} with primary evidence",
+        "chip_warn": "{n} with an open conflict", "chip_q": "{n} open questions",
+        "tree": "Tree of ancestors", "tree_sub": "Click a card for the detail with sources.",
+        "gen": ["Starting person", "Parents", "Grandparents", "Great-grandparents"],
+        "gen_n": "{n}× great-grandparents",
+        "birth": "Birth", "death": "Death", "occupation": "Occupation", "other_names": "Other name forms",
+        "marriage": "Marriage", "partners": "Partners", "parents": "Parents", "nonown_parents": "Non-biological parents",
+        "children": "Children", "facts": "Facts and sources", "identity": "In records",
+        "conflicts": "Open conflicts", "questions": "Open questions", "next": "Next steps",
+        "outside": "Persons outside the tree", "none": "none", "unknown_value": "unknown",
+        "close": "Close", "decides": "What would decide it", "claimed": "claimed by",
+        "about": "about", "from": "from", "to": "to", "support": "supported by", "confirmed": "confirmed",
+        "human_task": "human task", "bapt": "bapt.", "bur": "bur.",
         "male": "male", "female": "female", "unknown": "sex unknown",
-        "deceased": "deceased", "unknown_status": "vital status unknown",
-        "candidate": "candidate", "decides": "What would decide it",
-        "not_in_tree": "not in the tree", "pick": "Click a person in the tree.",
-        "claimed": "claimed by", "about": "about", "from": "from", "to": "to",
-        "support": "supported by", "confirmed": "confirmed", "bapt": "bapt.", "bur": "bur.",
+        "deceased": "deceased", "unknown_status": "vital status unknown", "candidate": "candidate",
     },
     "cs": {
         "map": "mapa rodiny", "root": "Výchozí osoba", "generated": "vygenerováno",
         "check_ok": "kontrola: bez chyb", "check_err": "kontrola: {n} chyb – spusťte validate.py",
         "proved": "prokázáno", "probable": "pravděpodobné", "possible": "možné",
         "not-proved": "neprokázáno", "disproved": "vyvráceno",
-        "lines": "Čára ukazuje jistotu vztahu",
-        "nonown": "nevlastní", "unknown_parent": "neznámý rodič", "repeat": "ve stromu už je jinde",
+        "legend": "Legenda", "cards": "Barva karty – jak je osoba doložená",
+        "lines": "Čára – jistota vztahu",
+        "doc3": "prvotní přímý doklad", "doc2": "druhotný nebo nepřímý doklad",
+        "doc1": "slabý doklad (neurčený, autorský, negativní)", "doc0": "zatím bez dokladu",
+        "warn": "otevřený rozpor", "nonown": "nevlastní", "unknown_parent": "neznámý rodič",
+        "repeat": "ve stromu už je", "living_short": "žijící",
         "living": "žijící – zobrazeno jen jméno, pohlaví, narození a vztahy (pravidlo 9)",
-        "minor_date": "datum neuvedeno (žijící nezletilá osoba)",
-        "hidden": "podrobnosti neuvedeny (žijící osoba)",
-        "names": "Jména", "facts": "Údaje", "identity": "V záznamech", "parents": "Rodiče",
-        "partners": "Partneři", "children": "Děti", "conflicts": "Otevřené rozpory",
-        "questions": "Otevřené otázky", "people": "Osoby", "none": "žádné",
+        "minor_date": "datum neuvedeno (žijící nezletilá osoba)", "hidden": "podrobnosti neuvedeny (žijící osoba)",
+        "chip_tree": "{n} osob ve stromu", "chip_doc": "{n} s prvotním dokladem",
+        "chip_warn": "{n} s otevřeným rozporem", "chip_q": "{n} otevřených otázek",
+        "tree": "Strom předků", "tree_sub": "Klikněte na kartu – otevře se detail se zdroji.",
+        "gen": ["Výchozí osoba", "Rodiče", "Prarodiče", "Praprarodiče", "Prapraprarodiče"],
+        "gen_n": "{n}. generace předků",
+        "birth": "Narození", "death": "Úmrtí", "occupation": "Povolání", "other_names": "Jiné podoby jména",
+        "marriage": "Sňatek", "partners": "Partneři", "parents": "Rodiče", "nonown_parents": "Nevlastní rodiče",
+        "children": "Děti", "facts": "Údaje a zdroje", "identity": "V záznamech",
+        "conflicts": "Otevřené rozpory", "questions": "Otevřené otázky", "next": "Další kroky",
+        "outside": "Osoby mimo strom", "none": "žádné", "unknown_value": "neznámé",
+        "close": "Zavřít", "decides": "Co rozhodne", "claimed": "zabral/a",
+        "about": "týká se", "from": "od", "to": "do", "support": "opírá se o", "confirmed": "potvrdil/a",
+        "human_task": "úkol pro člověka", "bapt": "křt.", "bur": "pohř.",
         "male": "muž", "female": "žena", "unknown": "pohlaví neznámé",
-        "deceased": "zemřelý/á", "unknown_status": "není známo, zda žije",
-        "candidate": "kandidát", "decides": "Co rozhodne",
-        "not_in_tree": "mimo strom", "pick": "Klikněte na osobu ve stromu.",
-        "claimed": "zabral/a", "about": "týká se", "from": "od", "to": "do",
-        "support": "opírá se o", "confirmed": "potvrdil/a", "bapt": "křt.", "bur": "pohř.",
+        "deceased": "zemřelý/á", "unknown_status": "není známo, zda žije", "candidate": "kandidát",
     },
 }
 
@@ -100,8 +125,8 @@ class Node:
     depth: int = 0
     repeat: bool = False               # already shown elsewhere: not expanded again
     nonown: bool = False               # step / adoptive / foster / guardian: not expanded
-    parents: list["Node"] = field(default_factory=list)
-    y: float = 0.0
+    parents: list[Node] = field(default_factory=list)
+    row: float = 0.0
 
 
 class MapBuilder:
@@ -177,7 +202,7 @@ class MapBuilder:
         if e is None:
             return False
         if e.type == "assertion":
-            return self.canon(e.data.get("subject")) in self.living or self.canon(e.data.get("person")) in self.living
+            return self.touches_living(e.data.get("subject")) or self.canon(e.data.get("person")) in self.living
         if e.type == "relationship":
             return any(self.canon(p.get("person")) in self.living for p in e.data.get("parties") or [] if isinstance(p, dict))
         return False
@@ -199,36 +224,76 @@ class MapBuilder:
         date = fact.data.get("date")
         return None if date is None else str(date)
 
-    def name(self, pid) -> str:
+    def names(self, pid) -> list[dict]:
         p = self.people.get(self.canon(pid))
-        if p is None:
-            return str(pid)
-        names = [n for n in p.data.get("names") or [] if isinstance(n, dict)]
-        preferred = [n for n in names if n.get("preferred")]
-        return str((preferred or names or [{"value": pid}])[0].get("value"))
+        names = [n for n in (p.data.get("names") if p else None) or [] if isinstance(n, dict) and n.get("value")]
+        return sorted(names, key=lambda n: not n.get("preferred"))
 
-    def life(self, pid: str) -> str:
-        parts = []
-        birth = self.best_fact(pid, BIRTH_FACTS)
-        if birth is not None and self.show_date(pid, birth):
-            parts.append(("*" if birth.data["fact_type"] == "birth" else self.L["bapt"]) + " " + self.show_date(pid, birth))
-        death = self.best_fact(pid, DEATH_FACTS)
-        if death is not None and death.data.get("date") is not None:
-            parts.append(("†" if death.data["fact_type"] == "death" else self.L["bur"]) + " " + str(death.data["date"]))
-        return "  ".join(parts)
+    def name(self, pid) -> str:
+        names = self.names(pid)
+        return str(names[0]["value"]) if names else str(pid)
+
+    def place_text(self, a: Entity) -> str:
+        place = self.get(a.data.get("place"))
+        if place is not None:
+            names = [n for n in place.data.get("names") or [] if isinstance(n, dict)]
+            same = [n for n in names if n.get("lang") == self.lang]
+            return str((same or names or [{"value": place.id}])[0].get("value"))
+        return str(a.data.get("place_as_written", ""))
+
+    def place_html(self, a: Entity) -> str:
+        place = self.get(a.data.get("place"))
+        text = esc(self.place_text(a))
+        return f'<a href="{esc(self.file_href(place))}">{text}</a>' if place is not None else text
+
+    def occupations(self, pid: str) -> list[str]:
+        return [str(a.data["value"]) for a in self.visible_facts(pid)
+                if a.data.get("fact_type") == "occupation" and a.data.get("value") is not None and a.data.get("confidence") != "disproved"]
+
+    def doc_level(self, pid: str) -> int:
+        """Best QUAY over the person's visible facts and record identifications."""
+        best = 0
+        assertions = self.visible_facts(pid) + ([] if pid in self.living else self.identities.get(pid, []))
+        for a in assertions:
+            if a.data.get("confidence") == "disproved":
+                continue
+            for c in a.data.get("citations") or []:
+                if isinstance(c, dict):
+                    best = max(best, quay_for_citation(self.citation_form(c), c.get("information"), c.get("evidence")))
+        return best
+
+    def citation_form(self, c: dict) -> str | None:
+        src = None
+        if c.get("record"):
+            rec = self.get(c["record"])
+            src = self.get(rec.data.get("source")) if rec is not None else None
+        elif c.get("source"):
+            src = self.get(c["source"])
+        return src.data.get("form") if src is not None else None
+
+    def warn(self, pid: str) -> bool:
+        related = self.related_ids(pid)
+        return any(related & {self.canon(r) for r in x.data.get("about") or []} for x in self.open_conflicts())
+
+    def related_ids(self, pid: str) -> set[str]:
+        return {pid} | {a.id for a in self.facts.get(pid, [])} | {
+            r.id for rels in (self.parent_rels, self.child_rels, self.partner_rels) for r in rels.get(pid, [])}
 
     def file_href(self, entity: Entity) -> str:
         return Path(os.path.relpath(self.repo / entity.path, self.out.parent)).as_posix()
 
     def ref(self, id_) -> str:
-        """Link to a person card, or to the file of any other entity."""
+        """Button opening a person's detail, or a link to the file of any other entity."""
         id_ = self.canon(id_)
         if id_ in self.people:
-            return f'<a href="#{esc(id_)}">{esc(self.name(id_))}</a>'
+            return f'<button type="button" class="lnk" data-id="{esc(id_)}">{esc(self.name(id_))}</button>'
         e = self.get(id_)
         if e is None:
             return f"<code>{esc(id_)}</code>"
         return f'<a href="{esc(self.file_href(e))}"><code>{esc(id_)}</code></a>'
+
+    def id_link(self, e: Entity) -> str:
+        return f'<a class="id" href="{esc(self.file_href(e))}">{esc(e.id)}</a>'
 
     # ----------------------------------------------------------------- tree
     def tree(self) -> Node:
@@ -253,16 +318,16 @@ class MapBuilder:
             return node
 
         root = build(Node(self.root))
-        slot = [0]
+        next_row = [0]
 
         def place(node: Node) -> None:
             for p in node.parents:
                 place(p)
             if node.parents:
-                node.y = sum(p.y for p in node.parents) / len(node.parents)
+                node.row = sum(p.row for p in node.parents) / len(node.parents)
             else:
-                node.y = slot[0] * (BOX_H + GAP_Y)
-                slot[0] += 1
+                node.row = next_row[0]
+                next_row[0] += 1
 
         place(root)
         return root
@@ -273,7 +338,31 @@ class MapBuilder:
         sex = person.data.get("sex") if person else None
         return (rel.data.get("subtype") not in OWN_SUBTYPES, {"male": 0, "female": 1}.get(sex, 2), rel.id)
 
-    def svg(self, root: Node) -> str:
+    def gen_label(self, g: int) -> str:
+        names = self.L["gen"]
+        return names[g] if g < len(names) else self.L["gen_n"].format(n=g if self.lang == "cs" else g - 2)
+
+    def marriage_between(self, a: str | None, b: str | None) -> Entity | None:
+        if not a or not b:
+            return None
+        for rel in self.partner_rels.get(a, []):
+            partners = {self.canon(p) for p in self.party(rel, "partner")}
+            if b in partners and rel.data.get("confidence") != "disproved":
+                return rel
+        return None
+
+    def marriage_text(self, rel: Entity) -> tuple[str, str]:
+        """(short text for the line, long text) – no dates when a party is living."""
+        if self.touches_living(rel.id):
+            return "", ""
+        fact = next((a for a in self.facts.get(rel.id, []) if a.data.get("fact_type") == "marriage" and a.data.get("confidence") != "disproved"), None)
+        date = (fact.data.get("date") if fact else None) or rel.data.get("start")
+        place = self.place_text(fact) if fact else ""
+        short = str(date)[:4] if date is not None else ""
+        long = ", ".join(x for x in (str(date) if date is not None else "", place) if x)
+        return short, long
+
+    def tree_html(self, root: Node) -> tuple[str, set[str]]:
         nodes: list[Node] = []
 
         def walk(n: Node):
@@ -282,57 +371,93 @@ class MapBuilder:
                 walk(p)
 
         walk(root)
-        width = (max(n.depth for n in nodes) + 1) * (BOX_W + GAP_X) - GAP_X + 2 * PAD
-        height = max(n.y for n in nodes) + BOX_H + 2 * PAD
-        out = [f'<svg class="tree" viewBox="0 0 {width:.0f} {height:.0f}" width="{width:.0f}" height="{height:.0f}" role="img" aria-label="{esc(self.L["map"])}">']
+        gens = max(n.depth for n in nodes) + 1
+        width = LEFT * 2 + (gens - 1) * COLW + W
+        height = TOP + max(n.row for n in nodes) * SLOT + H + 24
+        svg = [f'<svg width="{width:.0f}" height="{height:.0f}" aria-hidden="true">']
         for n in nodes:
-            for p in n.parents:
-                x1, y1 = PAD + n.depth * (BOX_W + GAP_X) + BOX_W, PAD + n.y + BOX_H / 2
-                x2, y2 = PAD + p.depth * (BOX_W + GAP_X), PAD + p.y + BOX_H / 2
-                xm = x1 + GAP_X / 2
-                conf = p.rel.data.get("confidence", "possible")
-                cls = f"edge c-{esc(conf)}" + (" nonown" if p.nonown else "")
-                out.append(f'<path class="{cls}" data-rel="{esc(p.rel.id)}" d="M{x1:.0f},{y1:.0f} H{xm:.0f} V{y2:.0f} H{x2:.0f}"><title>{esc(self._rel_title(p.rel))}</title></path>')
-        for n in nodes:
-            x, y = PAD + n.depth * (BOX_W + GAP_X), PAD + n.y
-            if n.person is None:
-                sub = self.label("relationship_subtypes", n.rel.data.get("subtype")) if n.nonown else ""
-                out.append(f'<g class="node unknown" transform="translate({x:.0f},{y:.0f})"><rect width="{BOX_W}" height="{BOX_H}" rx="6"/>'
-                           f'<text x="10" y="22" class="nm">? {esc(self.L["unknown_parent"])}</text>'
-                           f'<text x="10" y="40" class="sub">{esc(sub)}</text></g>')
+            if not n.parents:
                 continue
-            pid = n.person
-            classes = ["node"]
-            if pid in self.living:
-                classes.append("living")
-            if n.nonown:
-                classes.append("nonown")
-            if n.repeat:
-                classes.append("repeat")
-            sub = self.life(pid)
-            if n.nonown:
-                sub = self.label("relationship_subtypes", n.rel.data.get("subtype")) + ("  " + sub if sub else "")
-            if n.repeat:
-                sub = "↺ " + self.L["repeat"]
-            out.append(f'<a href="#{esc(pid)}" data-person="{esc(pid)}"><g class="{" ".join(classes)}" transform="translate({x:.0f},{y:.0f})">'
-                       f'<title>{esc(self.name(pid))}</title><rect width="{BOX_W}" height="{BOX_H}" rx="6"/>'
-                       f'<text x="10" y="22" class="nm">{esc(_clip(self.name(pid), 26))}</text>'
-                       f'<text x="10" y="40" class="sub">{esc(_clip(sub, 32))}</text></g></a>')
-        out.append("</svg>")
-        return "\n".join(out)
+            x0 = LEFT + n.depth * COLW + W
+            xp = LEFT + (n.depth + 1) * COLW
+            xm = (x0 + xp) / 2
+            y0 = TOP + n.row * SLOT + H / 2
+            for p in n.parents:
+                y1 = TOP + p.row * SLOT + H / 2
+                conf = p.rel.data.get("confidence") if p.rel.data.get("confidence") in CONFIDENCE else "possible"
+                cls = f"link c-{conf}" + (" n" if p.nonown else "")
+                svg.append(f'<path class="{cls}" data-rel="{esc(p.rel.id)}" d="M{x0:.0f},{y0:.0f} H{xm:.0f} V{y1:.0f} H{xp:.0f}"/>')
+            own = [p.person for p in n.parents if not p.nonown]
+            rel = self.marriage_between(*own[:2]) if len(own) >= 2 else None
+            if rel is not None:
+                short, long = self.marriage_text(rel)
+                svg.append(f'<g class="mar-g" data-rel="{esc(rel.id)}"><title>{esc(self.L["marriage"])} {esc(long)}</title>'
+                           f'<rect class="mar-bg" x="{xm - 24:.0f}" y="{y0 - 29:.0f}" width="48" height="18" rx="9"/>'
+                           f'<text class="mar" x="{xm:.0f}" y="{y0 - 20:.0f}">⚭ {esc(short)}</text></g>')
+        svg.append("</svg>")
+        parts = ["".join(svg)]
+        for g in range(gens):
+            parts.append(f'<div class="gen" style="left:{LEFT + g * COLW}px;width:{W}px">{esc(self.gen_label(g))}</div>')
+        in_tree: set[str] = set()
+        for n in nodes:
+            if n.person:
+                in_tree.add(n.person)
+            parts.append(self.card(n))
+        return (f'<div id="tree" style="width:{width:.0f}px;height:{height:.0f}px">' + "\n".join(parts) + "</div>"), in_tree
 
-    def _rel_title(self, rel: Entity) -> str:
-        bits = [self.label("relationship_subtypes", rel.data.get("subtype")) if rel.data.get("subtype") else "",
-                self.L.get(rel.data.get("confidence"), str(rel.data.get("confidence"))), rel.id]
-        return " · ".join(b for b in bits if b)
+    def card(self, n: Node) -> str:
+        style = f"left:{LEFT + n.depth * COLW}px;top:{TOP + n.row * SLOT:.0f}px"
+        if n.person is None:
+            tag = f'<span class="tag">{esc(self.label("relationship_subtypes", n.rel.data.get("subtype")))}</span>' if n.nonown else ""
+            return (f'<div class="card ph src-n" style="{style}"><span class="top">{tag}</span>'
+                    f'<span class="nm">? {esc(self.L["unknown_parent"])}</span></div>')
+        pid = n.person
+        tags = []
+        if n.nonown:
+            tags.append(f'<span class="tag n">{esc(self.label("relationship_subtypes", n.rel.data.get("subtype")))}</span>')
+        if n.repeat:
+            tags.append(f'<span class="tag">↺ {esc(self.L["repeat"])}</span>')
+        warn = f'<span class="warn" title="{esc(self.L["warn"])}">!</span>' if self.warn(pid) else ""
+        out = [f'<span class="top"><span>{"".join(tags)}</span>{warn}</span>', f'<span class="nm">{esc(self.name(pid))}</span>']
+        occ = self.occupations(pid)
+        if occ:
+            out.append(f'<span class="pf" title="{esc(", ".join(occ))}">{esc(", ".join(occ))}</span>')
+        other = [str(x["value"]) for x in self.names(pid)[1:2]]
+        if other:
+            out.append(f'<span class="or" title="{esc(other[0])}">{esc(other[0])}</span>')
+        out.append(f'<span class="dt">{self.dates(pid)}</span>')
+        cls = ["card", f"src-{self.doc_level(pid)}"]
+        if n.nonown:
+            cls.append("nonown")
+        return (f'<button type="button" class="{" ".join(cls)}" data-id="{esc(pid)}" style="{style}">'
+                + "".join(out) + "</button>")
 
-    # ----------------------------------------------------------------- cards
+    def dates(self, pid: str) -> str:
+        out = []
+        for types, mark in ((BIRTH_FACTS, "birth"), (DEATH_FACTS, "death")):
+            fact = self.best_fact(pid, types)
+            if fact is None:
+                continue
+            date = self.show_date(pid, fact)
+            if date is None:
+                continue
+            sign = {"birth": "*", "baptism": self.L["bapt"], "death": "†", "burial": self.L["bur"]}[fact.data["fact_type"]]
+            out.append(f"<span>{esc(sign)} {esc(date)}</span>")
+            place = self.place_text(fact)
+            if place:
+                out.append(f'<span class="pl" title="{esc(place)}">{esc(place)}</span>')
+        if pid in self.living:
+            out.append(f'<span class="liv">{esc(self.L["living_short"])}</span>')
+        return "".join(out)
+
+    # --------------------------------------------------------------- detail
     def conf(self, value) -> str:
         value = value if value in CONFIDENCE else "possible"
-        return f'<span class="conf c-{value}"><svg width="26" height="8" aria-hidden="true"><line class="edge c-{value}" x1="1" y1="4" x2="25" y2="4"/></svg>{esc(self.L[value])}</span>'
+        return (f'<span class="conf"><svg width="26" height="8" aria-hidden="true"><line class="link c-{value}" x1="1" y1="4" x2="25" y2="4"/></svg>'
+                f"{esc(self.L[value])}</span>")
 
     def citation(self, c: dict, show_participant: bool) -> str:
-        parts, form, url = [], None, None
+        parts, url = [], None
         if c.get("record"):
             rec = self.get(c["record"])
             parts.append(self.ref(c["record"]))
@@ -340,7 +465,6 @@ class MapBuilder:
                 src = self.get(rec.data.get("source"))
                 if src is not None:
                     parts.append(esc(src.data.get("title", "")))
-                    form = src.data.get("form")
                 loc = rec.data.get("locator") or {}
                 where = ", ".join(f"{k} {loc[k]}" for k in ("page", "folio", "entry", "image") if loc.get(k) is not None)
                 if where:
@@ -355,7 +479,7 @@ class MapBuilder:
             parts.append(self.ref(c["source"]))
             if src is not None:
                 parts.append(esc(src.data.get("title", "")))
-                form, url = src.data.get("form"), src.data.get("url")
+                url = src.data.get("url")
         else:
             key = next((k for k in ("oral", "coverage") if c.get(k)), None)
             if key:
@@ -366,50 +490,65 @@ class MapBuilder:
             parts.append(f'<a href="{esc(url)}" rel="noopener noreferrer" target="_blank">↗</a>')
         quality = [x for x in (c.get("information"), c.get("evidence")) if x]
         if quality:
-            q = quay_for_citation(form, c.get("information"), c.get("evidence"))
+            q = quay_for_citation(self.citation_form(c), c.get("information"), c.get("evidence"))
             parts.append(f'<span class="muted">{esc(" · ".join(quality))} · QUAY {q}</span>')
         return " · ".join(p for p in parts if p)
 
-    def place_name(self, a: Entity) -> str:
-        place = self.get(a.data.get("place"))
-        if place is not None:
-            names = place.data.get("names") or [{}]
-            same = [n for n in names if isinstance(n, dict) and n.get("lang") == self.lang]
-            name = (same or names)[0].get("value", place.id)
-            return f'<a href="{esc(self.file_href(place))}">{esc(name)}</a>'
-        return esc(a.data.get("place_as_written", ""))
-
-    def card(self, pid: str, in_tree: bool) -> str:
+    def detail(self, pid: str) -> str:
         p = self.people[pid]
         L, living = self.L, pid in self.living
-        badges = [esc(L.get(p.data.get("sex"), "")) if p.data.get("sex") else ""]
+        meta = [esc(L.get(p.data.get("sex"), "")) if p.data.get("sex") else ""]
         status = p.data.get("vital_status")
         if living:
-            badges.append(f'<span class="tag living">{esc(L["living"])}</span>')
-        elif status == "deceased":
-            badges.append(esc(L["deceased"]))
-        elif status == "unknown":
-            badges.append(esc(L["unknown_status"]))
+            meta.append(esc(L["living"]))
+        else:
+            meta.append(esc(L["deceased"] if status == "deceased" else L["unknown_status"]))
+            meta.append(esc(L[f"doc{self.doc_level(pid)}"]))
         if p.data.get("candidate"):
-            badges.append(f'<span class="tag">{esc(L["candidate"])}</span>')
-        if not in_tree:
-            badges.append(f'<span class="tag">{esc(L["not_in_tree"])}</span>')
-        out = [f'<section class="card" id="{esc(pid)}">',
-               f'<h2>{esc(self.name(pid))}</h2>',
-               f'<p class="meta"><a href="{esc(self.file_href(p))}"><code>{esc(pid)}</code></a> · {" · ".join(b for b in badges if b)}</p>']
+            meta.append(esc(L["candidate"]))
+        meta.append(self.id_link(p))
+        out = [f'<template id="d-{esc(pid)}">', f"<h2>{esc(self.name(pid))}</h2>",
+               f'<p class="sub">{" · ".join(m for m in meta if m)}</p>', "<dl>"]
 
-        names = [n for n in p.data.get("names") or [] if isinstance(n, dict)]
-        if len(names) > 1:
-            out.append(f"<h3>{esc(L['names'])}</h3><ul>")
-            for n in names:
-                extra = ", ".join(x for x in (self.label("name_types", n.get("name_type")), n.get("lang")) if x)
-                out.append(f"<li>{esc(n.get('value'))} <span class='muted'>({esc(extra)})</span></li>")
-            out.append("</ul>")
+        def row(label: str, value: str) -> None:
+            out.append(f"<dt>{esc(label)}</dt><dd>{value}</dd>")
+
+        for types, key in ((BIRTH_FACTS, "birth"), (DEATH_FACTS, "death")):
+            if key == "death" and living:
+                continue
+            fact = self.best_fact(pid, types)
+            if fact is None:
+                row(L[key], f'<span class="muted">{esc(L["unknown_value"])}</span>')
+                continue
+            date = self.show_date(pid, fact)
+            if date is None and fact.data.get("date") is not None:
+                text = f'<span class="muted">{esc(L["minor_date"])}</span>'
+            else:
+                text = esc(date or "")
+            place = self.place_html(fact)
+            row(L[key], ", ".join(x for x in (text, place) if x) or f'<span class="muted">{esc(L["unknown_value"])}</span>')
+        occ = self.occupations(pid)
+        if occ:
+            row(L["occupation"], esc(", ".join(occ)))
+        other = self.names(pid)[1:]
+        if other:
+            row(L["other_names"], ", ".join(
+                f'{esc(n["value"])} <span class="muted">({esc(", ".join(x for x in (self.label("name_types", n.get("name_type")), n.get("lang")) if x))})</span>'
+                for n in other))
+        own = [r for r in self.parent_rels.get(pid, []) if r.data.get("subtype") in OWN_SUBTYPES]
+        nonown = [r for r in self.parent_rels.get(pid, []) if r.data.get("subtype") not in OWN_SUBTYPES]
+        row(L["parents"], self.rel_list(pid, own, "parent") if own else f'<span class="muted">{esc(L["unknown_value"])}</span>')
+        if nonown:
+            row(L["nonown_parents"], self.rel_list(pid, nonown, "parent"))
+        if self.partner_rels.get(pid):
+            row(L["partners"], self.rel_list(pid, self.partner_rels[pid], "partner"))
+        if self.child_rels.get(pid):
+            row(L["children"], self.rel_list(pid, self.child_rels[pid], "child"))
+        out.append("</dl>")
 
         facts = self.visible_facts(pid)
-        out.append(f"<h3>{esc(L['facts'])}</h3>")
         if facts:
-            out.append('<ul class="facts">')
+            out.append(f'<h3>{esc(L["facts"])}</h3><ul class="notes">')
             for a in facts:
                 date = self.show_date(pid, a)
                 if date is None and a.data.get("date") is not None:
@@ -419,64 +558,55 @@ class MapBuilder:
                 what = f"<b>{esc(self.label('fact_types', a.data.get('fact_type')))}</b>"
                 if a.data.get("value") is not None:
                     what += f": {esc(a.data['value'])}"
-                head = " · ".join(x for x in (what, date_html, self.place_name(a), self.conf(a.data.get("confidence"))) if x)
+                head = " · ".join(x for x in (what, date_html, self.place_html(a), self.conf(a.data.get("confidence"))) if x)
                 cites = "".join(f"<li>{self.citation(c, not living)}</li>" for c in a.data.get("citations") or [] if isinstance(c, dict))
                 cls = ' class="disproved"' if a.data.get("confidence") == "disproved" else ""
-                out.append(f'<li{cls}>{head} <a class="id" href="{esc(self.file_href(a))}">{esc(a.id)}</a><ul class="src">{cites}</ul></li>')
+                out.append(f'<li{cls}>{head} {self.id_link(a)}<ul class="src-list">{cites}</ul></li>')
             out.append("</ul>")
-        else:
-            out.append(f"<p class='muted'>{esc(L['none'])}</p>")
-
         if not living and self.identities.get(pid):
-            out.append(f"<h3>{esc(L['identity'])}</h3><ul>")
+            out.append(f'<h3>{esc(L["identity"])}</h3><ul class="notes">')
             for a in self.identities[pid]:
                 part = a.data.get("participant") or {}
                 cite = self.citation({"record": part.get("record"), "participant": part.get("key")}, True)
-                out.append(f"<li>{cite} · {self.conf(a.data.get('confidence'))} <a class='id' href='{esc(self.file_href(a))}'>{esc(a.id)}</a></li>")
+                out.append(f"<li>{cite} · {self.conf(a.data.get('confidence'))} {self.id_link(a)}</li>")
             out.append("</ul>")
-
-        out += self._relations(pid, L["parents"], self.parent_rels.get(pid, []), "parent")
-        out += self._relations(pid, L["partners"], self.partner_rels.get(pid, []), "partner")
-        out += self._relations(pid, L["children"], self.child_rels.get(pid, []), "child")
-
-        related = {pid} | {a.id for a in self.facts.get(pid, [])} | {
-            r.id for rels in (self.parent_rels, self.child_rels, self.partner_rels) for r in rels.get(pid, [])}
+        related = self.related_ids(pid)
         conflicts = [x for x in self.open_conflicts() if related & {self.canon(r) for r in x.data.get("about") or []}]
         questions = [q for q in self.open_questions() if pid in {self.canon(s) for s in q.data.get("subjects") or []}]
         if conflicts:
-            out.append(f"<h3>{esc(L['conflicts'])}</h3><ul>" + "".join(f"<li>{self.conflict(x)}</li>" for x in conflicts) + "</ul>")
+            out.append(f'<h3>{esc(L["conflicts"])}</h3><ul class="notes">' + "".join(f"<li>{self.conflict(x)}</li>" for x in conflicts) + "</ul>")
         if questions:
-            out.append(f"<h3>{esc(L['questions'])}</h3><ul>" + "".join(f"<li>{self.question(q)}</li>" for q in questions) + "</ul>")
-        out.append("</section>")
+            out.append(f'<h3>{esc(L["questions"])}</h3><ul class="notes">' + "".join(f"<li>{self.question(q)}</li>" for q in questions) + "</ul>")
+        out.append(f'<button type="button" class="close">{esc(L["close"])}</button></template>')
         return "\n".join(out)
 
-    def _relations(self, pid: str, heading: str, rels: list[Entity], other_role: str) -> list[str]:
-        if not rels:
-            return []
-        out = [f"<h3>{esc(heading)}</h3><ul>"]
+    def rel_list(self, pid: str, rels: list[Entity], other_role: str) -> str:
+        items = []
         for rel in sorted(rels, key=lambda r: (r.data.get("subtype") not in OWN_SUBTYPES, _rank(r.data.get("confidence")), r.id)):
             others = [o for o in self.party(rel, other_role) if self.canon(o) != pid]
             who = ", ".join(esc(self.L["unknown_parent"]) if o == "unknown" else self.ref(o) for o in others) or "–"
             bits = [who]
             subtype = rel.data.get("subtype")
             if subtype:
-                tag = "tag nonown" if rel.data.get("rel_type") == "parent-child" and subtype not in OWN_SUBTYPES else "tag"
+                tag = "tag n" if rel.data.get("rel_type") == "parent-child" and subtype not in OWN_SUBTYPES else "tag"
                 bits.append(f'<span class="{tag}">{esc(self.label("relationship_subtypes", subtype))}</span>')
             bits.append(self.conf(rel.data.get("confidence")))
-            if not self.touches_living(rel.id):
-                span = [f"{self.L[k]} {esc(rel.data[f])}" for k, f in (("from", "start"), ("to", "end")) if rel.data.get(f) is not None]
-                bits += span
+            if rel.data.get("rel_type") != "parent-child":
+                _, long = self.marriage_text(rel)
+                if long:
+                    bits.append(esc(long))
+            elif not self.touches_living(rel.id):
+                bits += [f"{self.L[k]} {esc(rel.data[f])}" for k, f in (("from", "start"), ("to", "end")) if rel.data.get(f) is not None]
             support = rel.data.get("assertions") or []
             if support:
                 bits.append(f'<span class="muted">{esc(self.L["support"])}</span> ' + ", ".join(self.ref(a) for a in support))
             confirmed = rel.data.get("confirmed")
             if isinstance(confirmed, dict):
                 bits.append(f'<span class="muted">{esc(self.L["confirmed"])} {esc(confirmed.get("by", ""))} {esc(confirmed.get("on", ""))}</span>')
-            bits.append(f'<a class="id" href="{esc(self.file_href(rel))}">{esc(rel.id)}</a>')
+            bits.append(self.id_link(rel))
             cls = ' class="disproved"' if rel.data.get("confidence") == "disproved" else ""
-            out.append(f"<li{cls}>{' · '.join(bits)}</li>")
-        out.append("</ul>")
-        return out
+            items.append(f"<div{cls}>{' · '.join(bits)}</div>")
+        return "".join(items)
 
     # -------------------------------------------------- conflicts, questions
     def open_conflicts(self) -> list[Entity]:
@@ -510,47 +640,51 @@ class MapBuilder:
             out += f' · <span class="muted">{esc(self.L["claimed"])} {esc(q.data["claimed_by"])}</span>'
         return out
 
+    def next_steps(self) -> list[str]:
+        sessions = sorted(self.v.of_type("session"), key=lambda s: (str(s.data.get("date", "")), s.id), reverse=True)[:5]
+        out = []
+        for s in sessions:
+            text = f'<b>{esc(s.data.get("date", ""))}</b> ({esc(s.data.get("by", ""))}) {esc(s.data.get("next_step", ""))} {self.id_link(s)}'
+            tasks = [f'<li>{esc(self.L["human_task"])}: {esc(t)}</li>' for t in s.data.get("human_tasks") or []]
+            out.append(text + (f"<ul>{''.join(tasks)}</ul>" if tasks else ""))
+        return out
+
     # ------------------------------------------------------------------ page
     def render(self) -> str:
         L = self.L
-        root = self.tree()
-        in_tree: set[str] = set()
-
-        def collect(n: Node):
-            if n.person:
-                in_tree.add(n.person)
-            for p in n.parents:
-                collect(p)
-
-        collect(root)
+        tree, in_tree = self.tree_html(self.tree())
         check = L["check_ok"] if self.report.ok else L["check_err"].format(n=len(self.report.errors))
-        legend = " ".join(self.conf(c) for c in CONFIDENCE[:4])
+        chips = [L["chip_tree"].format(n=len(in_tree)),
+                 L["chip_doc"].format(n=sum(1 for p in in_tree if self.doc_level(p) == 3)),
+                 L["chip_warn"].format(n=sum(1 for p in in_tree if self.warn(p))),
+                 L["chip_q"].format(n=len(self.open_questions()))]
+        legend_cards = "".join(f'<span><i class="sw src-{d}"></i>{esc(L[f"doc{d}"])}</span>' for d in DOC_LEVELS)
+        legend_cards += f'<span><span class="warn">!</span>{esc(L["warn"])}</span>'
+        legend_lines = "".join(f"<span>{self.conf(c)}</span>" for c in CONFIDENCE[:4])
+        legend_lines += f'<span><svg width="26" height="8" aria-hidden="true"><line class="link n" x1="1" y1="4" x2="25" y2="4"/></svg>{esc(L["nonown"])}</span>'
         people = sorted(self.people, key=lambda pid: (self.name(pid).casefold(), pid))
-        cards = "\n".join(self.card(pid, pid in in_tree) for pid in people)
-        conflicts = self.open_conflicts()
-        questions = self.open_questions()
-        index = "".join(f'<li><a href="#{esc(pid)}">{esc(self.name(pid))}</a>{"" if pid in in_tree else " <span class=muted>(" + esc(L["not_in_tree"]) + ")</span>"}</li>' for pid in people)
+        details = "\n".join(self.detail(pid) for pid in people)
+        none = f"<li class='muted'>{esc(L['none'])}</li>"
+        boxes = [
+            (L["conflicts"], "".join(f"<li>{self.conflict(x)}</li>" for x in self.open_conflicts()) or none),
+            (L["questions"], "".join(f"<li>{self.question(q)}</li>" for q in self.open_questions()) or none),
+            (L["next"], "".join(f"<li>{s}</li>" for s in self.next_steps()) or none),
+            (L["outside"], "".join(f"<li>{self.ref(p)}</li>" for p in people if p not in in_tree) or none),
+        ]
         return PAGE.format(
-            lang=self.lang,
+            lang=self.lang, W=W, H=H,
             title=esc(f"{self.title} – {L['map']}"),
             heading=esc(self.title),
-            root_label=esc(L["root"]),
-            root=self.ref(self.root),
-            root_id=esc(self.root),
-            generated=esc(f"{L['generated']} {self.today.isoformat()}"),
-            check=esc(check),
-            check_cls="ok" if self.report.ok else "bad",
-            legend_label=esc(L["lines"]),
-            legend=legend + f' <span class="tag nonown">{esc(L["nonown"])}</span>',
-            tree=self.svg(root),
-            pick=esc(L["pick"]),
-            cards=cards,
-            conflicts_label=esc(L["conflicts"]),
-            conflicts="".join(f"<li>{self.conflict(x)}</li>" for x in conflicts) or f"<li class='muted'>{esc(L['none'])}</li>",
-            questions_label=esc(L["questions"]),
-            questions="".join(f"<li>{self.question(q)}</li>" for q in questions) or f"<li class='muted'>{esc(L['none'])}</li>",
-            people_label=esc(L["people"]),
-            index=index,
+            sub=f'{esc(L["root"])}: {self.ref(self.root)} · {esc(L["generated"])} {esc(self.today.isoformat())} · '
+                f'<span class="{"ok" if self.report.ok else "bad"}">{esc(check)}</span>',
+            chips="".join(f'<span class="chip">{esc(c)}</span>' for c in chips),
+            legend_label=esc(L["legend"]),
+            cards_label=esc(L["cards"]), legend_cards=legend_cards,
+            lines_label=esc(L["lines"]), legend_lines=legend_lines,
+            tree_label=esc(L["tree"]), tree_sub=esc(L["tree_sub"]),
+            tree=tree,
+            boxes="\n".join(f'<section class="box"><h2>{esc(h)}</h2><ul>{body}</ul></section>' for h, body in boxes),
+            details=details,
         )
 
 
@@ -560,10 +694,6 @@ def _rank(confidence) -> int:
 
 def _start(date) -> int:
     return edtf.parse(date)[0] if edtf.is_valid(date) else 99999
-
-
-def _clip(text: str, n: int) -> str:
-    return text if len(text) <= n else text[: n - 1] + "…"
 
 
 def _load_vocab() -> dict[str, dict[str, dict]]:
@@ -584,89 +714,120 @@ PAGE = """<!DOCTYPE html>
 <!-- GENERATED by tools/build_views.py – do not edit, not saved in git (Proavus ADR 0019, 0027) -->
 <title>{title}</title>
 <style>
-:root {{ --bg:#fbfaf7; --fg:#1f2328; --muted:#6b6f76; --line:#9a8f80; --box:#ffffff; --border:#c9c1b4;
-  --accent:#7a4b1e; --living:#2f6f5e; --nonown:#8a5a9e; --bad:#b42318; --ok:#2f6f5e; --tag:#efe9df; }}
+:root {{ --bg:#f5f4ef; --fg:#1f1f1c; --muted:#6a6860; --card:#ffffff; --border:#dcd9cd; --chip:#e9e7df;
+  --line:#8f8c82; --d3:#2f7d4f; --d2:#2b6cb0; --d1:#c7790b; --d0:#7b4fb8; --n:#7b4fb8; --warn:#c0392b; --liv:#2f7d4f; }}
 @media (prefers-color-scheme: dark) {{
-  :root {{ --bg:#171614; --fg:#e8e4dc; --muted:#a39e95; --line:#a89c8a; --box:#23211e; --border:#4a4540;
-    --accent:#e0a96d; --living:#7cc4ae; --nonown:#c9a0dc; --bad:#ff8a80; --ok:#7cc4ae; --tag:#2c2925; }} }}
+  :root {{ --bg:#1b1b19; --fg:#ecebe6; --muted:#a6a398; --card:#262624; --border:#3a3a36; --chip:#33332f; --line:#7d7a70; }} }}
 * {{ box-sizing:border-box; }}
-body {{ margin:0; background:var(--bg); color:var(--fg); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }}
-header, main, footer {{ padding:12px 16px; }}
-header h1 {{ margin:0 0 4px; font-size:1.4rem; color:var(--accent); }}
-.meta, .muted {{ color:var(--muted); }}
-.ok {{ color:var(--ok); }} .bad {{ color:var(--bad); font-weight:600; }}
-main {{ display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,520px); gap:16px; align-items:start; }}
-@media (max-width: 900px) {{ main {{ grid-template-columns:1fr; }} }}
-.treebox {{ overflow:auto; border:1px solid var(--border); border-radius:8px; background:var(--bg); max-height:80vh; }}
-svg.tree {{ display:block; }}
-.node rect {{ fill:var(--box); stroke:var(--border); stroke-width:1.2; }}
-.node .nm {{ fill:var(--fg); font-weight:600; font-size:14px; }}
-.node .sub {{ fill:var(--muted); font-size:12px; }}
-.node.living rect {{ stroke:var(--living); }}
-.node.nonown rect {{ stroke:var(--nonown); stroke-dasharray:5 3; }}
-.node.repeat rect {{ stroke-dasharray:2 3; }}
-.node.unknown rect {{ fill:none; stroke:var(--muted); stroke-dasharray:4 4; }}
-.node.unknown .nm {{ fill:var(--muted); font-style:italic; font-weight:400; }}
-a:hover .node rect, .node.sel rect {{ stroke:var(--accent); stroke-width:2.5; }}
-.edge {{ fill:none; stroke:var(--line); stroke-width:2; }}
-.edge.c-proved {{ stroke-width:2.5; }}
-.edge.c-probable {{ stroke-dasharray:8 4; }}
-.edge.c-possible {{ stroke-dasharray:2 4; stroke-linecap:round; }}
-.edge.c-not-proved {{ stroke-dasharray:1 6; stroke-linecap:round; stroke-width:1.5; opacity:.7; }}
-.edge.c-disproved {{ stroke:var(--bad); stroke-dasharray:1 3; }}
-.edge.nonown {{ stroke:var(--nonown); }}
+body {{ margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }}
+main {{ max-width:1400px; margin:0 auto; padding:24px 16px 56px; }}
+h1 {{ font-size:26px; margin:0 0 4px; }}
+h2 {{ font-size:18px; margin:0 0 10px; }}
+h3 {{ font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:14px 0 6px; }}
+.sub {{ color:var(--muted); margin:0 0 14px; font-size:14px; }}
+.muted {{ color:var(--muted); }} .ok {{ color:var(--d3); }} .bad {{ color:var(--warn); font-weight:700; }}
+code {{ font-size:13px; background:var(--chip); padding:1px 5px; border-radius:4px; }}
+a {{ color:var(--d2); }} a.id {{ font-size:11px; color:var(--muted); }}
+.chips {{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }}
+.chip {{ background:var(--chip); border-radius:99px; padding:4px 12px; font-size:13px; }}
+.box {{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }}
+.box ul, .box ol {{ margin:6px 0; padding-left:20px; }}
+.box li {{ margin-bottom:6px; }}
+.grid {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap:14px; margin-top:14px; }}
+.legend {{ display:flex; flex-wrap:wrap; gap:10px 20px; font-size:13px; color:var(--muted); margin-bottom:8px; }}
+.legend > span {{ display:inline-flex; align-items:center; gap:7px; }}
+.legend b {{ color:var(--fg); font-weight:600; width:100%; }}
+.sw {{ display:inline-block; width:26px; height:16px; border-radius:4px; background:var(--card);
+  border:1px solid var(--border); border-left-width:6px; border-left-style:solid; }}
+.sw.src-3 {{ border-left-color:var(--d3); }} .sw.src-2 {{ border-left-color:var(--d2); }}
+.sw.src-1 {{ border-left-color:var(--d1); }} .sw.src-0 {{ border-left-color:var(--d0); border-left-style:dashed; }}
+.tag {{ padding:0 6px; border-radius:99px; background:var(--chip); color:var(--muted); font-size:10px; line-height:16px; white-space:nowrap; margin-right:3px; }}
+.tag.n {{ color:var(--n); }} .card .liv {{ color:var(--liv); }}
+.warn {{ color:var(--warn); font-weight:700; font-size:13px; line-height:1; }}
+.tree-wrap {{ overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--card); margin-top:10px; }}
+#tree {{ position:relative; }}
+#tree svg {{ position:absolute; left:0; top:0; pointer-events:none; }}
+.link {{ fill:none; stroke:var(--line); stroke-width:1.6; }}
+.link.c-proved {{ stroke-width:2.4; }}
+.link.c-probable {{ stroke-dasharray:8 4; }}
+.link.c-possible {{ stroke-dasharray:2 4; stroke-linecap:round; }}
+.link.c-not-proved {{ stroke-dasharray:1 7; stroke-linecap:round; opacity:.75; }}
+.link.n {{ stroke:var(--n); }}
+.gen {{ position:absolute; top:14px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }}
+.card {{ position:absolute; width:{W}px; height:{H}px; margin:0; padding:8px 10px 8px 12px; text-align:left; font:inherit; color:inherit;
+  background:var(--card); border:1px solid var(--border); border-left:6px solid var(--c); border-radius:10px; cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,.06); display:flex; flex-direction:column; gap:4px; overflow:hidden; }}
+.card:hover, .card:focus-visible {{ outline:none; box-shadow:0 0 0 2px var(--c); }}
+.card.src-3 {{ --c:var(--d3); }} .card.src-2 {{ --c:var(--d2); }} .card.src-1 {{ --c:var(--d1); }}
+.card.src-0, .card.src-n {{ --c:var(--d0); border-left-style:dashed; }}
+.card.nonown {{ border-style:dashed; }}
+.card.ph {{ cursor:default; background:transparent; color:var(--muted); }}
+.card .top {{ display:flex; justify-content:space-between; align-items:center; min-height:16px; }}
+.card .nm {{ font-weight:650; font-size:14px; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }}
+.card .dt {{ display:flex; flex-direction:column; font-size:12px; color:var(--muted); line-height:1.35; }}
+.card .pl {{ font-size:11px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.card .pf {{ font-size:11px; line-height:1.3; font-style:italic; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.card .or {{ font-size:11px; line-height:1.3; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.mar-bg {{ fill:var(--card); stroke:var(--line); stroke-width:1; }}
+.mar {{ font-size:11px; fill:var(--fg); text-anchor:middle; dominant-baseline:central; }}
 .conf {{ white-space:nowrap; }} .conf svg {{ vertical-align:middle; margin-right:4px; }}
-.legend {{ display:flex; flex-wrap:wrap; gap:4px 14px; align-items:center; margin-top:6px; font-size:.9rem; }}
-.tag {{ display:inline-block; padding:0 6px; border-radius:4px; background:var(--tag); font-size:.85rem; }}
-.tag.living {{ color:var(--living); }} .tag.nonown {{ color:var(--nonown); }}
-.card {{ display:none; border:1px solid var(--border); border-radius:8px; padding:4px 14px 12px; background:var(--box); }}
-.card:target {{ display:block; }}
-.card h2 {{ margin:8px 0 2px; font-size:1.25rem; }}
-.card h3 {{ margin:14px 0 4px; font-size:1rem; color:var(--accent); }}
-.card ul {{ padding-left:18px; margin:4px 0; }}
-.cards {{ overflow-wrap:break-word; min-width:0; }}
-.facts {{ list-style:none; padding-left:0 !important; }} .facts > li {{ margin-bottom:8px; }}
-.src {{ font-size:.88rem; margin-top:2px !important; }}
-.disproved, .disproved a {{ text-decoration:line-through; color:var(--muted); }}
-a {{ color:var(--accent); }} a.id {{ font-size:.75rem; color:var(--muted); }}
-code {{ font-size:.85em; }}
-#hint {{ color:var(--muted); }}
-footer section {{ margin-bottom:12px; }} footer h2 {{ font-size:1.1rem; color:var(--accent); }}
-.index {{ columns:16em; padding-left:18px; }}
+dialog {{ border:0; border-radius:14px; padding:0; width:min(640px, calc(100% - 32px)); max-height:calc(100vh - 32px);
+  background:var(--card); color:var(--fg); box-shadow:0 20px 50px rgba(0,0,0,.35); }}
+dialog::backdrop {{ background:rgba(0,0,0,.45); }}
+.dlg {{ padding:22px 24px; overflow-wrap:break-word; }}
+.dlg h2 {{ font-size:20px; margin-bottom:4px; }}
+.dlg .sub {{ margin-bottom:6px; }}
+.dlg dl {{ display:grid; grid-template-columns:150px 1fr; gap:8px 14px; font-size:14px; margin:14px 0; }}
+.dlg dt {{ color:var(--muted); }} .dlg dd {{ margin:0; }} .dlg dd > div {{ margin-bottom:4px; }}
+.dlg ul.notes {{ padding-left:18px; font-size:14px; }} .dlg ul.notes > li {{ margin-bottom:8px; }}
+.src-list {{ font-size:13px; padding-left:18px; }}
+.disproved, .disproved a, .disproved .lnk {{ text-decoration:line-through; color:var(--muted); }}
+.lnk {{ background:none; border:0; padding:0; font:inherit; color:var(--d2); text-decoration:underline; cursor:pointer; }}
+.close {{ margin-top:8px; font:inherit; padding:6px 14px; border-radius:8px; border:1px solid var(--border); background:var(--chip); color:var(--fg); cursor:pointer; }}
+@media (max-width:520px) {{ .dlg dl {{ grid-template-columns:1fr; }} .dlg dt {{ margin-top:6px; }} }}
 </style>
 </head>
 <body>
-<header>
-<h1>{heading}</h1>
-<div class="meta">{root_label}: {root} · {generated} · <span class="{check_cls}">{check}</span></div>
-<div class="legend"><span class="muted">{legend_label}:</span> {legend}</div>
-</header>
 <main>
-<div class="treebox">
+<h1>{heading}</h1>
+<p class="sub">{sub}</p>
+<div class="chips">{chips}</div>
+<section class="box">
+<h2>{legend_label}</h2>
+<div class="legend"><b>{cards_label}</b>{legend_cards}</div>
+<div class="legend"><b>{lines_label}</b>{legend_lines}</div>
+</section>
+<section class="box" style="margin-top:14px">
+<h2>{tree_label}</h2>
+<p class="sub">{tree_sub}</p>
+<div class="tree-wrap">
 {tree}
 </div>
-<div class="cards">
-<p id="hint">{pick}</p>
-{cards}
+</section>
+<div class="grid">
+{boxes}
 </div>
 </main>
-<footer>
-<section><h2>{conflicts_label}</h2><ul>{conflicts}</ul></section>
-<section><h2>{questions_label}</h2><ul>{questions}</ul></section>
-<section><h2>{people_label}</h2><ul class="index">{index}</ul></section>
-</footer>
+<dialog id="dlg"><div class="dlg"></div></dialog>
+{details}
 <script>
 (function () {{
-  function show() {{
-    var id = decodeURIComponent(location.hash.slice(1));
-    var card = id && document.getElementById(id);
-    document.getElementById("hint").style.display = card ? "none" : "";
-    document.querySelectorAll(".node.sel").forEach(function (n) {{ n.classList.remove("sel"); }});
-    document.querySelectorAll('a[data-person="' + id + '"] .node').forEach(function (n) {{ n.classList.add("sel"); }});
+  var dlg = document.getElementById("dlg"), box = dlg.querySelector(".dlg");
+  function openDetail(id) {{
+    var t = document.getElementById("d-" + id);
+    if (!t) return;
+    box.replaceChildren(t.content.cloneNode(true));
+    box.scrollTop = 0;
+    if (!dlg.open) dlg.showModal();
+    history.replaceState(null, "", "#" + id);
   }}
-  if (!location.hash) {{ history.replaceState(null, "", "#{root_id}"); }}
-  window.addEventListener("hashchange", show);
-  show();
+  document.addEventListener("click", function (e) {{
+    var b = e.target.closest("[data-id]");
+    if (b) {{ openDetail(b.getAttribute("data-id")); return; }}
+    if (e.target.closest(".close") || e.target === dlg) dlg.close();
+  }});
+  dlg.addEventListener("close", function () {{ history.replaceState(null, "", location.pathname); }});
+  if (location.hash) openDetail(decodeURIComponent(location.hash.slice(1)));
 }})();
 </script>
 </body>

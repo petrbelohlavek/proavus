@@ -83,7 +83,7 @@ proavus/
 │   ├── new_id.py                       ID bez kolizí                                    [v0]
 │   ├── guard_names.py                  kontrola jmen rodiny před commitem frameworku     [v0]
 │   ├── build_index.py · query.py       SQLite index a dotazy (fáze 3)
-│   ├── build_views.py                  mapa views/mapa.html (ADR 0027) [v0]; později GEDCOM
+│   ├── build_views.py                  mapa views/mapa.html (ADR 0027, 0028) [v0]; později GEDCOM
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
 ├── skills/                             init · start · end [v0]; později setup · check · upgrade · claim · review · feedback
