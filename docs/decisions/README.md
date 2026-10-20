@@ -33,5 +33,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0026](0026-separating-development-from-family-data.md) | Oddělení vývoje frameworku od dat rodiny | přijato | kap. 14 návrhu |
 | [0027](0027-family-map.md) | Mapa rodiny jako jeden soběstačný soubor HTML | přijato (rozvržení nahrazeno 0028) | — |
 | [0028](0028-family-map-layout.md) | Rozvržení mapy rodiny: sloupce generací, karty a detail v dialogu | přijato | — |
+| [0029](0029-family-map-facts-and-sharing.md) | Mapa rodiny: data slovy, výběr údaje, žijící a sdílení | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

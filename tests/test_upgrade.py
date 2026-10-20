@@ -71,7 +71,7 @@ class Plan(OldRepoCase):
         self.assertEqual(len(heads), 1)
         self.assertTrue(heads[0].startswith("0.2.0"), heads)
         self.assertIn("build_views.py", plan.changelog[0][1])
-        self.assertIn("schema/repo.schema.json: + map.lang, + map.root", plan.schema)
+        self.assertIn("schema/repo.schema.json: + map.lang, + map.living_places, + map.root", plan.schema)
         self.assertIn("schema/vocab/fact_types.yaml: + other", plan.schema)
         self.assertFalse(plan.migration)
         self.assertEqual(plan.map_missing, ["root", "lang"])

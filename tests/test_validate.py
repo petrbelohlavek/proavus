@@ -22,7 +22,7 @@ class ValidFixture(FamilyRepoCase):
         report = self.validate()
         self.assertClean(report)
         self.assertEqual(report.warnings, [])
-        self.assertEqual(report.files, 30)
+        self.assertEqual(report.files, 32)
 
     def test_cli_exit_code(self):
         ok = subprocess.run([sys.executable, str(ROOT / "tools/validate.py"), str(self.repo)], capture_output=True, text=True)
@@ -269,7 +269,8 @@ class Dates(FamilyRepoCase):
         self.assertNotIn("dies before being born", "\n".join(self.validate().errors))
 
     def test_parent_too_young(self):
-        self.edit("A-20261020-ab-b02", lambda d: d.update(date="1872"))
+        for birth in ("A-20261020-ab-b02", "A-20261020-ab-b05"):  # both versions of Matěj's birth
+            self.edit(birth, lambda d: d.update(date="1872"))
         self.assertError(self.validate(), "parent younger than 12")
 
     def test_father_dead_long_before_birth(self):

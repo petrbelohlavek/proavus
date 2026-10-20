@@ -9,5 +9,6 @@ members:
 living_threshold_years: 110
 # Family map views/mapa.html (uv run .proavus/tools/build_views.py .):
 # map:
-#   root: P-…        # starting person: the map shows their ancestors
-#   lang: cs         # labels: en (default) or cs
+#   root: P-…              # starting person: the map shows their ancestors
+#   lang: cs               # labels and dates: cs or en (default: from regions, cz → cs)
+#   living_places: false   # show the birth place of living persons (default false)

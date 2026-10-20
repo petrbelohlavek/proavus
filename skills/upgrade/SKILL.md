@@ -59,8 +59,9 @@ If the plan says `repo.yaml has no map.root` (the family map, since 0.2.0):
   youngest generation, often the researcher or their child); the user may
   name anyone else in `people/` (check the ID exists). It may also stay
   empty for now;
-- if `map.lang` is missing: offer `cs` (Czech labels) or `en`; suggest the
-  user's language.
+- if `map.lang` is missing: without it the map follows the region (`cz` →
+  Czech, otherwise English); ask only whether that is right, and set it
+  (`cs` or `en`) if they want it written down or different.
 
 ## 5. Confirm and upgrade
 

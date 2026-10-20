@@ -6,6 +6,19 @@ major + `migrate.py`.
 
 ## 0.3.0 – unreleased
 
+- Family map (ADR 0029): dates in the map's language and EDTF in words
+  (cs `13. 5. 1958`, `kolem 1868`, `před 26. 1. 1836`, `1946/1947`);
+  `map.lang` defaults to the region's language (`cz` → `cs`); of several
+  facts of one type the card shows the strongest (information, evidence,
+  confidence) and marks **≠** a disagreeing or equally strong other
+  version, all versions in the detail; names and record titles instead of
+  IDs in conflicts, questions and citations; long occupations and places
+  shortened on the card; `map.living_places` (birth place of living
+  persons, default false – then also no source title in their citations);
+  `--hide-living` writes `views/mapa-sdileni.html` for sharing outside the
+  family. Screenshots in `docs/images/` updated.
+- Fictional fixture: a second, equally strong birth of Matěj (part of the
+  open conflict) and his long occupation.
 - Plugin skill `/proavus:upgrade` and its deterministic part in
   `family_repo.py` (ADR 0009, 0014, 0018): `upgrade-plan` compares
   `.proavus/VERSION` with the plugin and shows the CHANGELOG sections in

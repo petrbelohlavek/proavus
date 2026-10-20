@@ -5,9 +5,9 @@
 # ///
 """Generate views of a family repository (never saved in git, ADR 0019).
 
-Usage:  uv run .proavus/tools/build_views.py [REPO_DIR] [--root P-…] [--out FILE]
+Usage:  uv run .proavus/tools/build_views.py [REPO_DIR] [--root P-…] [--out FILE] [--hide-living]
 
-Writes REPO_DIR/views/mapa.html (ADR 0027, 0028): one self-contained HTML file
+Writes REPO_DIR/views/mapa.html (ADR 0027–0029): one self-contained HTML file
 without any external resources. Header with counts and a legend; the
 ancestor tree of the starting person (`map.root` in repo.yaml, or --root) in
 generation columns – cards coloured by how well the person is documented,
@@ -16,7 +16,10 @@ detail dialog for every person (facts with confidence and sources,
 relationships, open conflicts and questions); boxes with open conflicts,
 open questions, next steps and persons outside the tree.
 Living persons show only what rule 9 allows: name, sex, birth and
-relationships; living minors without the birth date.
+relationships; living minors without the birth date; their birth place only
+with `map.living_places: true`. --hide-living writes a version for sharing
+outside the family (views/mapa-sdileni.html): living persons without names
+or dates, no next steps.
 """
 
 from __future__ import annotations
@@ -25,6 +28,7 @@ import argparse
 import datetime as dt
 import html
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -48,6 +52,70 @@ OPEN_QUESTION = ("open", "in-progress")
 # Card colour = how well the person is documented: best QUAY of their
 # visible facts and record identifications (ADR 0022). 0 = no evidence.
 DOC_LEVELS = (3, 2, 1, 0)
+
+# Ranking of facts of the same type: information, then evidence, then confidence.
+INFORMATION_RANK = {"primary": 0, "secondary": 1, "undetermined": 2}
+EVIDENCE_RANK = {"direct": 0, "indirect": 1, "negative": 2}
+# Language of the map when map.lang is missing: from the first known region.
+REGION_LANG = {"cz": "cs"}
+CLIP_OCCUPATION, CLIP_PLACE = 32, 30   # characters on a card; full text in the tooltip and detail
+
+MONTHS = {
+    "en": ["January", "February", "March", "April", "May", "June", "July", "August",
+           "September", "October", "November", "December"],
+    "cs": ["leden", "únor", "březen", "duben", "květen", "červen", "červenec", "srpen",
+           "září", "říjen", "listopad", "prosinec"],
+}
+DATE_WORDS = {"en": {"about": "about", "before": "before", "after": "after"},
+              "cs": {"about": "kolem", "before": "před", "after": "po"}}
+_EDTF = re.compile(r"^([0-9]{4}|[0-9]{3}X|[0-9]{2}XX)(?:-([0-9]{2}|XX)(?:-([0-9]{2}|XX))?)?([?~%])?$")
+
+
+def human_date(value, lang: str = "en") -> str:
+    """EDTF (subset) or ISO date in words: cs 13. 5. 1958, kolem 1868, před 26. 1. 1836, 1946/1947."""
+    if value is None:
+        return ""
+    text = str(value).strip()
+    words = DATE_WORDS.get(lang, DATE_WORDS["en"])
+    if "/" in text:
+        start, _, end = text.partition("/")
+        if start in ("", "..") and end not in ("", ".."):
+            return f"{words['before']} {human_date(end, lang)}"
+        if end in ("", "..") and start not in ("", ".."):
+            return f"{words['after']} {human_date(start, lang)}"
+        return f"{human_date(start, lang)}/{human_date(end, lang)}"
+    m = _EDTF.match(text)
+    if not m:
+        return text
+    year, month, day, qual = m.groups()
+    months = MONTHS.get(lang, MONTHS["en"])
+    if "X" in year:
+        core = f"{year.replace('X', '0')}–{year.replace('X', '9')}"
+    elif month and month != "XX" and 1 <= int(month) <= 12:
+        if day and day != "XX":
+            core = f"{int(day)}. {int(month)}. {year}" if lang == "cs" else f"{int(day)} {months[int(month) - 1]} {year}"
+        else:
+            core = f"{months[int(month) - 1]} {year}"
+    else:
+        core = year
+    if qual in ("~", "%"):
+        core = f"{words['about']} {core}"
+    return core + ("?" if qual in ("?", "%") else "")
+
+
+def short_year(value) -> str:
+    """Compact year for the marriage label: ~1877, 1877?, <1836, >1900."""
+    text = str(value)
+    m = re.search(r"[0-9]{4}|[0-9]{3}X|[0-9]{2}XX", text)
+    if not m:
+        return ""
+    prefix = "<" if text.startswith(("../", "/")) else ">" if text.endswith(("/..", "/")) else "~" if re.search(r"[~%]", text) else ""
+    return prefix + m.group(0) + ("?" if re.search(r"[?%]", text) else "")
+
+
+def clip(text: str, n: int) -> str:
+    return text if len(text) <= n else text[: n - 1].rstrip() + "…"
+
 
 W, H, GX, GY, LEFT, TOP = 210, 160, 64, 16, 14, 46
 COLW, SLOT = W + GX, H + GY
@@ -79,6 +147,12 @@ LABELS = {
         "close": "Close", "decides": "What would decide it", "claimed": "claimed by",
         "about": "about", "from": "from", "to": "to", "support": "supported by", "confirmed": "confirmed",
         "human_task": "human task", "bapt": "bapt.", "bur": "bur.",
+        "alt_mark": "other version of a fact", "alt_equal": "equally strong other version",
+        "alt_conflict": "another version disagrees", "alt_more": "other versions",
+        "chosen": "shown on the card", "alternative": "other version",
+        "conflict_label": "Conflict", "identity_of": "identity", "session": "session",
+        "living_person": "Living person", "hidden_share": "living – hidden in this version for sharing",
+        "shared": "version for sharing outside the family – living persons hidden",
         "male": "male", "female": "female", "unknown": "sex unknown",
         "deceased": "deceased", "unknown_status": "vital status unknown", "candidate": "candidate",
     },
@@ -109,6 +183,12 @@ LABELS = {
         "close": "Zavřít", "decides": "Co rozhodne", "claimed": "zabral/a",
         "about": "týká se", "from": "od", "to": "do", "support": "opírá se o", "confirmed": "potvrdil/a",
         "human_task": "úkol pro člověka", "bapt": "křt.", "bur": "pohř.",
+        "alt_mark": "jiná verze údaje", "alt_equal": "stejně silná jiná verze",
+        "alt_conflict": "jiná verze se liší", "alt_more": "další verze",
+        "chosen": "zobrazeno na kartě", "alternative": "jiná verze",
+        "conflict_label": "Rozpor", "identity_of": "identita", "session": "sezení",
+        "living_person": "Žijící osoba", "hidden_share": "žijící – v této verzi pro sdílení skryto",
+        "shared": "verze pro sdílení mimo rodinu – žijící osoby skryté",
         "male": "muž", "female": "žena", "unknown": "pohlaví neznámé",
         "deceased": "zemřelý/á", "unknown_status": "není známo, zda žije", "candidate": "kandidát",
     },
@@ -142,15 +222,17 @@ class Node:
 
 
 class MapBuilder:
-    def __init__(self, repo: Path, out: Path, today: dt.date, root: str | None = None):
+    def __init__(self, repo: Path, out: Path, today: dt.date, root: str | None = None, hide_living: bool = False):
         self.repo = repo
         self.out = out
         self.today = today
+        self.hide_living = hide_living
         self.v = RepoValidator(repo, FRAMEWORK, today=today)
         self.report = self.v.run()
         config = self.v.config
         settings = config.get("map") if isinstance(config.get("map"), dict) else {}
-        self.lang = settings.get("lang") if settings.get("lang") in LABELS else "en"
+        self.lang = settings.get("lang") if settings.get("lang") in LABELS else default_lang(config)
+        self.living_places = settings.get("living_places") is True
         self.L = LABELS[self.lang]
         self.title = config.get("title") or "Proavus"
         root = root or settings.get("root")
@@ -225,18 +307,62 @@ class MapBuilder:
             facts = [a for a in facts if a.data.get("fact_type") in LIVING_ALLOWED_FACTS]
         return sorted(facts, key=lambda a: (_start(a.data.get("date")), a.data.get("fact_type", ""), a.id))
 
+    @staticmethod
+    def strength(a: Entity) -> tuple[int, int, int]:
+        """(information, evidence, confidence) of the best citation – lower is stronger."""
+        best = min(((INFORMATION_RANK.get(c.get("information"), 3), EVIDENCE_RANK.get(c.get("evidence"), 3))
+                    for c in a.data.get("citations") or [] if isinstance(c, dict)), default=(3, 3))
+        return best + (_rank(a.data.get("confidence")),)
+
     def best_fact(self, pid: str, types) -> Entity | None:
         found = [a for a in self.visible_facts(pid) if a.data.get("fact_type") in types and a.data.get("confidence") != "disproved"]
-        found.sort(key=lambda a: (types.index(a.data["fact_type"]), _rank(a.data.get("confidence")), a.id))
+        found.sort(key=lambda a: (types.index(a.data["fact_type"]), *self.strength(a), a.id))
         return found[0] if found else None
+
+    def alternatives(self, pid: str, fact: Entity) -> list[Entity]:
+        """Other (not disproved) facts of the same type as the chosen one."""
+        return [a for a in self.visible_facts(pid) if a is not fact and a.data.get("fact_type") == fact.data.get("fact_type")
+                and a.data.get("confidence") != "disproved"]
+
+    def _what(self, a: Entity) -> tuple:
+        return (str(a.data.get("date", "")), self.canon(a.data.get("place")) or str(a.data.get("place_as_written", "")).casefold(),
+                str(a.data.get("value", "")).casefold())
+
+    def variance(self, pid: str, fact: Entity) -> str | None:
+        """'equal' – an equally strong version says something else; 'conflict' – a weaker one does."""
+        if pid in self.minors:
+            return None
+        differing = [a for a in self.alternatives(pid, fact) if self._what(a) != self._what(fact)]
+        if not differing:
+            return None
+        return "equal" if any(self.strength(a) == self.strength(fact) for a in differing) else "conflict"
+
+    def fact_summary(self, pid: str, a: Entity) -> str:
+        """Date and place of a fact in words, as allowed for this person (plain text)."""
+        date = self.show_date(pid, a)
+        parts = [human_date(date, self.lang) if date else "", self.place_shown(pid, a)]
+        return ", ".join(x for x in parts if x)
 
     def show_date(self, pid: str, fact: Entity) -> str | None:
         if pid in self.minors and fact.data.get("fact_type") in BIRTH_FACTS:
             return None
+        if self.hidden(pid):
+            return None
         date = fact.data.get("date")
         return None if date is None else str(date)
 
+    def hidden(self, pid) -> bool:
+        """Living person in a version for sharing outside the family."""
+        return self.hide_living and self.canon(pid) in self.living
+
+    def place_shown(self, pid: str, a: Entity) -> str:
+        if pid in self.living and (self.hide_living or not self.living_places):
+            return ""
+        return self.place_text(a)
+
     def names(self, pid) -> list[dict]:
+        if self.hidden(pid):
+            return [{"value": self.L["living_person"]}]
         p = self.people.get(self.canon(pid))
         names = [n for n in (p.data.get("names") if p else None) or [] if isinstance(n, dict) and n.get("value")]
         return sorted(names, key=lambda n: not n.get("preferred"))
@@ -245,15 +371,20 @@ class MapBuilder:
         names = self.names(pid)
         return str(names[0]["value"]) if names else str(pid)
 
-    def place_text(self, a: Entity) -> str:
-        place = self.get(a.data.get("place"))
+    def place_label(self, place_id, as_written="") -> str:
+        place = self.get(place_id)
         if place is not None:
             names = [n for n in place.data.get("names") or [] if isinstance(n, dict)]
             same = [n for n in names if n.get("lang") == self.lang]
             return str((same or names or [{"value": place.id}])[0].get("value"))
-        return str(a.data.get("place_as_written", ""))
+        return str(as_written or "")
 
-    def place_html(self, a: Entity) -> str:
+    def place_text(self, a: Entity) -> str:
+        return self.place_label(a.data.get("place"), a.data.get("place_as_written", ""))
+
+    def place_html(self, a: Entity, pid: str | None = None) -> str:
+        if pid is not None and not self.place_shown(pid, a):
+            return ""
         place = self.get(a.data.get("place"))
         text = esc(self.place_text(a))
         return f'<a href="{esc(self.file_href(place))}">{text}</a>' if place is not None else text
@@ -264,6 +395,8 @@ class MapBuilder:
 
     def doc_level(self, pid: str) -> int:
         """Best QUAY over the person's visible facts and record identifications."""
+        if self.hidden(pid):
+            return 0
         best = 0
         assertions = self.visible_facts(pid) + ([] if pid in self.living else self.identities.get(pid, []))
         for a in assertions:
@@ -294,15 +427,54 @@ class MapBuilder:
     def file_href(self, entity: Entity) -> str:
         return Path(os.path.relpath(self.repo / entity.path, self.out.parent)).as_posix()
 
+    def record_title(self, rec: Entity) -> str:
+        """A record in words: event, date, place and the principal as written."""
+        event = rec.data.get("event") if isinstance(rec.data.get("event"), dict) else {}
+        place_text = self.place_label(event.get("place"), event.get("place_as_written", ""))
+        principal = next((p.get("name_as_written") for p in rec.data.get("participants") or []
+                          if isinstance(p, dict) and p.get("role") == "principal" and p.get("name_as_written")), "")
+        head = " ".join(x for x in (self.label("event_types", event.get("type")), human_date(event.get("date"), self.lang)) if x)
+        text = ", ".join(x for x in (head, place_text) if x) or rec.id
+        return text + (f" („{principal}“)" if principal else "")
+
+    def entity_label(self, e: Entity) -> str:
+        """Plain-text name of any entity – what a person reads instead of its ID."""
+        d = e.data
+        if e.type == "person":
+            return self.name(e.id)
+        if e.type == "assertion":
+            if d.get("kind") == "identity":
+                return f"{self.L['identity_of']}: {self.name(d.get('person'))}"
+            subject = self.get(d.get("subject"))
+            about = self.entity_label(subject) if subject is not None else str(d.get("subject", ""))
+            when = human_date(d.get("date"), self.lang) if d.get("date") is not None and not self.touches_living(e.id) else ""
+            return " ".join(x for x in (self.label("fact_types", d.get("fact_type")), when) if x) + f" – {about}"
+        if e.type == "relationship":
+            names = " – ".join(self.L["unknown_parent"] if p.get("person") == "unknown" else self.name(p.get("person"))
+                               for p in d.get("parties") or [] if isinstance(p, dict))
+            return f"{names} ({self.label('relationship_types', d.get('rel_type'))})"
+        if e.type == "record":
+            return self.record_title(e)
+        if e.type in ("source", "question"):
+            return str(d.get("title") or e.id)
+        if e.type == "place":
+            names = [n for n in d.get("names") or [] if isinstance(n, dict)]
+            return str(names[0].get("value")) if names else e.id
+        if e.type == "conflict":
+            return self.L["conflict_label"]
+        if e.type == "session":
+            return f"{self.L['session']} {human_date(d.get('date'), self.lang)}"
+        return e.id
+
     def ref(self, id_) -> str:
-        """Button opening a person's detail, or a link to the file of any other entity."""
+        """Button opening a person's detail, or the name of any other entity linked to its file."""
         id_ = self.canon(id_)
         if id_ in self.people:
             return f'<button type="button" class="lnk" data-id="{esc(id_)}">{esc(self.name(id_))}</button>'
         e = self.get(id_)
         if e is None:
             return f"<code>{esc(id_)}</code>"
-        return f'<a href="{esc(self.file_href(e))}"><code>{esc(id_)}</code></a>'
+        return f'<a href="{esc(self.file_href(e))}" title="{esc(id_)}">{esc(self.entity_label(e))}</a>'
 
     def count(self, key: str, n: int) -> str:
         """Label with the right plural form: en one/other, cs 1 / 2–4 / 5+."""
@@ -383,8 +555,8 @@ class MapBuilder:
         fact = next((a for a in self.facts.get(rel.id, []) if a.data.get("fact_type") == "marriage" and a.data.get("confidence") != "disproved"), None)
         date = (fact.data.get("date") if fact else None) or rel.data.get("start")
         place = self.place_text(fact) if fact else ""
-        short = str(date)[:4] if date is not None else ""
-        long = ", ".join(x for x in (str(date) if date is not None else "", place) if x)
+        short = short_year(date) if date is not None else ""
+        long = ", ".join(x for x in (human_date(date, self.lang) if date is not None else "", place) if x)
         return short, long
 
     def tree_html(self, root: Node) -> tuple[str, set[str]]:
@@ -417,7 +589,7 @@ class MapBuilder:
             if rel is not None:
                 short, long = self.marriage_text(rel)
                 svg.append(f'<g class="mar-g" data-rel="{esc(rel.id)}"><title>{esc(self.L["marriage"])} {esc(long)}</title>'
-                           f'<rect class="mar-bg" x="{xm - 24:.0f}" y="{y0 - 29:.0f}" width="48" height="18" rx="9"/>'
+                           f'<rect class="mar-bg" x="{xm - 28:.0f}" y="{y0 - 29:.0f}" width="56" height="18" rx="9"/>'
                            f'<text class="mar" x="{xm:.0f}" y="{y0 - 20:.0f}">⚭ {esc(short)}</text></g>')
         svg.append("</svg>")
         parts = ["".join(svg)]
@@ -437,6 +609,9 @@ class MapBuilder:
             return (f'<div class="card ph src-n" style="{style}"><span class="top">{tag}</span>'
                     f'<span class="nm">? {esc(self.L["unknown_parent"])}</span></div>')
         pid = n.person
+        if self.hidden(pid):
+            return (f'<button type="button" class="card src-n" data-id="{esc(pid)}" style="{style}"><span class="top"></span>'
+                    f'<span class="nm">{esc(self.L["living_person"])}</span><span class="dt"><span class="liv">{esc(self.L["living_short"])}</span></span></button>')
         tags = []
         if n.nonown:
             tags.append(f'<span class="tag n">{esc(self.label("relationship_subtypes", n.rel.data.get("subtype")))}</span>')
@@ -444,9 +619,9 @@ class MapBuilder:
             tags.append(f'<span class="tag">↺ {esc(self.L["repeat"])}</span>')
         warn = f'<span class="warn" title="{esc(self.L["warn"])}">!</span>' if self.warn(pid) else ""
         out = [f'<span class="top"><span>{"".join(tags)}</span>{warn}</span>', f'<span class="nm">{esc(self.name(pid))}</span>']
-        occ = self.occupations(pid)
+        occ = ", ".join(self.occupations(pid))
         if occ:
-            out.append(f'<span class="pf" title="{esc(", ".join(occ))}">{esc(", ".join(occ))}</span>')
+            out.append(f'<span class="pf" title="{esc(occ)}">{esc(clip(occ, CLIP_OCCUPATION))}</span>')
         other = [str(x["value"]) for x in self.names(pid)[1:2]]
         if other:
             out.append(f'<span class="or" title="{esc(other[0])}">{esc(other[0])}</span>')
@@ -467,10 +642,15 @@ class MapBuilder:
             if date is None:
                 continue
             sign = {"birth": "*", "baptism": self.L["bapt"], "death": "†", "burial": self.L["bur"]}[fact.data["fact_type"]]
-            out.append(f"<span>{esc(sign)} {esc(date)}</span>")
-            place = self.place_text(fact)
+            mark = ""
+            kind = self.variance(pid, fact)
+            if kind:
+                others = "; ".join(f"{self.fact_summary(pid, a)} ({self.L.get(a.data.get('confidence'), a.data.get('confidence', ''))})" for a in self.alternatives(pid, fact))
+                mark = f' <span class="alt" title="{esc(self.L["alt_" + kind])}: {esc(others)}">≠</span>'
+            out.append(f"<span>{esc(sign)} {esc(human_date(date, self.lang))}{mark}</span>")
+            place = self.place_shown(pid, fact)
             if place:
-                out.append(f'<span class="pl" title="{esc(place)}">{esc(place)}</span>')
+                out.append(f'<span class="pl" title="{esc(place)}">{esc(clip(place, CLIP_PLACE))}</span>')
         if pid in self.living:
             out.append(f'<span class="liv">{esc(self.L["living_short"])}</span>')
         return "".join(out)
@@ -481,14 +661,19 @@ class MapBuilder:
         return (f'<span class="conf"><svg width="26" height="8" aria-hidden="true"><line class="link c-{value}" x1="1" y1="4" x2="25" y2="4"/></svg>'
                 f"{esc(self.L[value])}</span>")
 
-    def citation(self, c: dict, show_participant: bool) -> str:
+    def citation(self, c: dict, show_participant: bool, show_source: bool = True) -> str:
+        """One citation. For a living person show_participant=False hides the record title and the
+        names in it; show_source=False also the source title and note (they name the parish)."""
         parts, url = [], None
         if c.get("record"):
             rec = self.get(c["record"])
-            parts.append(self.ref(c["record"]))
+            if show_participant or rec is None:
+                parts.append(self.ref(c["record"]))
+            else:
+                parts.append(self.id_link(rec))
             if rec is not None:
                 src = self.get(rec.data.get("source"))
-                if src is not None:
+                if src is not None and show_source:
                     parts.append(esc(src.data.get("title", "")))
                 loc = rec.data.get("locator") or {}
                 where = ", ".join(f"{self.term(k)} {loc[k]}" for k in ("page", "folio", "entry", "image") if loc.get(k) is not None)
@@ -501,15 +686,16 @@ class MapBuilder:
                             parts.append(f'{esc(p["key"])}: „{esc(p.get("name_as_written", ""))}“ ({esc(self.label("participant_roles", p.get("role")))})')
         elif c.get("source"):
             src = self.get(c["source"])
-            parts.append(self.ref(c["source"]))
-            if src is not None:
-                parts.append(esc(src.data.get("title", "")))
+            if src is not None and show_source:
+                parts.append(self.ref(c["source"]))   # the link text is the source title
                 url = src.data.get("url")
+            elif src is not None:
+                parts.append(self.id_link(src))
         else:
             key = next((k for k in ("oral", "coverage") if c.get(k)), None)
             if key:
                 parts.append(self.ref(c[key]))
-        if c.get("detail"):
+        if c.get("detail") and show_source:
             parts.append(esc(c["detail"]))
         if url and str(url).startswith(("http://", "https://")):
             parts.append(f'<a href="{esc(url)}" rel="noopener noreferrer" target="_blank">↗</a>')
@@ -520,6 +706,8 @@ class MapBuilder:
         return " · ".join(p for p in parts if p)
 
     def detail(self, pid: str) -> str:
+        if self.hidden(pid):
+            return self.hidden_detail(pid)
         p = self.people[pid]
         L, living = self.L, pid in self.living
         meta = [esc(L.get(p.data.get("sex"), "")) if p.data.get("sex") else ""]
@@ -549,9 +737,17 @@ class MapBuilder:
             if date is None and fact.data.get("date") is not None:
                 text = f'<span class="muted">{esc(L["minor_date"])}</span>'
             else:
-                text = esc(date or "")
-            place = self.place_html(fact)
-            row(L[key], ", ".join(x for x in (text, place) if x) or f'<span class="muted">{esc(L["unknown_value"])}</span>')
+                text = esc(human_date(date, self.lang))
+            place = self.place_html(fact, pid)
+            value = ", ".join(x for x in (text, place) if x) or f'<span class="muted">{esc(L["unknown_value"])}</span>'
+            others = self.alternatives(pid, fact) if pid not in self.minors else []
+            if others:
+                kind = self.variance(pid, fact)
+                label = L["alt_" + kind] if kind else L["alt_more"]
+                value += (f'<div class="muted">{"≠ " if kind else ""}{esc(label)}: '
+                          + "; ".join(f"{esc(self.fact_summary(pid, a))} ({esc(L.get(a.data.get('confidence'), a.data.get('confidence', '')))})" for a in others)
+                          + "</div>")
+            row(L[key], value)
         occ = self.occupations(pid)
         if occ:
             row(L["occupation"], esc(", ".join(occ)))
@@ -572,6 +768,7 @@ class MapBuilder:
         out.append("</dl>")
 
         facts = self.visible_facts(pid)
+        chosen = {id(f) for f in (self.best_fact(pid, BIRTH_FACTS), self.best_fact(pid, DEATH_FACTS)) if f is not None}
         if facts:
             out.append(f'<h3>{esc(L["facts"])}</h3><ul class="notes">')
             for a in facts:
@@ -579,12 +776,16 @@ class MapBuilder:
                 if date is None and a.data.get("date") is not None:
                     date_html = f'<span class="muted">{esc(L["minor_date"])}</span>'
                 else:
-                    date_html = esc(date or "")
+                    date_html = esc(human_date(date, self.lang))
                 what = f"<b>{esc(self.label('fact_types', a.data.get('fact_type')))}</b>"
                 if a.data.get("value") is not None:
                     what += f": {esc(a.data['value'])}"
-                head = " · ".join(x for x in (what, date_html, self.place_html(a), self.conf(a.data.get("confidence"))) if x)
-                cites = "".join(f"<li>{self.citation(c, not living)}</li>" for c in a.data.get("citations") or [] if isinstance(c, dict))
+                same = [b for b in facts if b.data.get("fact_type") == a.data.get("fact_type") and b.data.get("confidence") != "disproved"]
+                if len(same) > 1 and a.data.get("confidence") != "disproved" and a.data.get("fact_type") in BIRTH_FACTS + DEATH_FACTS:
+                    what += f' <span class="tag">{esc(L["chosen"] if id(a) in chosen else L["alternative"])}</span>'
+                head = " · ".join(x for x in (what, date_html, self.place_html(a, pid), self.conf(a.data.get("confidence"))) if x)
+                show_source = not living or self.living_places
+                cites = "".join(f"<li>{self.citation(c, not living, show_source)}</li>" for c in a.data.get("citations") or [] if isinstance(c, dict))
                 cls = ' class="disproved"' if a.data.get("confidence") == "disproved" else ""
                 out.append(f'<li{cls}>{head} {self.id_link(a)}<ul class="src-list">{cites}</ul></li>')
             out.append("</ul>")
@@ -605,6 +806,18 @@ class MapBuilder:
         out.append(f'<button type="button" class="close">{esc(L["close"])}</button></template>')
         return "\n".join(out)
 
+    def hidden_detail(self, pid: str) -> str:
+        """A living person in a version for sharing: no name, no facts – only the links of the tree."""
+        L = self.L
+        out = [f'<template id="d-{esc(pid)}">', f"<h2>{esc(L['living_person'])}</h2>", f'<p class="sub">{esc(L["hidden_share"])}</p>', "<dl>"]
+        for label, rels, role in ((L["parents"], self.parent_rels.get(pid, []), "parent"),
+                                  (L["partners"], self.partner_rels.get(pid, []), "partner"),
+                                  (L["children"], self.child_rels.get(pid, []), "child")):
+            if rels:
+                out.append(f"<dt>{esc(label)}</dt><dd>{self.rel_list(pid, rels, role)}</dd>")
+        out.append(f'</dl><button type="button" class="close">{esc(L["close"])}</button></template>')
+        return "\n".join(out)
+
     def rel_list(self, pid: str, rels: list[Entity], other_role: str) -> str:
         items = []
         for rel in sorted(rels, key=lambda r: (r.data.get("subtype") not in OWN_SUBTYPES, _rank(r.data.get("confidence")), r.id)):
@@ -621,13 +834,13 @@ class MapBuilder:
                 if long:
                     bits.append(esc(long))
             elif not self.touches_living(rel.id):
-                bits += [f"{self.L[k]} {esc(rel.data[f])}" for k, f in (("from", "start"), ("to", "end")) if rel.data.get(f) is not None]
+                bits += [f"{self.L[k]} {esc(human_date(rel.data[f], self.lang))}" for k, f in (("from", "start"), ("to", "end")) if rel.data.get(f) is not None]
             support = rel.data.get("assertions") or []
             if support:
                 bits.append(f'<span class="muted">{esc(self.L["support"])}</span> ' + ", ".join(self.ref(a) for a in support))
             confirmed = rel.data.get("confirmed")
             if isinstance(confirmed, dict):
-                bits.append(f'<span class="muted">{esc(self.L["confirmed"])} {esc(confirmed.get("by", ""))} {esc(confirmed.get("on", ""))}</span>')
+                bits.append(f'<span class="muted">{esc(self.L["confirmed"])} {esc(confirmed.get("by", ""))} {esc(human_date(confirmed.get("on"), self.lang))}</span>')
             bits.append(self.id_link(rel))
             cls = ' class="disproved"' if rel.data.get("confidence") == "disproved" else ""
             items.append(f"<div{cls}>{' · '.join(bits)}</div>")
@@ -641,7 +854,7 @@ class MapBuilder:
         return sorted((q for q in self.v.of_type("question") if q.data.get("status") in OPEN_QUESTION), key=lambda q: q.id)
 
     def conflict(self, x: Entity) -> str:
-        head = f'<a href="{esc(self.file_href(x))}"><code>{esc(x.id)}</code></a> ({esc(self.term(x.data.get("status")))})'
+        head = f'<a href="{esc(self.file_href(x))}" title="{esc(x.id)}">{esc(self.L["conflict_label"])}</a> ({esc(self.term(x.data.get("status")))})'
         about = x.data.get("about") or []
         if any(self.touches_living(r) for r in about):
             return f'{head} <span class="muted">{esc(self.L["hidden"])}</span>'
@@ -654,11 +867,11 @@ class MapBuilder:
         return out
 
     def question(self, q: Entity) -> str:
-        head = f'<a href="{esc(self.file_href(q))}"><code>{esc(q.id)}</code></a> ({esc(self.term(q.data.get("status")))})'
+        status = f'({esc(self.term(q.data.get("status")))})'
         subjects = q.data.get("subjects") or []
         if any(self.touches_living(s) for s in subjects):
-            return f'{head} <span class="muted">{esc(self.L["hidden"])}</span>'
-        out = f"{head} {esc(q.data.get('title', ''))}"
+            return f'<a href="{esc(self.file_href(q))}" title="{esc(q.id)}">{esc(self.L["questions"])}</a> {status} <span class="muted">{esc(self.L["hidden"])}</span>'
+        out = f'<a href="{esc(self.file_href(q))}" title="{esc(q.id)}">{esc(q.data.get("title") or q.id)}</a> {status}'
         if subjects:
             out += f' · {esc(self.L["about"])}: ' + ", ".join(self.ref(s) for s in subjects)
         if q.data.get("claimed_by"):
@@ -669,7 +882,7 @@ class MapBuilder:
         sessions = sorted(self.v.of_type("session"), key=lambda s: (str(s.data.get("date", "")), s.id), reverse=True)[:5]
         out = []
         for s in sessions:
-            text = f'<b>{esc(s.data.get("date", ""))}</b> ({esc(s.data.get("by", ""))}) {esc(s.data.get("next_step", ""))} {self.id_link(s)}'
+            text = f'<b>{esc(human_date(s.data.get("date"), self.lang))}</b> ({esc(s.data.get("by", ""))}) {esc(s.data.get("next_step", ""))} {self.id_link(s)}'
             tasks = [f'<li>{esc(self.L["human_task"])}: {esc(t)}</li>' for t in s.data.get("human_tasks") or []]
             out.append(text + (f"<ul>{''.join(tasks)}</ul>" if tasks else ""))
         return out
@@ -684,7 +897,7 @@ class MapBuilder:
                  self.count("chip_warn", sum(1 for p in in_tree if self.warn(p))),
                  self.count("chip_q", len(self.open_questions()))]
         legend_cards = "".join(f'<span><i class="sw src-{d}"></i>{esc(L[f"doc{d}"])}</span>' for d in DOC_LEVELS)
-        legend_cards += f'<span><span class="warn">!</span>{esc(L["warn"])}</span>'
+        legend_cards += f'<span><span class="warn">!</span>{esc(L["warn"])}</span><span><span class="alt">≠</span>{esc(L["alt_mark"])}</span>'
         legend_lines = "".join(f"<span>{self.conf(c)}</span>" for c in CONFIDENCE[:4])
         legend_lines += f'<span><svg width="26" height="8" aria-hidden="true"><line class="link n" x1="1" y1="4" x2="25" y2="4"/></svg>{esc(L["nonown"])}</span>'
         people = sorted(self.people, key=lambda pid: (self.name(pid).casefold(), pid))
@@ -696,12 +909,16 @@ class MapBuilder:
             (L["next"], "".join(f"<li>{s}</li>" for s in self.next_steps()) or none),
             (L["outside"], "".join(f"<li>{self.ref(p)}</li>" for p in people if p not in in_tree) or none),
         ]
+        if self.hide_living:
+            # Free text of the sessions may name anyone – not in a version for sharing.
+            boxes = [b for b in boxes if b[0] != L["next"]]
         return PAGE.format(
             lang=self.lang, W=W, H=H,
             title=esc(f"{self.title} – {L['map']}"),
             heading=esc(self.title),
-            sub=f'{esc(L["root"])}: {self.ref(self.root)} · {esc(L["generated"])} {esc(self.today.isoformat())} · '
-                f'<span class="{"ok" if self.report.ok else "bad"}">{esc(check)}</span>',
+            sub=f'{esc(L["root"])}: {self.ref(self.root)} · {esc(L["generated"])} {esc(human_date(self.today.isoformat(), self.lang))} · '
+                f'<span class="{"ok" if self.report.ok else "bad"}">{esc(check)}</span>'
+                + (f' · <b>{esc(L["shared"])}</b>' if self.hide_living else ""),
             chips="".join(f'<span class="chip">{esc(c)}</span>' for c in chips),
             legend_label=esc(L["legend"]),
             cards_label=esc(L["cards"]), legend_cards=legend_cards,
@@ -711,6 +928,14 @@ class MapBuilder:
             boxes="\n".join(f'<section class="box"><h2>{esc(h)}</h2><ul>{body}</ul></section>' for h, body in boxes),
             details=details,
         )
+
+
+def default_lang(config: dict) -> str:
+    """Map language when map.lang is missing: the language of the first known region."""
+    for region in config.get("regions") or []:
+        if REGION_LANG.get(region) in LABELS:
+            return REGION_LANG[region]
+    return "en"
 
 
 def _rank(confidence) -> int:
@@ -769,6 +994,7 @@ a {{ color:var(--d2); }} a.id {{ font-size:11px; color:var(--muted); }}
 .tag {{ padding:0 6px; border-radius:99px; background:var(--chip); color:var(--muted); font-size:10px; line-height:16px; white-space:nowrap; margin-right:3px; }}
 .tag.n {{ color:var(--n); }} .card .liv {{ color:var(--liv); }}
 .warn {{ color:var(--warn); font-weight:700; font-size:13px; line-height:1; }}
+.alt {{ color:var(--d1); font-weight:700; cursor:help; }}
 .tree-wrap {{ overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--card); margin-top:10px; }}
 #tree {{ position:relative; }}
 #tree svg {{ position:absolute; left:0; top:0; pointer-events:none; }}
@@ -862,11 +1088,12 @@ dialog::backdrop {{ background:rgba(0,0,0,.45); }}
 """
 
 
-def build_map(repo: Path, out: Path | None = None, root: str | None = None, today: dt.date | None = None) -> tuple[Path, MapBuilder]:
+def build_map(repo: Path, out: Path | None = None, root: str | None = None, today: dt.date | None = None,
+              hide_living: bool = False) -> tuple[Path, MapBuilder]:
     repo = repo.resolve()
     check_family_repo(repo, "build_views")
-    out = (out or repo / "views" / "mapa.html").resolve()
-    builder = MapBuilder(repo, out, today or dt.date.today(), root)
+    out = (out or repo / "views" / ("mapa-sdileni.html" if hide_living else "mapa.html")).resolve()
+    builder = MapBuilder(repo, out, today or dt.date.today(), root, hide_living)
     page = builder.render()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, encoding="utf-8")
@@ -877,12 +1104,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Generate views of a Proavus family repository.")
     parser.add_argument("repo", nargs="?", default=".", help="family repository (default: .)")
     parser.add_argument("--root", help="starting person ID (default: map.root in repo.yaml)")
-    parser.add_argument("--out", help="output file (default: REPO/views/mapa.html)")
+    parser.add_argument("--out", help="output file (default: REPO/views/mapa.html, with --hide-living mapa-sdileni.html)")
+    parser.add_argument("--hide-living", action="store_true", help="version for sharing outside the family: living persons without names or data")
     args = parser.parse_args(argv)
     repo = Path(args.repo).resolve()
     if args.root and not ids.parse(args.root):
         raise SystemExit(f"build_views: {args.root!r} is not a person ID")
-    out, builder = build_map(repo, Path(args.out).resolve() if args.out else None, args.root)
+    out, builder = build_map(repo, Path(args.out).resolve() if args.out else None, args.root, hide_living=args.hide_living)
     errors = len(builder.report.errors)
     print(f"{out} written: {len(builder.people)} persons, root {builder.root}"
           + (f" – {errors} validation errors, the map may be incomplete" if errors else ""))

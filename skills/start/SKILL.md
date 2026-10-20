@@ -91,6 +91,9 @@ Follow the method:
   committed) – tell the user to open it in a browser. It starts from
   `map.root` in `repo.yaml`; if that is missing, ask whose ancestors to show
   and add `map: {root: <P-ID>}` with their yes (or use `--root <P-ID>` once).
+  For showing it to anyone outside the family, build it with
+  `--hide-living` (`views/mapa-sdileni.html`: living persons without names
+  or data).
   If `.proavus/tools/build_views.py` is missing, the copy is older than 0.2.0:
   with the user's yes run
   `uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" install-tools .`

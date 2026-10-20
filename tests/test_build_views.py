@@ -42,8 +42,20 @@ def person(id_, name, status="deceased"):
 
 
 class MapCase(FamilyRepoCase):
-    def build(self, root=None):
-        out, self.builder = build_views.build_map(self.repo, root=root, today=TODAY)
+    """Labels in English: the fictional family's region cz would make them Czech (map.lang default)."""
+
+    def setUp(self):
+        super().setUp()
+        self.set_map("lang: en")
+
+    def set_map(self, *lines):
+        text = self.path("repo.yaml").read_text(encoding="utf-8")
+        head, _, block = text.partition("map:\n")
+        keep = [line for line in block.splitlines() if line.strip() and not any(line.strip().startswith(new.split(":")[0] + ":") for new in lines)]
+        self.path("repo.yaml").write_text(head + "map:\n" + "".join(f"{line}\n" for line in keep) + "".join(f"  {new}\n" for new in lines), encoding="utf-8")
+
+    def build(self, root=None, hide_living=False):
+        out, self.builder = build_views.build_map(self.repo, root=root, today=TODAY, hide_living=hide_living)
         self.page = out.read_text(encoding="utf-8")
         return self.page
 
@@ -89,8 +101,7 @@ class Output(MapCase):
         self.assertIn("7 persons", out.stdout)
 
     def test_czech_labels(self):
-        with open(self.repo / "repo.yaml", "a", encoding="utf-8") as f:
-            f.write("  lang: cs\n")
+        self.set_map("lang: cs")
         self.build()
         self.assertIn('<html lang="cs">', self.page)
         self.assertIn("Výchozí osoba", self.page)
@@ -197,7 +208,7 @@ class Cards(MapCase):
     def test_facts_with_confidence_and_source(self):
         self.build()
         card = self.card(MATEJ)
-        for text in ("1850~", "possible", SRC, "QUAY 2", "† 1910", "Matthias Pokusny"):
+        for text in ("about 1850", "possible", SRC, "QUAY 2", "† 1910", "Matthias Pokusny"):
             self.assertIn(text, card + self.tree())
         josef = self.card(JOSEF)
         self.assertIn("page 41, folio 21r, entry 12", josef)
@@ -210,7 +221,7 @@ class Cards(MapCase):
         card = self.card(MATEJ)
         self.assertIn("Anna Vzorná", card)
         self.assertIn("marriage", card)
-        self.assertIn("confirmed ab 2026-10-20", card)
+        self.assertIn("confirmed ab 20 October 2026", card)
 
     def test_open_conflict_and_question(self):
         self.build()
@@ -238,7 +249,7 @@ class LivingPersons(MapCase):
         self.add("assertions/A-20261020-ab-o01.md", fact("A-20261020-ab-o01", LUCIE, "occupation", value="secret occupation"))
         self.add("assertions/A-20261020-ab-o02.md", fact("A-20261020-ab-o02", LUCIE, "residence", "2001", place_as_written="Secret street"))
         self.build()
-        self.assertIn("1950-06-02", self.card(LUCIE))
+        self.assertIn("2 June 1950", self.card(LUCIE))
         self.assertIn("rule 9", self.card(LUCIE))
         for secret in ("secret occupation", "Secret street", "A-20261020-ab-o01"):
             self.assertNotIn(secret, self.page)
@@ -246,7 +257,8 @@ class LivingPersons(MapCase):
     def test_living_minor_without_birth_date(self):
         self.add("assertions/A-20261020-ab-o03.md", fact("A-20261020-ab-o03", NELA, "birth", "2015-05-05"))
         self.build()
-        self.assertNotIn("2015-05-05", self.page)
+        for date in ("2015-05-05", "5 May 2015", "2015"):
+            self.assertNotIn(date, self.page)
         self.assertIn("living minor", self.card(NELA))
 
     def test_presumed_living_by_birth_year(self):
@@ -265,7 +277,8 @@ class LivingPersons(MapCase):
             "start": "1975-07-07", "confidence": "probable"})
         self.build()
         self.assertIn("Petr Partnerský", self.card(LUCIE))
-        self.assertNotIn("1975-07-07", self.page)
+        for date in ("1975-07-07", "7 July 1975", "1975"):
+            self.assertNotIn(date, self.page)
 
     def test_conflict_and_question_about_living_hidden(self):
         self.add("conflicts/X-20261020-ab-o06.md", {
@@ -283,6 +296,151 @@ class LivingPersons(MapCase):
         self.edit("A-20261020-ab-i02", lambda d: d.update(person=LUCIE))
         self.build()
         self.assertNotIn("In records", self.card(LUCIE))
+
+
+class Dates(unittest.TestCase):
+    """1) Dates in the language of the map, EDTF in words."""
+
+    def test_czech(self):
+        cases = {"1958-05-13": "13. 5. 1958", "1868~": "kolem 1868", "1904?": "1904?", "../1836-01-26": "před 26. 1. 1836",
+                 "1946/1947": "1946/1947", "1900/..": "po 1900", "1935-04": "duben 1935", "193X": "1930–1939",
+                 "1904%": "kolem 1904?", 1958: "1958", "1904-03-02/1906": "2. 3. 1904/1906"}
+        for value, expected in cases.items():
+            self.assertEqual(build_views.human_date(value, "cs"), expected, value)
+
+    def test_english(self):
+        cases = {"1958-05-13": "13 May 1958", "1868~": "about 1868", "../1836-01-26": "before 26 January 1836",
+                 "1900/..": "after 1900", "1935-04": "April 1935"}
+        for value, expected in cases.items():
+            self.assertEqual(build_views.human_date(value, "en"), expected, value)
+
+    def test_unknown_text_is_kept(self):
+        self.assertEqual(build_views.human_date("spring of the flood", "cs"), "spring of the flood")
+
+    def test_marriage_label(self):
+        for value, expected in (("1877?", "1877?"), ("1877~", "~1877"), ("../1836", "<1836"), ("1900/..", ">1900"), ("1877-05-01", "1877")):
+            self.assertEqual(build_views.short_year(value), expected, value)
+
+
+class Language(MapCase):
+    """6) map.lang from the region of the repository when it is missing."""
+
+    def test_default_from_region(self):
+        text = self.path("repo.yaml").read_text(encoding="utf-8")
+        self.path("repo.yaml").write_text(text.replace("  lang: en\n", ""), encoding="utf-8")
+        self.build()
+        self.assertIn('<html lang="cs">', self.page)
+        self.assertIn("kolem 1850", self.card(MATEJ))
+        self.assertIn("14. 3. 1878", self.card(JOSEF))
+
+    def test_english_without_known_region(self):
+        text = self.path("repo.yaml").read_text(encoding="utf-8").replace("  lang: en\n", "")
+        self.path("repo.yaml").write_text(text.replace("regions: [cz]", "regions: []").replace("extensions: [cz]", "extensions: []"), encoding="utf-8")
+        self.build()
+        self.assertIn('<html lang="en">', self.page)
+
+
+class BestFact(MapCase):
+    """2) Several facts of one type: the strongest on the card, the others in the detail."""
+
+    def test_equally_strong_versions_are_marked(self):
+        self.build()
+        card = re.search(rf'<button type="button" class="card[^"]*" data-id="{MATEJ}".*?</button>', self.tree()).group(0)
+        self.assertIn("* about 1850", card)       # A-…-b02 and A-…-b05 are equally strong, the first one wins
+        self.assertIn('class="alt" title="equally strong other version: about 1853 (possible)"', card)
+        detail = self.card(MATEJ)
+        self.assertIn("≠ equally strong other version: about 1853 (possible)", detail)
+        self.assertIn("shown on the card", detail)
+        self.assertIn("other version", detail)
+
+    def test_stronger_information_wins(self):
+        self.edit("A-20261020-ab-b05", lambda d: d["citations"][0].update(information="primary", evidence="direct"))
+        self.build()
+        self.assertIn("* about 1853", self.tree())
+        self.assertIn('title="another version disagrees: about 1850 (possible)"', self.tree())
+
+    def test_same_version_twice_is_no_disagreement(self):
+        self.edit("A-20261020-ab-b05", lambda d: d.update(date="1850~"))
+        self.build()
+        self.assertNotIn('class="alt"', self.tree())
+
+
+class Labels(MapCase):
+    """3) Names and titles instead of IDs; 4) long texts shortened on the card."""
+
+    def test_conflict_and_question_boxes_without_ids(self):
+        self.build()
+        for heading in ("Open conflicts", "Open questions"):
+            box = self.box(heading)
+            self.assertNotRegex(re.sub(r'(href|title|data-id)="[^"]*"', "", box), r"\b(A|X|Q|P)-20261020-ab-")
+        conflicts = self.box("Open conflicts")
+        self.assertIn(">Conflict</a> (open)", conflicts)
+        self.assertIn(">birth about 1850 – Matěj Pokusný</a>", conflicts)
+        self.assertIn(">birth about 1853 – Matěj Pokusný</a>", conflicts)
+        self.assertIn('title="X-20261020-ab-x01"', conflicts)
+        self.assertIn(">Who were the parents of Matěj Pokusný?</a> (in-progress)", self.box("Open questions"))
+
+    def test_record_title_in_citations(self):
+        self.build()
+        self.assertIn(">baptism 14 March 1878, Vzorkov („Josephus“)</a>", self.card(JOSEF))
+
+    def test_long_occupation_and_place(self):
+        long_place = "Vzorkov, farnost Vzorkov, panství Ukázkov, kraj Příkladný"
+        self.edit("A-20261020-ab-b01", lambda d: (d.pop("place"), d.update(place_as_written=long_place)))
+        self.build()
+        occupation = "sedlák na usedlosti čp. 12 ve Vzorkově, později obecní starosta a kostelník"
+        self.assertIn(f'<span class="pf" title="{occupation}">{build_views.clip(occupation, build_views.CLIP_OCCUPATION)}</span>', self.tree())
+        self.assertTrue(build_views.clip(occupation, build_views.CLIP_OCCUPATION).endswith("…"))
+        self.assertIn(occupation, self.card(MATEJ))
+        self.assertIn(f'title="{long_place}">{build_views.clip(long_place, build_views.CLIP_PLACE)}</span>', self.tree())
+        self.assertIn(long_place, self.card(JOSEF))
+
+
+class LivingSettings(MapCase):
+    """5) map.living_places and --hide-living."""
+
+    def lucie_card(self):
+        return re.search(rf'<button type="button" class="card[^"]*" data-id="{LUCIE}".*?</button>', self.tree()).group(0)
+
+    def test_no_birth_place_of_living_by_default(self):
+        self.build()
+        self.assertNotIn("Vzorkov", self.lucie_card())
+        self.assertNotIn("Vzorkov", self.card(LUCIE))   # neither the place nor the parish register's title
+        self.assertNotIn("fictional family register", self.card(LUCIE))
+        self.assertIn('href="../sources/SO-20261020-ab-s01.md"', self.card(LUCIE))
+        self.assertIn("2 June 1950", self.card(LUCIE))
+
+    def test_living_places_on(self):
+        self.set_map("lang: en", "living_places: true")
+        self.build()
+        self.assertIn("Vzorkov", self.lucie_card())
+        self.assertIn("Vzorkov", self.card(LUCIE))
+        self.assertIn("fictional family register", self.card(LUCIE))   # source and note shown again
+
+    def test_hide_living_for_sharing(self):
+        self.set_map("lang: en", "living_places: true")
+        family_map = self.repo / "views" / "mapa.html"
+        before = family_map.read_bytes() if family_map.exists() else None
+        out, _ = build_views.build_map(self.repo, today=TODAY, hide_living=True)
+        self.assertEqual(out.name, "mapa-sdileni.html")
+        self.page = out.read_text(encoding="utf-8")
+        for secret in ("Lucie Pokusná", "Nela Pokusná", "2 June 1950", "1950", "Search the marriage register"):
+            self.assertNotIn(secret, self.page)
+        self.assertIn("Living person", self.page)
+        self.assertIn("living persons hidden", self.page)
+        self.assertNotIn("<h2>Next steps</h2>", self.page)
+        self.assertIn("Karel Pokusný", self.page)   # the dead stay as they are
+        self.assertEqual(family_map.read_bytes() if family_map.exists() else None, before)  # the family's map is not overwritten
+
+    def test_hide_living_cli(self):
+        out = subprocess.run([sys.executable, str(ROOT / "tools" / "build_views.py"), str(self.repo), "--hide-living"], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertTrue((self.repo / "views" / "mapa-sdileni.html").is_file())
+
+    def test_living_places_must_be_true_or_false(self):
+        self.set_map("lang: en", "living_places: sometimes")
+        report = self.validate()
+        self.assertError(report, "repo.yaml")
 
 
 if __name__ == "__main__":

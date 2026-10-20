@@ -43,8 +43,12 @@
           "$ref": "common.schema.json#/$defs/ref_person"
         },
         "lang": {
-          "description": "Language of the map labels (default en).",
+          "description": "Language of the map labels and dates (default: from regions, e.g. cz → cs; otherwise en).",
           "enum": ["en", "cs"]
+        },
+        "living_places": {
+          "description": "Show the birth place of living persons (default false; rule 9 allows it, the family decides).",
+          "type": "boolean"
         }
       }
     }
