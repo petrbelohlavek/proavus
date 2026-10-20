@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -79,6 +80,25 @@ class Init(unittest.TestCase):
         self.assertTrue((clone / "repo.yaml").is_file())
         self.assertTrue((clone / ".git").is_dir())
 
+    def test_init_into_clone_with_claude_settings(self):
+        """Opening the empty clone in Claude Code may create .claude/ first."""
+        clone = Path(self._tmp.name) / "proavus-clone2"
+        subprocess.run(["git", "init", "-q", str(clone)], check=True)
+        (clone / ".claude").mkdir()
+        (clone / ".claude" / "settings.local.json").write_text('{"permissions": {"allow": []}}\n')
+        family_repo.init(clone, "x", ["ab:A"], [])
+        self.assertTrue((clone / "repo.yaml").is_file())
+        self.assertEqual((clone / ".claude" / "settings.local.json").read_text(), '{"permissions": {"allow": []}}\n')
+
+    def test_init_refuses_other_entries(self):
+        for name, make in ((".DS_Store", Path.touch), ("notes", Path.mkdir), (".claude", Path.touch)):
+            folder = Path(self._tmp.name) / f"other-{name.strip('.')}"
+            folder.mkdir()
+            make(folder / name)
+            with self.assertRaises(SystemExit) as cm:
+                family_repo.init(folder, "x", ["ab:A"], [])
+            self.assertIn(name, str(cm.exception))
+
     def test_install_tools_refuses_framework_and_other_folders(self):
         with self.assertRaises(SystemExit) as cm:
             family_repo.install_tools(ROOT)
@@ -94,6 +114,58 @@ class Init(unittest.TestCase):
     def test_no_remote(self):
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         self.assertEqual(family_repo.check_private(self.repo), 5)
+
+
+class ProtectPlugin(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmp.name) / "family"
+        shutil.copytree(FIXTURE, self.repo)
+        self.settings = self.repo / ".claude" / "settings.local.json"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def deny(self):
+        return json.loads(self.settings.read_text(encoding="utf-8"))["permissions"]["deny"]
+
+    def test_denies_edits_in_the_plugin_folder(self):
+        added = family_repo.protect_plugin(self.repo)
+        rule = f"Edit(/{ROOT.resolve().as_posix()}/**)"
+        self.assertEqual(added, [rule])
+        self.assertTrue(rule.startswith("Edit(//"))  # // = absolute path in Claude Code rules
+        self.assertEqual(self.deny(), [rule])
+
+    def test_keeps_other_settings_and_is_idempotent(self):
+        self.settings.parent.mkdir()
+        self.settings.write_text(json.dumps({"permissions": {"allow": ["Bash(git status)"], "deny": ["Read(./secret)"]}, "x": 1}))
+        other = Path(self._tmp.name) / "proavus-checkout"
+        other.mkdir()
+        family_repo.protect_plugin(self.repo, [other])
+        self.assertEqual(family_repo.protect_plugin(self.repo, [other]), [])
+        data = json.loads(self.settings.read_text(encoding="utf-8"))
+        self.assertEqual(data["x"], 1)
+        self.assertEqual(data["permissions"]["allow"], ["Bash(git status)"])
+        self.assertEqual(len(data["permissions"]["deny"]), 3)
+        self.assertIn(f"Edit(/{other.resolve().as_posix()}/**)", data["permissions"]["deny"])
+
+    def test_broken_settings_are_not_overwritten(self):
+        self.settings.parent.mkdir()
+        self.settings.write_text("{broken")
+        with self.assertRaises(SystemExit):
+            family_repo.protect_plugin(self.repo)
+        self.assertEqual(self.settings.read_text(), "{broken")
+
+    def test_only_in_a_family_repository(self):
+        own = ROOT / ".claude" / "settings.local.json"
+        before = own.read_bytes() if own.exists() else None
+        with self.assertRaises(SystemExit):
+            family_repo.protect_plugin(ROOT)
+        self.assertEqual(own.read_bytes() if own.exists() else None, before)
+
+    def test_settings_are_not_saved_in_git(self):
+        ignore = (ROOT / "templates" / "family" / ".gitignore").read_text()
+        self.assertIn(".claude/settings.local.json", ignore)
 
 
 class StartHere(unittest.TestCase):

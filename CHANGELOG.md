@@ -4,8 +4,22 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
-## 0.2.0 – unreleased
+## 0.2.0 – 2026-10-20
 
+First release (`stable`); includes everything listed under 0.1.0.
+
+- README (EN, CS): installing the plugin from the local catalogue
+  (`.claude-plugin/marketplace.json`) in Claude Code desktop and CLI, step by
+  step, with checks that `/proavus:init`, `/proavus:start` and
+  `/proavus:end` are available; update and removal.
+- `/proavus:init` and `family_repo.py init` accept an existing empty
+  repository that contains `.claude/` besides `.git` (Claude Code creates it
+  when the folder is opened).
+- `family_repo.py protect-plugin` and a new `/proavus:init` step: the family
+  repository's `.claude/settings.local.json` denies Claude Code's
+  file-editing tools in the plugin folder (`Edit(//<folder>/**)` – one Edit
+  rule covers Write too); the skill explains that shell commands are not
+  covered and rely on the agent following `AGENTS.md`.
 - `tools/build_views.py`: family map `views/mapa.html` – one self-contained
   HTML file without CDN (ADR 0027). Ancestor tree of the starting person,
   lines by relationship confidence (proved / probable / possible / not
@@ -33,7 +47,7 @@ major + `migrate.py`.
 - Fictional fixture extended (seven persons over five generations, step and
   unknown parent, living persons, open conflict).
 
-## 0.1.0 – unreleased
+## 0.1.0 – not released separately (part of 0.2.0)
 
 First minimal framework (build step 2).
 

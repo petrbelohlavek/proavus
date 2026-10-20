@@ -26,6 +26,54 @@ Genealogical Proof Standard.
    plan the search and read the records.
 5. Type `/end`: findings are saved with source citations and checked.
 
+## Install the plugin from a local folder
+
+Until Proavus is public, the plugin is installed from a local copy of this
+repository: the repository is its own plugin catalogue
+(`.claude-plugin/marketplace.json`, the whole repository is the plugin, ADR
+0014). Needs Claude Code 2.1.275 or later (`claude --version`). The desktop
+app (Code tab) and the `claude` command in a terminal share the same
+settings, so you install once per computer – in a terminal.
+
+1. **Get the framework** into a folder outside iCloud Drive, Dropbox,
+   OneDrive or Google Drive, e.g.
+   `git clone https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
+   (private for now – you need access).
+2. **Add the catalogue and install the plugin:**
+   ```
+   claude plugin marketplace add ~/Documents/Proavus/proavus
+   claude plugin install proavus@proavus
+   ```
+3. **Check the installation:**
+   - `claude plugin list` shows `proavus@proavus`, `Status: ✔ enabled`;
+   - `claude plugin details proavus@proavus` shows `Skills (3)  end, init, start`.
+4. **Check the commands in a session.** Sessions started before the
+   installation do not see the plugin – start a new one:
+   - **terminal:** run `claude` in any folder and type `/proavus:` – the
+     suggestions offer `/proavus:init`, `/proavus:start` and `/proavus:end`;
+   - **desktop app:** open a new session in the Code tab and type `/proavus:`
+     in the message box – the same three commands appear.
+
+   A quick check that changes nothing: in an empty folder run
+   `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
+   the folder is not a family repository yet and offers `/proavus:init`.
+5. **Create your family repository** with `/proavus:init` (in a new session
+   in the folder where it should live). It also forbids Claude Code's
+   file-editing tools to touch the framework folder from the family
+   repository (`.claude/settings.local.json` there).
+
+**Update** after `git pull` in the framework folder:
+`claude plugin marketplace update proavus`, then
+`claude plugin update proavus@proavus` (it takes a new version number from
+`.claude-plugin/plugin.json`), then start a new session.
+**Remove:** `claude plugin uninstall proavus@proavus` and
+`claude plugin marketplace remove proavus`.
+
+The tools run straight from this folder (`${CLAUDE_PLUGIN_ROOT}` is the
+folder itself), and Claude Code also copies the folder – including files git
+ignores – into its plugin cache. Keep nothing private in the framework
+folder.
+
 ## The family map
 
 `tools/build_views.py` turns a family repository into one self-contained

@@ -26,6 +26,53 @@ a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
    čtením zápisů.
 5. Napište `/end`: výsledky se uloží s citacemi zdrojů a zkontrolují.
 
+## Instalace pluginu z místní složky
+
+Dokud Proavus není veřejný, instaluje se plugin z místní kopie tohoto repa:
+repo je samo sobě katalogem pluginů (`.claude-plugin/marketplace.json`,
+plugin je celé repo, ADR 0014). Je potřeba Claude Code 2.1.275 nebo novější
+(`claude --version`). Desktopová aplikace (karta Code) i příkaz `claude`
+v terminálu sdílejí stejné nastavení, takže stačí nainstalovat jednou na
+počítač – v terminálu.
+
+1. **Stáhněte framework** do složky mimo iCloud Drive, Dropbox, OneDrive
+   nebo Google Drive, např.
+   `git clone https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
+   (zatím soukromé – potřebujete přístup).
+2. **Přidejte katalog a nainstalujte plugin:**
+   ```
+   claude plugin marketplace add ~/Documents/Proavus/proavus
+   claude plugin install proavus@proavus
+   ```
+3. **Zkontrolujte instalaci:**
+   - `claude plugin list` ukáže `proavus@proavus`, `Status: ✔ enabled`;
+   - `claude plugin details proavus@proavus` ukáže `Skills (3)  end, init, start`.
+4. **Zkontrolujte příkazy v sezení.** Sezení spuštěná před instalací plugin
+   nevidí – začněte nové:
+   - **terminál:** spusťte `claude` v libovolné složce a napište `/proavus:` –
+     nabídka ukáže `/proavus:init`, `/proavus:start` a `/proavus:end`;
+   - **desktopová aplikace:** otevřete nové sezení na kartě Code a do pole
+     zprávy napište `/proavus:` – objeví se stejné tři příkazy.
+
+   Rychlá kontrola, která nic nemění: v prázdné složce spusťte
+   `claude -p "/proavus:start" --permission-mode plan` – Proavus odpoví, že
+   složka zatím není repo rodiny, a nabídne `/proavus:init`.
+5. **Založte repo rodiny** příkazem `/proavus:init` (v novém sezení ve
+   složce, kde má být). Ten také zakáže nástrojům Claude Code pro úpravu
+   souborů sahat z repa rodiny do složky frameworku (tamní
+   `.claude/settings.local.json`).
+
+**Aktualizace** po `git pull` ve složce frameworku:
+`claude plugin marketplace update proavus`, potom
+`claude plugin update proavus@proavus` (převezme nové číslo verze z
+`.claude-plugin/plugin.json`) a nové sezení.
+**Odebrání:** `claude plugin uninstall proavus@proavus` a
+`claude plugin marketplace remove proavus`.
+
+Nástroje běží přímo z této složky (`${CLAUDE_PLUGIN_ROOT}` je sama složka)
+a Claude Code ji navíc kopíruje – i se soubory, které git ignoruje – do své
+mezipaměti pluginů. Ve složce frameworku nemějte nic soukromého.
+
 ## Mapa rodiny
 
 `tools/build_views.py` vytvoří z repa rodiny jednu soběstačnou stránku HTML:

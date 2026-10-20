@@ -10,6 +10,9 @@ Usage:
       create a new family repository from templates/family/ and install .proavus/
   family_repo.py install-tools DIR
       (re)install the pinned copy of tools, schema and method in DIR/.proavus/
+  family_repo.py protect-plugin DIR [--also PATH …]
+      deny Claude Code's file-editing tools in the framework (this plugin's
+      folder, and PATH) via DIR/.claude/settings.local.json
   family_repo.py start-here DIR
       generate DIR/START-HERE.md (not saved in git) and print a short summary
   family_repo.py check-private DIR
@@ -38,6 +41,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 from proavuslib.validator import RepoValidator  # noqa: E402
 
 TEMPLATE = FRAMEWORK / "templates" / "family"
+# An existing empty repository may contain only these (a clone, plus the
+# per-machine settings Claude Code may create when the folder is opened).
+EMPTY_REPO_ENTRIES = {".git", ".claude"}
 # What goes into .proavus/ (ADR 0014). guard_names.py is framework-only.
 COPY_DIRS = ["schema"]
 COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py"]
@@ -107,8 +113,10 @@ def yaml_str(text: str) -> str:
 
 
 def init(repo: Path, title: str, members: list[str], regions: list[str]) -> None:
-    if repo.exists() and any(p.name != ".git" for p in repo.iterdir()):
-        raise SystemExit(f"init: {repo} is not empty – refusing to overwrite")
+    if repo.exists():
+        extra = [p.name for p in repo.iterdir() if p.name not in EMPTY_REPO_ENTRIES or (p.name == ".claude" and not p.is_dir())]
+        if extra:
+            raise SystemExit(f"init: {repo} is not empty ({', '.join(sorted(extra))}) – refusing to overwrite")
     if not TEMPLATE.is_dir():
         raise SystemExit("init: templates/family/ not found (run from the framework, not from .proavus)")
     parsed = []
@@ -141,6 +149,38 @@ def init(repo: Path, title: str, members: list[str], regions: list[str]) -> None
             text = text.replace(key, value)
         path.write_text(text, encoding="utf-8")
     install_tools(repo)
+
+
+# --------------------------------------------------------- protect-plugin
+def edit_deny_rule(path: Path) -> str:
+    """Claude Code rule denying all file-editing tools under an absolute path.
+
+    `//` marks an absolute path; an Edit rule covers Edit, Write and the other
+    editing tools (a Write(path) rule is not matched by file checks).
+    """
+    return f"Edit(/{path.resolve().as_posix()}/**)"
+
+
+def protect_plugin(repo: Path, also: list[Path] | None = None) -> list[str]:
+    """Add deny rules for the framework folder(s) to .claude/settings.local.json."""
+    check_family_repo(repo, "protect-plugin")
+    rules = [edit_deny_rule(FRAMEWORK)] + [edit_deny_rule(p) for p in also or []]
+    path = repo / ".claude" / "settings.local.json"
+    settings = {}
+    if path.is_file():
+        try:
+            settings = json.loads(path.read_text(encoding="utf-8") or "{}")
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"protect-plugin: {path} is not valid JSON ({exc}) – fix it first, nothing was changed")
+        if not isinstance(settings, dict):
+            raise SystemExit(f"protect-plugin: {path} must be a JSON object – nothing was changed")
+    permissions = settings.setdefault("permissions", {})
+    deny = permissions.setdefault("deny", [])
+    added = [r for r in dict.fromkeys(rules) if r not in deny]
+    deny.extend(added)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return added
 
 
 # ------------------------------------------------------------- START-HERE
@@ -248,6 +288,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--region", action="append", default=[], help="region code, e.g. cz (repeatable)")
     for name in ("install-tools", "start-here", "check-private"):
         sub.add_parser(name).add_argument("repo", nargs="?", default=".")
+    p = sub.add_parser("protect-plugin")
+    p.add_argument("repo", nargs="?", default=".")
+    p.add_argument("--also", action="append", default=[], help="another framework folder to protect (repeatable)")
     args = parser.parse_args(argv)
     repo = Path(args.repo).resolve()
 
@@ -258,6 +301,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "install-tools":
         install_tools(repo)
         print(f".proavus/ installed (Proavus {framework_version()})")
+        return 0
+    if args.cmd == "protect-plugin":
+        added = protect_plugin(repo, [Path(a).expanduser() for a in args.also])
+        print(f".claude/settings.local.json: {len(added)} new deny rules" + "".join(f"\n  {r}" for r in added))
         return 0
     if args.cmd == "start-here":
         summary, code = start_here(repo)

@@ -28,7 +28,7 @@ uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private .
 - exit 4 – cannot tell (gh missing or logged out): help fix it; until then
   do not save or push anything;
 - exit 5 – no remote yet: work locally, remind that the private repository
-  still has to be created (step 6 of `/proavus:init`).
+  still has to be created (step 7 of `/proavus:init`).
 
 ## 3. Get what others added
 

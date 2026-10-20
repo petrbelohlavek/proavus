@@ -37,7 +37,8 @@ Git.Git GitHub.cli astral-sh.uv`; then `gh auth login` in the browser and
 
 **Existing empty repository.** If the user already created the repository on
 GitHub (or the current folder is its empty clone), use it: the folder must
-contain only `.git` and have a remote `origin`. Check it **before writing any
+contain only `.git` (and possibly `.claude/`, which Claude Code creates when
+the folder is opened) and have a remote `origin`. Check it **before writing any
 file**:
 
 ```
@@ -46,8 +47,8 @@ uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private "<folder>"
 
 Exit 0 = private, continue. Exit 3 = public or a fork: stop and help make it
 private first. Exit 4 = cannot tell: fix `gh` first. If the folder has
-commits or files other than `.git`, stop – never overwrite an existing
-repository.
+commits or files other than `.git` and `.claude/`, stop – never overwrite an
+existing repository.
 
 ## 3. Confirm the plan
 
@@ -61,10 +62,32 @@ a clear yes.
 uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" init "<folder>" --title "<title>" --member <abbr>:"<Full name>" --region cz
 ```
 
-The tool refuses a folder with anything but `.git` in it – then ask for
-another one.
+The tool refuses a folder with anything but `.git` and `.claude/` in it –
+then ask for another one.
 
-## 5. Save locally
+## 5. Protect the framework
+
+The family repository must never change the Proavus framework (family data
+would leak into it). Tell the user in one sentence, then run:
+
+```
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" protect-plugin "<folder>"
+```
+
+It adds `Edit(//<plugin folder>/**)` to `permissions.deny` in
+`<folder>/.claude/settings.local.json` (keeps everything else there; the file
+is per computer and not saved in git). One `Edit` rule blocks all of Claude
+Code's file-editing tools (Edit, Write …); a `Write(path)` rule would not
+work. If the plugin was installed from GitHub and the user also keeps a local
+checkout of the framework, protect it too: `--also "<checkout>"`.
+
+Say plainly what this does **not** do: a shell command (`sed -i`, `>`, a
+script) can still write anywhere – the rule does not cover the shell. That
+the framework stays untouched from a Bash command relies on the agent
+following `AGENTS.md`, and on the person approving commands, not on this
+setting.
+
+## 6. Save locally
 
 In the folder: if there is no `.git` yet, `git init -b main`; otherwise
 `git branch -M main` (an empty clone may start on another branch name). Then
@@ -72,7 +95,7 @@ In the folder: if there is no `.git` yet, `git init -b main`; otherwise
 `git commit -m "Create family repository (Proavus <version>)"`
 (version from `.proavus/VERSION`).
 
-## 6. Put it on GitHub (private)
+## 7. Put it on GitHub (private)
 
 After the user's yes:
 
@@ -81,7 +104,7 @@ After the user's yes:
 - **existing empty repository** (already checked in step 2):
   `git push -u origin main`
 
-## 7. Verify it is private
+## 8. Verify it is private
 
 ```
 uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private "<folder>"
@@ -91,7 +114,7 @@ Exit 0 = private. Anything else: stop, tell the user plainly, and help make
 the repository private (`gh repo edit <owner>/proavus-<family> --visibility
 private --accept-visibility-change-consequences`) before any data is added.
 
-## 8. Hand over
+## 9. Hand over
 
 Tell the user: open the new folder in a new Claude Code session and type
 `/start`. To invite family members later: GitHub → repository → Settings →
