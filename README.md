@@ -12,9 +12,8 @@ tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
 > **Work in progress (0.4.0).** The schema, the validator, the binding rules
-> and the first commands (`/proavus:init`, `/proavus:start`,
-> `/proavus:end`) exist; the guided setup (`/setup`) does not yet. Not ready
-> for general use.
+> and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
+> `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
 
 ## How it will work
 
@@ -63,10 +62,10 @@ developing Proavus).
    started before the installation do not see the plugin – restart the
    desktop app or start a new session:
    - **terminal:** run `claude` in any folder and type `/proavus:` – the
-     suggestions offer `/proavus:init`, `/proavus:start`, `/proavus:end`
-     and `/proavus:upgrade`;
+     suggestions offer `/proavus:init`, `/proavus:setup`,
+     `/proavus:start`, `/proavus:end` and `/proavus:upgrade`;
    - **desktop app:** open a new session in the Code tab and type `/proavus:`
-     in the message box – the same four commands appear.
+     in the message box – the same five commands appear.
 
    A quick check that changes nothing: in an empty folder run
    `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
@@ -75,6 +74,39 @@ developing Proavus).
    in the folder where it should live). It also forbids Claude Code's
    file-editing tools to touch the framework folder from the family
    repository (`.claude/settings.local.json` there).
+
+## A family member joins (`/proavus:setup`)
+
+The maintainer invites the member to the private family repository (GitHub →
+repository → Settings → Collaborators) and, while Proavus is private, to
+`petrbelohlavek/proavus` too. The member creates a GitHub account, installs
+the Claude desktop app and, in a new session in the Code tab (any folder,
+e.g. Documents), writes:
+
+> Set up Proavus for me: install git and the GitHub CLI, log me in to GitHub
+> in the browser, download https://github.com/petrbelohlavek/proavus (branch
+> `stable`) into `Documents/Proavus/proavus` and follow
+> `skills/setup/SKILL.md` in it. My family repository is
+> `<owner>/proavus-<family>`.
+
+On a computer where the plugin is already installed, `/proavus:setup` is
+enough. The guide asks before every step and skips what is done, so it can
+be run again after a restart:
+
+1. git, `gh` and `uv` (macOS: Homebrew, or the system installers; Windows:
+   `winget`);
+2. GitHub login in the browser (`gh auth login --web`, `gh auth setup-git`)
+   and the advice to turn on two-factor login;
+3. the plugin from the catalogue (the `stable` branch, as above);
+4. checks that the family repository is private and what the account may do
+   (`tools/family_repo.py access`), then clones it;
+5. adds the member to `repo.yaml` – abbreviation, name, role (researcher,
+   helper, maintainer) – with a commit (admin, maintain) or a pull request
+   for the maintainer (write);
+6. hands over to `/proavus:start` in the family folder.
+
+**Never type a password, a token or a recovery code into the chat** – the
+password goes only into GitHub's page in the browser or into a system window.
 
 **Update to a new release:**
 ```
@@ -107,6 +139,7 @@ the **folder the session runs in** – it is shown under the message box.
 | Command | When | Where | What it does |
 |---|---|---|---|
 | `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, puts it on GitHub and checks it is private |
+| `/proavus:setup` | once per computer and member | a new session in any folder (not the framework) | installs git, gh, uv and the plugin, logs in to GitHub, clones the private family repository, adds the member to `repo.yaml` (commit or pull request), recommends two-factor login |
 | `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
 | `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
 | `/proavus:upgrade` | when `/proavus:start` says the Proavus copy is older than the plugin | a session in the family repository, with nothing unsaved | shows what changes, asks about new settings (e.g. the map's starting person), updates `.proavus/`, the Proavus blocks, the check workflow and `schema_version`, migrates data if needed, validates and saves |

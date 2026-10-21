@@ -27,6 +27,15 @@ Usage:
       check that the repository's origin is private and not a fork of proavus
       exit 0 = private · 3 = public or a fork (do not write) · 4 = cannot tell
       · 5 = no remote yet
+  family_repo.py access DIR|OWNER/NAME
+      before cloning or saving: is the repository private, and may this GitHub
+      account save to it directly or only through a pull request
+      exit 0 = private, save directly (admin or maintain) · 2 = private, save
+      through a pull request (write) · 6 = private, read only · 3 = public or
+      a fork (do not write) · 4 = cannot tell · 7 = not found or no access
+  family_repo.py add-member DIR --abbr xy --name "Full name" [--role researcher]
+      add a member to repo.yaml, keeping the rest of the file as written
+      exit 0 = added · 1 = already listed (nothing changed)
 
 The agent does git and GitHub steps itself, with the user's consent.
 """
@@ -729,6 +738,98 @@ def check_private(repo: Path) -> int:
     return 0
 
 
+# ----------------------------------------------------------------- access
+DIRECT = ("ADMIN", "MAINTAIN")   # may save straight to main
+PROPOSE = ("WRITE",)             # saves through a branch and a pull request
+
+
+def repo_access(info: dict) -> tuple[int, str]:
+    """Exit code and a plain sentence from `gh repo view --json` output."""
+    name = info.get("nameWithOwner", "?")
+    parent = (info.get("parent") or {}).get("name", "")
+    if info.get("isFork") and parent == "proavus":
+        return 3, f"{name} is a FORK of proavus – forks are public; never write family data here"
+    if info.get("visibility") != "PRIVATE":
+        return 3, f"{name} is {info.get('visibility')} – family data may only be in a PRIVATE repository"
+    permission = info.get("viewerPermission") or "NONE"
+    if permission in DIRECT:
+        return 0, f"{name} is private; you may save directly ({permission.lower()})"
+    if permission in PROPOSE:
+        return 2, f"{name} is private; you save through a pull request (write) – a maintainer merges it"
+    return 6, f"{name} is private; you may only read ({permission.lower()}) – ask a maintainer for write access"
+
+
+def access(target: str) -> int:
+    """`target` is a family repository folder (its origin) or OWNER/NAME on GitHub."""
+    path = Path(target).expanduser()
+    if path.is_dir():
+        url = subprocess.run(["git", "-C", str(path), "remote", "get-url", "origin"], capture_output=True, text=True)
+        if url.returncode != 0:
+            print("no remote 'origin' – not a clone of a GitHub repository")
+            return 4
+        target = url.stdout.strip()
+    try:
+        out = subprocess.run(
+            ["gh", "repo", "view", target, "--json", "nameWithOwner,visibility,isFork,parent,viewerPermission"],
+            capture_output=True, text=True, timeout=60,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        print("cannot tell: GitHub CLI (gh) is not available")
+        return 4
+    if out.returncode != 0:
+        if "Could not resolve to a Repository" in out.stderr:
+            print(f"{target}: not found, or this GitHub account has no access yet – "
+                  "accept the invitation (github.com → notifications) or ask a maintainer to invite you")
+            return 7
+        print("cannot tell: gh could not read the repository (logged in? gh auth status)")
+        return 4
+    code, message = repo_access(json.loads(out.stdout))
+    print(message)
+    return code
+
+
+# ------------------------------------------------------------- add-member
+MEMBER_ROLES = ("researcher", "helper", "maintainer")
+
+
+def add_member(repo: Path, abbr: str, name: str, role: str = "researcher") -> bool:
+    """Append a member to repo.yaml; False if exactly this member is already listed."""
+    check_family_repo(repo, "add-member")
+    name = name.strip()
+    if not re.fullmatch(r"[a-z]{2,4}", abbr):
+        raise SystemExit(f"add-member: the abbreviation must be 2–4 lowercase letters a–z, got {abbr!r}")
+    if not name:
+        raise SystemExit("add-member: the name is empty")
+    if role not in MEMBER_ROLES:
+        raise SystemExit(f"add-member: role must be one of {', '.join(MEMBER_ROLES)}, got {role!r}")
+    path = repo / "repo.yaml"
+    text = path.read_text(encoding="utf-8")
+    members = (load_yaml(text) or {}).get("members") or []
+    for m in members:
+        if not isinstance(m, dict):
+            continue
+        if m.get("abbr") == abbr:
+            if str(m.get("name", "")).strip() == name:
+                return False
+            raise SystemExit(f"add-member: {abbr!r} already belongs to {m.get('name')!r} – choose another abbreviation")
+        if str(m.get("name", "")).strip().casefold() == name.casefold():
+            raise SystemExit(f"add-member: {name!r} is already listed as {m.get('abbr')!r} – nothing to add")
+    lines = text.splitlines(keepends=True)
+    start = next((i for i, line in enumerate(lines) if re.match(r"^members:\s*(#.*)?$", line)), None)
+    if start is None:
+        raise SystemExit("add-member: members in repo.yaml is not written as a block (members: on its own line) – edit it by hand")
+    end = start + 1
+    while end < len(lines) and (lines[end].startswith((" ", "\t")) or not lines[end].strip()):
+        end += 1
+    while end > start + 1 and not lines[end - 1].strip():
+        end -= 1
+    if end > start + 1 and not lines[end - 1].endswith("\n"):
+        lines[end - 1] += "\n"
+    lines.insert(end, f"  - abbr: {abbr}\n    name: {yaml_str(name)}\n    role: {role}\n")
+    path.write_text("".join(lines), encoding="utf-8")
+    return True
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Family repository helper (Proavus).")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -742,11 +843,20 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("protect-plugin")
     p.add_argument("repo", nargs="?", default=".")
     p.add_argument("--also", action="append", default=[], help="another framework folder to protect (repeatable)")
+    p = sub.add_parser("access")
+    p.add_argument("target", nargs="?", default=".", help="family repository folder or OWNER/NAME")
+    p = sub.add_parser("add-member")
+    p.add_argument("repo", nargs="?", default=".")
+    p.add_argument("--abbr", required=True, help="2–4 lowercase letters, used in IDs")
+    p.add_argument("--name", required=True)
+    p.add_argument("--role", choices=MEMBER_ROLES, default="researcher")
     p = sub.add_parser("upgrade")
     p.add_argument("repo", nargs="?", default=".")
     p.add_argument("--map-root", help="starting person of the family map (P-…)")
     p.add_argument("--map-lang", choices=MAP_LANGS, help="language of the map labels")
     args = parser.parse_args(argv)
+    if args.cmd == "access":
+        return access(args.target)
     repo = Path(args.repo).resolve()
 
     if args.cmd == "init":
@@ -761,6 +871,12 @@ def main(argv: list[str] | None = None) -> int:
         added = protect_plugin(repo, [Path(a).expanduser() for a in args.also])
         print(f".claude/settings.local.json: {len(added)} new deny rules" + "".join(f"\n  {r}" for r in added))
         return 0
+    if args.cmd == "add-member":
+        if add_member(repo, args.abbr, args.name, args.role):
+            print(f"repo.yaml: added {args.abbr} – {args.name.strip()} ({args.role})")
+            return 0
+        print(f"repo.yaml: {args.abbr} – {args.name.strip()} is already listed, nothing changed")
+        return 1
     if args.cmd == "upgrade-plan":
         plan = plan_upgrade(repo)
         print_plan(plan)

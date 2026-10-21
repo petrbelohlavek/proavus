@@ -88,7 +88,7 @@ proavus/
 │   ├── bulk_import.py                  převod staršího bádání plánem (docs/import.md, ADR 0042) [v0]
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
-├── skills/                             init · start · end · upgrade [v0]; později setup · check · claim · review · feedback
+├── skills/                             init · setup · start · end · upgrade [v0]; později check · claim · review · feedback
 ├── hooks/                              kontrola před uložením v rodinném repu (později)
 ├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu
@@ -372,6 +372,12 @@ větu z README. Průvodce `/setup` (uživatel potvrzuje každý krok):
    nainstaluje plugin a provede zapnutím automatických aktualizací;
 4. založí soukromé repo (`/init`) nebo stáhne rodinné repo, kam byl pozván;
 5. „Vše připraveno, napište `/start`.“
+
+Člen, který se připojuje k existujícímu repu rodiny: `/proavus:setup`
+([ADR 0048](decisions/0048-setup-for-family-members.md)) – ověří soukromí
+a oprávnění (`family_repo.py access`), naklonuje repo, zapíše člena do
+`repo.yaml` (`add-member`) commitem nebo pull requestem podle práv
+a doporučí dvoufázové ověření. Kroky jsou opakovatelné.
 
 `/check` kdykoli vyhodnotí, co nefunguje. Při běžné práci git uživatel nevidí.
 

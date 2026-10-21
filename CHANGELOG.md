@@ -8,6 +8,24 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## 0.5.0 – unreleased
+
+- `/proavus:setup` – a guide for a family member without technical
+  knowledge: checks and installs git, gh and uv (macOS, Windows), logs in to
+  GitHub in the browser, recommends two-factor login, installs the plugin
+  from the catalogue, clones the private family repository, adds the member
+  to `repo.yaml` (abbreviation, role) with a commit or a pull request
+  according to their access, and hands over to `/proavus:start`. Every step
+  is skipped when already done. Never passwords or tokens in the chat
+  (ADR 0048).
+- `family_repo.py access <folder|owner/name>`: private? save directly
+  (admin, maintain), through a pull request (write) or read only; not found
+  or no access yet.
+- `family_repo.py add-member`: adds a member to `repo.yaml` and keeps the
+  rest of the file as written; refuses a taken abbreviation.
+- `/proavus:start`: a member missing in `repo.yaml` – first looks for an open
+  pull request `member-<abbr>`, otherwise adds them with `add-member`.
+
 ## 0.4.0 – 2026-10-21
 
 - Schema (core, additive): a human task may name the `question` it serves,

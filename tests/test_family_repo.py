@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from helpers import FIXTURE, ROOT, TODAY
 
 import family_repo
+from proavuslib.frontmatter import load_yaml
 from proavuslib.validator import RepoValidator
 
 
@@ -321,6 +324,180 @@ class StartHere(unittest.TestCase):
         summary, code = family_repo.start_here(self.repo, today=TODAY)
         self.assertEqual(code, 1)
         self.assertIn("ERRORS", summary)
+
+
+class AddMember(unittest.TestCase):
+    """/proavus:setup adds a new family member to repo.yaml (ADR 0048)."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmp.name) / "proavus-pokusni"
+        family_repo.init(self.repo, "Rodokmen rodiny Pokusných", ["ab:Ada Badatelová"], ["cz"])
+        self.yaml = self.repo / "repo.yaml"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def members(self, repo=None):
+        return load_yaml(((repo or self.repo) / "repo.yaml").read_text(encoding="utf-8"))["members"]
+
+    def test_adds_member_and_keeps_the_rest(self):
+        before = self.yaml.read_text(encoding="utf-8")
+        self.assertTrue(family_repo.add_member(self.repo, "bp", "Bedřich Pokusný", "helper"))
+        after = self.yaml.read_text(encoding="utf-8")
+        self.assertEqual(self.members()[-1], {"abbr": "bp", "name": "Bedřich Pokusný", "role": "helper"})
+        self.assertEqual(after.replace('  - abbr: bp\n    name: "Bedřich Pokusný"\n    role: helper\n', ""), before)
+        self.assertIn("# map:", after)  # comments stay
+        self.assertEqual(RepoValidator(self.repo, ROOT, today=TODAY).run().errors, [])
+
+    def test_already_listed_changes_nothing(self):
+        before = self.yaml.read_text(encoding="utf-8")
+        self.assertFalse(family_repo.add_member(self.repo, "ab", "Ada Badatelová"))
+        self.assertEqual(self.yaml.read_text(encoding="utf-8"), before)
+
+    def test_refuses_taken_abbreviation_name_twice_and_bad_values(self):
+        before = self.yaml.read_text(encoding="utf-8")
+        for abbr, name, role, fragment in (
+            ("ab", "Bedřich Pokusný", "researcher", "already belongs to"),
+            ("bp", "ada badatelová", "researcher", "already listed as"),
+            ("B1", "Bedřich Pokusný", "researcher", "2–4 lowercase"),
+            ("bp", "  ", "researcher", "name is empty"),
+            ("bp", "Bedřich Pokusný", "owner", "role must be"),
+        ):
+            with self.assertRaises(SystemExit) as cm:
+                family_repo.add_member(self.repo, abbr, name, role)
+            self.assertIn(fragment, str(cm.exception))
+        self.assertEqual(self.yaml.read_text(encoding="utf-8"), before)
+
+    def test_fixture_with_map_block(self):
+        repo = Path(self._tmp.name) / "fixture"
+        shutil.copytree(FIXTURE, repo)
+        family_repo.add_member(repo, "cp", "Cecílie Pokusná")
+        self.assertEqual([m["abbr"] for m in self.members(repo)], ["ab", "cp"])
+        self.assertEqual(RepoValidator(repo, ROOT, today=TODAY).run().errors, [])
+
+    def test_flow_style_members_need_a_hand_edit(self):
+        self.yaml.write_text('schema_version: "0.4.0"\nmembers: [{abbr: ab, name: Ada}]\n', encoding="utf-8")
+        with self.assertRaises(SystemExit) as cm:
+            family_repo.add_member(self.repo, "bp", "Bedřich Pokusný")
+        self.assertIn("edit it by hand", str(cm.exception))
+
+    def test_refuses_framework(self):
+        with self.assertRaises(SystemExit):
+            family_repo.add_member(ROOT, "bp", "Bedřich Pokusný")
+
+    def test_command_line(self):
+        self.assertEqual(family_repo.main(["add-member", str(self.repo), "--abbr", "bp", "--name", "Bedřich Pokusný"]), 0)
+        self.assertEqual(family_repo.main(["add-member", str(self.repo), "--abbr", "bp", "--name", "Bedřich Pokusný"]), 1)
+
+
+FAKE_GH = """#!{python}
+import os, sys
+if os.environ.get("FAKE_GH_ERROR"):
+    sys.stderr.write(os.environ["FAKE_GH_ERROR"])
+    sys.exit(1)
+with open(os.environ["FAKE_GH_ARGS"], "w") as f:
+    f.write(" ".join(sys.argv[1:]))
+sys.stdout.write(os.environ["FAKE_GH_JSON"])
+"""
+
+
+class Access(unittest.TestCase):
+    """Private? Save directly or through a pull request? (ADR 0048) – with a fake gh."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        tmp = Path(self._tmp.name)
+        bin_dir = tmp / "bin"
+        bin_dir.mkdir()
+        gh = bin_dir / "gh"
+        gh.write_text(FAKE_GH.format(python=sys.executable), encoding="utf-8")
+        gh.chmod(0o755)
+        self.args = tmp / "gh-args"
+        self.env = {"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}", "FAKE_GH_ARGS": str(self.args)}
+        self.repo = tmp / "proavus-pokusni"
+        subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
+        subprocess.run(["git", "-C", str(self.repo), "remote", "add", "origin", "https://github.com/pokusni/proavus-pokusni.git"], check=True)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def info(self, **kw):
+        base = {"nameWithOwner": "pokusni/proavus-pokusni", "visibility": "PRIVATE", "isFork": False, "parent": None}
+        return {**base, **kw}
+
+    def test_permissions(self):
+        for permission, code in (("ADMIN", 0), ("MAINTAIN", 0), ("WRITE", 2), ("TRIAGE", 6), ("READ", 6), (None, 6)):
+            self.assertEqual(family_repo.repo_access(self.info(viewerPermission=permission))[0], code, permission)
+
+    def test_public_or_fork_is_never_written(self):
+        self.assertEqual(family_repo.repo_access(self.info(visibility="PUBLIC", viewerPermission="ADMIN"))[0], 3)
+        fork = self.info(isFork=True, parent={"name": "proavus"}, viewerPermission="ADMIN")
+        self.assertEqual(family_repo.repo_access(fork)[0], 3)
+
+    def run_access(self, target, **env):
+        with unittest.mock.patch.dict(os.environ, {**self.env, **env}):
+            return family_repo.access(target)
+
+    def test_folder_uses_origin(self):
+        code = self.run_access(str(self.repo), FAKE_GH_JSON=json.dumps(self.info(viewerPermission="WRITE")))
+        self.assertEqual(code, 2)
+        self.assertIn("https://github.com/pokusni/proavus-pokusni.git", self.args.read_text())
+        self.assertIn("viewerPermission", self.args.read_text())
+
+    def test_owner_name_before_cloning(self):
+        code = self.run_access("pokusni/proavus-pokusni", FAKE_GH_JSON=json.dumps(self.info(viewerPermission="ADMIN")))
+        self.assertEqual(code, 0)
+        self.assertTrue(self.args.read_text().startswith("repo view pokusni/proavus-pokusni "))
+
+    def test_no_access_yet_and_other_errors(self):
+        self.assertEqual(self.run_access("pokusni/proavus-pokusni", FAKE_GH_ERROR="GraphQL: Could not resolve to a Repository with the name"), 7)
+        self.assertEqual(self.run_access("pokusni/proavus-pokusni", FAKE_GH_ERROR="error connecting to api.github.com"), 4)
+
+    def test_gh_missing(self):
+        with unittest.mock.patch.dict(os.environ, {"PATH": str(Path(self._tmp.name) / "nothing")}):
+            self.assertEqual(family_repo.access("pokusni/proavus-pokusni"), 4)
+
+    def test_setup_on_a_fictional_family_repo(self):
+        """Step 5–6 of /proavus:setup: clone, check access, add the member, save by access."""
+        tmp = Path(self._tmp.name)
+        git = ["git", "-c", "user.name=Ada Badatelová", "-c", "user.email=ada@example.invalid"]
+        origin = tmp / "origin.git"
+        subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
+        first = tmp / "maintainer"
+        family_repo.init(first, "Rodokmen rodiny Pokusných", ["ab:Ada Badatelová"], ["cz"])
+        for cmd in (["init", "-q", "-b", "main"], ["add", "-A"], ["commit", "-q", "-m", "Create"],
+                    ["remote", "add", "origin", str(origin)], ["push", "-q", "-u", "origin", "main"]):
+            subprocess.run(git + ["-C", str(first)] + cmd, check=True)
+
+        def joins(abbr, name, permission):
+            clone = tmp / f"clone-{abbr}"
+            subprocess.run(["git", "clone", "-q", str(origin), str(clone)], check=True)
+            code = self.run_access(str(clone), FAKE_GH_JSON=json.dumps(self.info(viewerPermission=permission)))
+            self.assertTrue(family_repo.add_member(clone, abbr, name))
+            self.assertEqual(RepoValidator(clone, ROOT, today=TODAY).run().errors, [])
+            run = lambda *cmd: subprocess.run(git + ["-C", str(clone), *cmd], check=True)  # noqa: E731
+            if code == 2:
+                run("switch", "-q", "-c", f"member-{abbr}")
+            run("add", "repo.yaml")
+            run("commit", "-q", "-m", f"Add member {abbr} (researcher)")
+            run("push", "-q", "-u", "origin", "HEAD")
+            return code
+
+        def members_on(branch):
+            out = subprocess.run(["git", "-C", str(origin), "show", f"{branch}:repo.yaml"], capture_output=True, text=True, check=True)
+            return [m["abbr"] for m in load_yaml(out.stdout)["members"]]
+
+        self.assertEqual(joins("bp", "Bedřich Pokusný", "MAINTAIN"), 0)     # saved straight to main
+        self.assertEqual(members_on("main"), ["ab", "bp"])
+        self.assertEqual(joins("cp", "Cecílie Pokusná", "WRITE"), 2)        # a branch for the pull request
+        self.assertEqual(members_on("main"), ["ab", "bp"])
+        self.assertEqual(members_on("member-cp"), ["ab", "bp", "cp"])
+
+    def test_folder_without_origin(self):
+        folder = Path(self._tmp.name) / "local"
+        subprocess.run(["git", "init", "-q", str(folder)], check=True)
+        self.assertEqual(family_repo.access(str(folder)), 4)
 
 
 if __name__ == "__main__":

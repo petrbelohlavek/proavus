@@ -51,8 +51,12 @@ Read `AGENTS.md`, the family notes in `CLAUDE.md` and the binding rules
 ## 5. Who is researching
 
 Find the user's abbreviation in `repo.yaml` → `members`. If they are not
-listed, ask for name and a 2–4 letter abbreviation and add them (with their
-yes).
+listed: an open pull request `member-<abbr>` from `/proavus:setup` (`gh pr
+list --head member-<abbr>`) waits for the maintainer – say so and continue
+after it is merged and pulled. Otherwise ask for name, a 2–4 letter
+abbreviation and role and add them with their yes
+(`uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" add-member . --abbr <abbr> --name
+"<name>" --role <role>`; saving as in `/proavus:setup` step 6).
 
 ## 6. Choose the work
 

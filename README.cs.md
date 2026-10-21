@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.4.0 -->
+<!-- source: README.md @ v0.5.0 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -12,8 +12,8 @@
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
 > **Rozpracováno (0.4.0).** Existuje schéma, validátor, závazná pravidla
-> a první příkazy (`/proavus:init`, `/proavus:start`, `/proavus:end`);
-> průvodce instalací (`/setup`) zatím ne. Zatím není k běžnému použití.
+> a příkazy (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
+> `/proavus:end`, `/proavus:upgrade`). Zatím není k běžnému použití.
 
 ## Jak to bude fungovat
 
@@ -61,10 +61,10 @@ Proavus).
    instalací plugin nevidí – restartujte desktopovou aplikaci nebo začněte
    nové sezení:
    - **terminál:** spusťte `claude` v libovolné složce a napište `/proavus:` –
-     nabídka ukáže `/proavus:init`, `/proavus:start`, `/proavus:end`
-     a `/proavus:upgrade`;
+     nabídka ukáže `/proavus:init`, `/proavus:setup`,
+     `/proavus:start`, `/proavus:end` a `/proavus:upgrade`;
    - **desktopová aplikace:** otevřete nové sezení na kartě Code a do pole
-     zprávy napište `/proavus:` – objeví se stejné čtyři příkazy.
+     zprávy napište `/proavus:` – objeví se stejných pět příkazů.
 
    Rychlá kontrola, která nic nemění: v prázdné složce spusťte
    `claude -p "/proavus:start" --permission-mode plan` – Proavus odpoví, že
@@ -73,6 +73,39 @@ Proavus).
    složce, kde má být). Ten také zakáže nástrojům Claude Code pro úpravu
    souborů sahat z repa rodiny do složky frameworku (tamní
    `.claude/settings.local.json`).
+
+## Připojení člena rodiny (`/proavus:setup`)
+
+Správce pozve člena do soukromého repa rodiny (GitHub → repo → Settings →
+Collaborators) a dokud je Proavus soukromý, také do
+`petrbelohlavek/proavus`. Člen si založí účet na GitHubu, nainstaluje
+desktopovou aplikaci Claude a v novém sezení na kartě Code (v libovolné
+složce, např. Dokumenty) napíše:
+
+> Nastav mi Proavus: nainstaluj git a GitHub CLI, přihlas mě ke GitHubu přes
+> prohlížeč, stáhni https://github.com/petrbelohlavek/proavus (větev
+> `stable`) do `Documents/Proavus/proavus` a postupuj podle
+> `skills/setup/SKILL.md` v něm. Moje rodinné repo je
+> `<vlastník>/proavus-<rodina>`.
+
+Na počítači, kde už plugin je, stačí `/proavus:setup`. Průvodce se ptá před
+každým krokem a hotové kroky přeskočí, takže ho jde po restartu spustit
+znovu:
+
+1. git, `gh` a `uv` (macOS: Homebrew, nebo instalátory systému; Windows:
+   `winget`);
+2. přihlášení ke GitHubu v prohlížeči (`gh auth login --web`,
+   `gh auth setup-git`) a doporučení zapnout dvoufázové ověření;
+3. plugin z katalogu (větev `stable`, jako výše);
+4. ověří, že repo rodiny je soukromé a co smí účet dělat
+   (`tools/family_repo.py access`), a naklonuje ho;
+5. zapíše člena do `repo.yaml` – zkratku, jméno a roli (badatel, pomocník,
+   správce) – commitem (admin, maintain) nebo pull requestem pro správce
+   (write);
+6. předá na `/proavus:start` ve složce rodiny.
+
+**Heslo, token ani kód pro obnovení nikdy nepište do chatu** – heslo patří
+jen do stránky GitHubu v prohlížeči nebo do systémového okna.
 
 **Aktualizace na nové vydání:**
 ```
@@ -103,6 +136,7 @@ nebo `claude` v terminálu): napište `/proavus:` a vyberte. Rozhoduje,
 | Příkaz | Kdy | Kde | Co dělá |
 |---|---|---|---|
 | `/proavus:init` | jednou | nové sezení ve složce, kde má repo rodiny vzniknout, nebo v jeho prázdném klonu | založí **soukromé** repo rodiny ze šablony, nainstaluje `.proavus/`, ochrání framework před úpravami, nahraje repo na GitHub a ověří, že je soukromé |
+| `/proavus:setup` | jednou na počítač a člena | nové sezení v libovolné složce (ne ve frameworku) | nainstaluje git, gh, uv a plugin, přihlásí ke GitHubu, naklonuje soukromé repo rodiny, zapíše člena do `repo.yaml` (commit nebo pull request), doporučí dvoufázové ověření |
 | `/proavus:start` | první zpráva každého sezení bádání | sezení v repu rodiny | kontrola soukromí, stažení práce ostatních, přehled (`START-HERE.md`), výběr nebo zápis výzkumné otázky |
 | `/proavus:end` | poslední zpráva každého sezení bádání | totéž sezení | záznam sezení s dalším krokem, rozhodnutí, která dělá jen člověk, validace (0 chyb), uložení na GitHub |
 | `/proavus:upgrade` | když `/proavus:start` hlásí, že kopie Proavus je starší než plugin | sezení v repu rodiny, bez neuložených změn | ukáže, co se změní, zeptá se na nová nastavení (např. výchozí osobu mapy), aktualizuje `.proavus/`, bloky Proavus, kontrolní workflow a `schema_version`, při potřebě převede data, zvaliduje a uloží |
