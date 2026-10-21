@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.3.1 -->
+<!-- source: README.md @ v0.4.0 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -11,7 +11,7 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.3.1).** Existuje schéma, validátor, závazná pravidla
+> **Rozpracováno (0.4.0).** Existuje schéma, validátor, závazná pravidla
 > a první příkazy (`/proavus:init`, `/proavus:start`, `/proavus:end`);
 > průvodce instalací (`/setup`) zatím ne. Zatím není k běžnému použití.
 

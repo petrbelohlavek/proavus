@@ -4,7 +4,7 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
-## 0.4.0 – unreleased
+## 0.4.0 – 2026-10-21
 
 - Schema (core, additive): a human task may name the `question` it serves,
   and a `conflict` or an `inquiry` (ADR 0047).

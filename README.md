@@ -11,7 +11,7 @@
 tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
-> **Work in progress (0.3.1).** The schema, the validator, the binding rules
+> **Work in progress (0.4.0).** The schema, the validator, the binding rules
 > and the first commands (`/proavus:init`, `/proavus:start`,
 > `/proavus:end`) exist; the guided setup (`/setup`) does not yet. Not ready
 > for general use.
