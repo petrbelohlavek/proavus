@@ -4,6 +4,10 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
+Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
+added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
+released on `stable` (their changes are in 0.2.0 and 0.3.0).
+
 ## 0.4.0 – 2026-10-21
 
 - Schema (core, additive): a human task may name the `question` it serves,
