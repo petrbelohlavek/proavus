@@ -4,128 +4,143 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
-## 0.3.0 – unreleased
+## 0.3.0 – 2026-10-21
 
-- From the identity gate of a family repository (fictional examples):
-  participant roles `spouse-father`, `spouse-mother`, `grandfather`,
-  `grandmother` (ADR 0044, also in the sex check); EDTF with single
-  unspecified digits in month and day – `1855-02-1X`, `1855-1X`,
-  `1855-02-X5` – only real dates, shown as „10.–19. 2. 1855“ (ADR 0045,
-  `edtf.expand`); `participant.marital_status_as_written` and
-  `marital_status` (vocabulary `marital_statuses`: single, married, widowed,
-  divorced) next to `status_as_written` (ADR 0046) – `upgrade-plan` lists
-  participants whose `status_as_written` holds a marital status, the method
-  (§4) says how to split them. Existing data stay valid unchanged.
-- Workflows (ADR 0043): `actions/checkout` and `astral-sh/setup-uv` pinned to
-  a commit SHA in the framework CI and the family template (v4.4.0 and
-  v6.8.0, then raised by Dependabot to v7.0.1 and v10.3.0 – no breaking
-  change applies: Node 24 on GitHub runners, no removed inputs used); `permissions: {}` for the workflow, `contents: read` for the
-  job; `persist-credentials: false`; Dependabot for GitHub Actions in the
-  framework (weekly, 7-day cooldown). Families get the new pins with
-  `/proavus:upgrade`. `tests/test_workflows.py` keeps it that way.
-- Bringing older research in (ADR 0042, `docs/import.md` + Czech): plan
-  files with symbolic keys and `@key` links (header, sentences, body), new
-  IDs, files in the hand-written style and the right folders
-  (`proavuslib/bulk.py`, `tools/bulk_import.py --dry-run`, copied into
-  `.proavus/`); the whole batch is written only if it validates, no file
-  exists and every entry of the old diary is linked (`diary:` /
-  `from_diary:`, the original text quoted in the body); keys kept in
-  `archive/import-keys.yaml` for later plans. Order: archive → pilot
-  question → the rest → daily sessions from the diary → check the diary
-  links. Fictional example in `examples/import/`.
-- `tools/archive_fetch.py` (ADR 0041): ARON – `book` (metadata), `list`
-  (images and sizes, downloads nothing), `link`, `get --dry-run` / `get`
-  (only into a folder outside any repository, at most `--max` images per
-  call, default 10, limit 50, a pause between images, checks content type,
-  size and a complete JPEG). Acta Publica and Matricula Online: `link` only –
-  their terms of use / robots.txt do not allow automated access; nothing is
-  fetched from them. Standard library only; copied into `.proavus/`.
-- `/proavus:start` and the family `AGENTS.md`: images only after the user's
-  explicit yes to the list from `get --dry-run`.
-- Method (`reading-records.md`) and new `regions/cz/pitfalls.md`: index
-  numbers are often pages, two anchors for page → image, crops with ~10 %
-  margin, whole-book ZIPs in lower resolution, `P`/`Š`/`Ř`/`R`, margin notes
-  are later, age column above 30 is years, married women under the husband's
-  name, the parents' marriage also in the next book, cemetery maps incomplete
-  and a grave proves no parenthood.
-- START-HERE (ADR 0039): name, question title, record in words, conflict
-  and inquiry labels next to every ID (`proavuslib/labels.py`); a summary
-  per open question (who, searches and results, records, last next step,
-  conflicts, inquiries, open tasks, planned sources) instead of a table;
-  open human tasks with a state from all sessions, plain-text tasks only
-  from the latest session (also in the map); the first ten warnings.
-- Validator (ADR 0040): negatives from an index only in one grouped warning,
-  and `coverage.index_negative_accepted: {by, on, note}` to accept one;
-  the participant's sex (stated or from the role) must fit the person of an
-  identity link (error for probable / proved, warning below); possible
-  duplicate persons (same name without diacritics, overlapping birth) with
-  `person.distinct_from` for known namesakes; the same fact twice (type,
-  date, value); advice what to add for `vital_status: unknown`.
-- `proavuslib/dates.py` (dates in words, moved from `build_views.py`).
-- **Schema 0.3** (core, additive – old forms stay valid; ADR 0031–0038):
-  `record.crops` (path + caption; `crop` stays as the short form);
-  `record.annotations` (later notes in the margin: text, position, hand,
-  when written, the event and its date); `reading.read_by` = members who
-  read it, `reading.read_by_agent` = AI reading – a confirmed reading needs
-  a member in `read_by` who confirmed it, and only such a reading passes the
-  identity gate; `oral.speakers` (`speaker` stays for one); coverage ranges
-  as a `query` for database searches; new entity `inquiry` (`IN-…`,
-  `inquiries/`: addressee, sent, state sent / acknowledged / answered /
-  closed, result, records) and `session.inquiries`; human tasks
-  `{task, status: open / done / dropped, for, by, on}`; `relationship.citations`
-  (also in the identity gate).
-- START-HERE and the map show only open human tasks (from all sessions) and
-  inquiries not closed.
-- `migrate.py` runs migrations by the version that brought them (ADR 0030):
-  required for a major version, allowed for a minor one to rewrite data into
-  the new form. 0.3.0: `crop` → `crops`, human tasks as text → open tasks.
-  `proavuslib.frontmatter.join` writes headers back in the hand-written
-  style (short lists `[a, b]`, indented items, plain dates), so a migration
-  changes only the lines it converts.
-- Method and skills: who read a record (person or agent), margin notes,
-  inquiries, closing human tasks.
-- Fictional fixture: two crops and a margin note, an agent reading, an
-  inquiry, a database search, oral testimony with two speakers, a
-  relationship with direct citations, open and done human tasks.
-- Family map (ADR 0029): dates in the map's language and EDTF in words
-  (cs `13. 5. 1958`, `kolem 1868`, `před 26. 1. 1836`, `1946/1947`);
-  `map.lang` defaults to the region's language (`cz` → `cs`); of several
-  facts of one type the card shows the strongest (information, evidence,
-  confidence) and marks **≠** a disagreeing or equally strong other
-  version, all versions in the detail; names and record titles instead of
-  IDs in conflicts, questions and citations; long occupations and places
-  shortened on the card; `map.living_places` (birth place of living
-  persons, default false – then also no source title in their citations);
-  `--hide-living` writes `views/mapa-sdileni.html` for sharing outside the
-  family. Screenshots in `docs/images/` updated.
-- Fictional fixture: a second, equally strong birth of Matěj (part of the
-  open conflict) and his long occupation.
-- Plugin skill `/proavus:upgrade` and its deterministic part in
-  `family_repo.py` (ADR 0009, 0014, 0018): `upgrade-plan` compares
-  `.proavus/VERSION` with the plugin and shows the CHANGELOG sections in
-  between, schema changes (new and removed fields and vocabulary values),
-  whether a migration is needed and missing map settings with candidate
-  starting persons; `upgrade` reinstalls `.proavus/`, refreshes the
-  `proavus:begin/end` blocks and the check workflow (never the family's own
-  text), migrates data on a major version change, sets `schema_version` and
-  `map.root` / `map.lang`, validates with the new copy and prints the commit
-  message. Never downgrades.
-- `tools/migrate.py`: skeleton with a registry of migrations between major
-  versions (none yet); refuses a major upgrade whose migration is missing.
-  Copied into `.proavus/` with the other tools.
-- `START-HERE.md`: when the repository's copy is newer than the plugin it now
-  says to update the plugin instead of suggesting an upgrade.
-- References to `/proavus:upgrade` corrected in the family template
-  (`AGENTS.md` block, README, `repo.yaml`), `.proavus/README.md` and
-  `/proavus:start`: what it changes, when and where to run it.
-- Tested on a fictional repository as left by 0.1.0 (0.1.0 → 0.2.0 plan and
-  upgrade to the plugin version, including the map settings).
-- How to use `/proavus:init`, `/proavus:start` and `/proavus:end` – what
-  each does, where to type it (the folder of the session) and what to do
-  if you forget one: in the family repository template README (for family
-  members) and in README (EN, CS).
-- Commands always with their full plugin names (`/proavus:start`,
-  `/proavus:end`) in README, the template and the skills.
+**Upgrading from 0.2.0:** update the plugin (`claude plugin marketplace
+update proavus`, `claude plugin update proavus@proavus`), open a new session
+in the family repository and run `/proavus:upgrade`. It rewrites `crop` into
+`crops` and plain-text human tasks into open tasks (the old forms stay
+valid), asks for the map's starting person and language, and lists
+participants whose `status_as_written` holds a marital status. If an agent
+did the first reading of a record but a member is in `read_by`, add
+`read_by_agent` – no migration can tell.
+
+### Schema 0.3 (core and vocabularies, additive – existing data stay valid)
+
+- `record.crops` (path + caption; `crop` stays as the short form) and
+  `record.annotations` – later notes in the margin: text, position, hand,
+  when written, the event and its date (ADR 0031, 0032).
+- Readings by people and by an agent: `reading.read_by` = members who read
+  the entry, `reading.read_by_agent` = AI reading; a reading is confirmed
+  only by a member in `read_by`, and only such a reading passes the identity
+  gate (ADR 0033).
+- `oral.speakers` (`speaker` stays for one) (ADR 0034); coverage ranges as a
+  `query` for database searches (ADR 0035).
+- New entity `inquiry` (`IN-…`, `inquiries/`): requests to offices,
+  archives and parishes with state sent / acknowledged / answered / closed,
+  result and records; `session.inquiries` (ADR 0036).
+- Human tasks `{task, status: open / done / dropped, for, by, on}` (ADR 0037).
+- `relationship.citations`, also in the identity gate (ADR 0038).
+- `coverage.index_negative_accepted: {by, on, note}` and
+  `person.distinct_from` (ADR 0040).
+- Participant roles `spouse-father`, `spouse-mother`, `grandfather`,
+  `grandmother` (ADR 0044); `marital_status_as_written` and
+  `marital_status` (vocabulary `marital_statuses`) next to
+  `status_as_written` (ADR 0046).
+- EDTF: single unspecified digits in month and day of a known year –
+  `1855-02-1X`, `1855-1X`, `1855-02-X5`; only dates that can exist
+  (ADR 0045, `edtf.expand`).
+- `repo.yaml`: `map.living_places` (ADR 0029).
+
+### Validator
+
+- Negatives from an index only in one grouped warning, acceptable with
+  `index_negative_accepted`; the participant's sex (stated or from the role)
+  must fit the person of an identity link – error for probable / proved,
+  warning below; possible duplicate persons (same name without diacritics,
+  overlapping birth); the same fact twice (type, date, value); advice what to
+  add for `vital_status: unknown` (ADR 0040).
+- Query-only ranges only for database searches; inquiry dates in order and
+  not in the future; a crop or crops, not both; every crop must exist.
+
+### Tools
+
+- `/proavus:upgrade` and `family_repo.py upgrade-plan` / `upgrade`
+  (ADR 0009, 0014, 0018): shows the CHANGELOG sections in between, schema
+  changes, migrations, missing map settings with candidate starting persons
+  and participants whose `status_as_written` holds a marital status;
+  reinstalls `.proavus/`, refreshes the `proavus:begin/end` blocks and the
+  check workflow (never the family's own text), runs migrations, sets
+  `schema_version` and `map`, validates with the new copy, prints the commit
+  message; never downgrades.
+- `tools/migrate.py` (ADR 0030): migrations by the version that brought
+  them – required for a major version, allowed for a minor one to rewrite
+  data into the new form; 0.3.0: `crop` → `crops`, plain-text human tasks →
+  open tasks. `proavuslib.frontmatter.join` writes headers back in the
+  hand-written style, so a migration changes only the lines it converts.
+- `tools/bulk_import.py` and `proavuslib/bulk.py` (ADR 0042,
+  `docs/import.md` + Czech): bring older research in from a plan with
+  symbolic keys and `@key` links; the whole batch is written only if it
+  validates, no file exists and every entry of the old diary is linked
+  (original text quoted); keys in `archive/import-keys.yaml`. Fictional
+  example in `examples/import/`.
+- `tools/archive_fetch.py` (ADR 0041): ARON – `book`, `list` (downloads
+  nothing), `link`, `get --dry-run` / `get` into a folder outside any
+  repository, at most `--max` images per call, content type, size and JPEG
+  checks. Acta Publica and Matricula Online: `link` only – their terms of
+  use / robots.txt do not allow automated access.
+- All new tools are copied into `.proavus/`.
+
+### Family map (ADR 0028, 0029)
+
+- Layout of the pilot map: header with counts and legend, generation
+  columns, cards coloured by how well the person is documented (best QUAY),
+  open-conflict mark, marriage label on the lines, detail in a dialog, boxes
+  with open conflicts, questions, next steps and persons outside the tree.
+- Dates in words in the map's language; `map.lang` defaults to the region's
+  language (`cz` → `cs`); the strongest of several facts of one type on the
+  card, **≠** for a disagreeing or equally strong version; names and record
+  titles instead of IDs; long occupations and places shortened.
+- Living persons: birth place only with `map.living_places: true` (then
+  also the source title in their citations); `--hide-living` writes
+  `views/mapa-sdileni.html` for sharing outside the family.
+- Screenshots of the fictional family in README (`docs/images/`).
+
+### START-HERE (ADR 0039)
+
+- A name, question title or record in words next to every ID; a summary per
+  open question; open human tasks with a state from all sessions,
+  plain-text tasks only from the latest session (also in the map);
+  inquiries not closed; the first ten warnings; when the repository's copy
+  is newer than the plugin it says to update the plugin.
+
+### Method, skills, documentation
+
+- `method/reading-records.md` and new `regions/cz/pitfalls.md`: who read a
+  record (person or agent), margin notes, roles and marital status of
+  participants, index numbers as pages, two anchors for page → image, crops
+  with ~10 % margin, whole-book ZIPs in lower resolution, `P`/`Š`/`Ř`/`R`,
+  age column above 30 is years, married women under the husband's name, the
+  parents' marriage also in the next book, cemetery maps incomplete and a
+  grave proves no parenthood.
+- `/proavus:start`: images only after the user's yes to the dry-run list;
+  older research via `docs/import.md`; inquiries; the family map with
+  `--hide-living` for sharing. `/proavus:end`: closing human tasks,
+  decisions that end warnings.
+- How to use `/proavus:init`, `/proavus:start`, `/proavus:end` and
+  `/proavus:upgrade` – what, where, if you forget – in the family template
+  README and in README (EN, CS); full plugin command names everywhere.
+
+### Security and CI (ADR 0043)
+
+- `actions/checkout` and `astral-sh/setup-uv` pinned to commit SHAs in the
+  framework CI and the family template – v7.0.1 and v10.3.0 (Dependabot
+  raised them from v4.4.0 and v6.8.0; the release notes have no breaking
+  change that applies: Node 24 on GitHub runners, no removed inputs used);
+  `permissions: {}` for the workflow, `contents: read` for the job,
+  `persist-credentials: false`; Dependabot for GitHub Actions in the
+  framework (weekly, 7-day cooldown). `tests/test_workflows.py` checks pins,
+  template parity and permissions.
+- The name guard finds names inside identifiers (underscores, digits,
+  camelCase).
+
+### Tests and fixture
+
+- 256 tests. Fictional fixture extended: two crops and a margin note, an
+  agent reading, an inquiry, a database search, oral testimony with two
+  speakers, a relationship with direct citations, open and done human tasks,
+  a second birth of Matěj in the open conflict, a long occupation. Upgrades
+  tested on repositories made by the real 0.1.0 and 0.2.0 code.
 
 ## 0.2.0 – 2026-10-20
 
