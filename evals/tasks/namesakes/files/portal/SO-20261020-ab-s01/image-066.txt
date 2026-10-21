@@ -1,0 +1,11 @@
+Archiv Vzorkov (fictional) – Vzorkov 7, N 1870–1890 – image 66 of 112
+https://example.org/archive/vzorkov-7/image/66
+Accessed: 2026-10-21
+Page number written on the page: 63 (folio 32r)
+
+Liber natorum Vzorkov, anno 1884
+
+No | natus      | baptisatus | nomen     | sexus | legitimus | pater                                      | mater                  | patrini
+7  | 3. Martii  | 4. Martii  | Antonius  | m     | leg.      | Matthias Pokusny inquilinus Vzorkov N. 31   | Maria nata Jinachova   | Wenceslaus Zkusil
+8  | 20. Martii | 21. Martii | Rosalia   | f     | leg.      | Thomas Zkusil inquilinus Vzorkov N. 5       | Barbara nata Pokusna   | Anna Kmotrovska
+9  | 9. Aprilis | 10. Aprilis| Franciscus| m     | leg.      | Matthias Pokusny agricola Vzorkov N. 12     | Anna nata Vzorna       | Joannes Kmotrovsky

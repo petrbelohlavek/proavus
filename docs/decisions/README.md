@@ -59,5 +59,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0052](0052-coverage-searched-by.md) | Coverage: kdo hledal – člen sám, nebo agent na jeho pokyn | přijato | — |
 | [0053](0053-readme-for-everyone.md) | README pro každého a technická stránka; obrázek bez textu | přijato | — |
 | [0054](0054-public-community-files.md) | Veřejná výbava: CONTRIBUTING, pravidla chování, SECURITY, šablony úkolů | přijato | — |
+| [0055](0055-evals.md) | Evaly: úlohy pro agenta na fiktivní rodině, hodnocení skriptem | navrženo | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

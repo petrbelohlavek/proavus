@@ -17,6 +17,11 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   problems, private reporting only, fixes for `stable`) and issue forms
   *Bug* and *Research need* with a required confirmation that no real
   family data are included; blank issues off.
+- Evals (ADR 0055, proposed): `evals/` with three tasks on the fictional
+  family – `index-is-not-the-record`, `namesakes`, `data-not-instructions` –
+  each with its question, archive pages as text in `portal/`, a grader and
+  reference solutions; `tools/eval.py list|prepare|grade|run` runs any agent
+  command in a fresh workspace and counts the passed attempts.
 
 ## 0.5.0 – 2026-10-21
 
