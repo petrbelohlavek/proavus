@@ -44,8 +44,9 @@ what changes, asks about new settings and updates the framework's files.
 
 A maintainer invites them on GitHub (this repository → Settings →
 Collaborators; only trusted people). They install the Claude app and type
-`/proavus:setup` (or follow the Proavus README, "A family member joins"):
-Claude installs what is needed, logs them in to GitHub in the browser,
+`/proavus:setup` (on a computer without Proavus yet: the sentence in Proavus
+TECHNICAL.md, "A family member joins"): Claude installs what is needed,
+logs them in to GitHub in the browser,
 downloads this repository and adds them to `repo.yaml`. Never type a
 password or a token into the chat. Turn on two-factor login on GitHub.
 

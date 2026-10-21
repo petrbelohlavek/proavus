@@ -1,5 +1,15 @@
 # Images for the README
 
+## The two kinds of repositories
+
+`proavus-architecture.svg` and `proavus-architecture-dark.svg` (README, ADR
+0053) are generated – change `architecture.py` and run
+`python3 docs/images/architecture.py`; never edit the SVG by hand. No
+sentences in the picture, only names that read the same in every language;
+the explanation is in each README below it.
+
+## The family map
+
 Screenshots of `views/mapa.html` built from the **fictional** test family
 (`tests/fixtures/family/`). Never use a real family's map here.
 

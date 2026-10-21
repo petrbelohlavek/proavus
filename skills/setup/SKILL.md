@@ -132,7 +132,7 @@ Check: the commands `/proavus:start`, `/proavus:end` exist in this session
 `proavus@proavus`. If yes, compare its version
 (`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`) with the family
 repository's `.proavus/VERSION` after step 5; an older plugin is updated as
-in the Proavus README, "Update to a new release".
+in Proavus TECHNICAL.md, "Update to a new release".
 
 Not installed: the framework repository is its own plugin catalogue (ADR
 0014). Until Proavus is public, the user's GitHub account needs access to

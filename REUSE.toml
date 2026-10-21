@@ -16,6 +16,7 @@ path = [
   ".githooks/**",
   ".github/**",
   "hooks/**",
+  "docs/images/*.py",
   "pyproject.toml",
 ]
 SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"

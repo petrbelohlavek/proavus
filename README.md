@@ -5,194 +5,102 @@
   </picture>
 </p>
 
-<p align="center"><b>English</b> · <a href="README.cs.md">Čeština</a></p>
+<p align="center"><b>English</b> · <a href="README.cs.md">Čeština</a><br>
+<b>For everyone</b> · <a href="TECHNICAL.md">Technical</a></p>
 
-**Proavus** – evidence-first genealogy with AI: a method, a data schema and
-tools for researching your family history with an LLM under the
-Genealogical Proof Standard.
+**Proavus helps you find your ancestors in old parish registers together
+with Claude – honestly, with a source for every fact, and your family's data
+stay with your family.**
 
-> **Work in progress (0.4.0).** The schema, the validator, the binding rules
-> and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
-> `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
+> **Not available to everyone yet.** Proavus is being tested by its first
+> families. This page describes how it will work; the
+> [technical guide](TECHNICAL.md) has today's state.
 
-## How it will work
+## What it does for you
 
-1. Create a GitHub account and install the Claude desktop app.
-2. Ask Claude to set up Proavus – it installs everything and creates your
-   own **private** family repository. Never put family data in a fork of
-   Proavus: forks are public.
-3. Open your private repository and type `/proavus:start`.
-4. Describe who you are looking for; Claude helps you frame the question,
-   plan the search and read the records.
-5. Type `/proavus:end`: findings are saved with source citations and checked.
+- You tell Claude, in your own words, whom you are looking for – a
+  great-grandfather, the village the family came from, a name in an old
+  letter.
+- Claude helps you find the right register books in the archives' online
+  portals and reads the old handwriting **together with you**.
+- Only what a record proves goes into your family tree, and every fact
+  keeps its source: which book, which page, which entry. Guesses stay
+  marked as guesses.
+- Nothing is forgotten between sessions: what was searched, what was found
+  and what to do next is written down.
 
-## Install the plugin from a local folder
+## How it fits together
 
-Until Proavus is public, the plugin is installed from a local copy of this
-repository: the repository is its own plugin catalogue
-(`.claude-plugin/marketplace.json`, the whole repository is the plugin, ADR
-0014). Needs Claude Code 2.1.275 or later (`claude --version`). The desktop
-app (Code tab) and the `claude` command in a terminal share the same
-settings, so you install once per computer – in a terminal.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/proavus-architecture-dark.svg">
+    <img src="docs/images/proavus-architecture.svg" width="760"
+         alt="Left: the public Proavus, open to the whole world. Right: locked family houses with their family trees. Every family gets its own copy of Proavus; a family tree never goes back to the public side.">
+  </picture>
+</p>
 
-**Claude Code installs whatever is checked out in that folder.** Use the
-`stable` branch – the last release. `main` is work in progress (only for
-developing Proavus).
+**One Proavus for everyone, each family on its own.** Proavus – the method
+and tools for research – is public and improves for everyone. Each family
+takes its own copy into a private repository (such as `proavus-novak`) that
+only the family can see. Your family tree and your relatives' data never go
+to the public side.
 
-1. **Get the framework** (the `stable` branch) into a folder outside iCloud
-   Drive, Dropbox, OneDrive or Google Drive, e.g.
-   `git clone --branch stable https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
-   (private for now – you need access).
-2. **Add the catalogue and install the plugin:**
-   ```
-   claude plugin marketplace add ~/Documents/Proavus/proavus
-   claude plugin install proavus@proavus
-   ```
-3. **Check what is installed.** `claude plugin list` and `claude plugin
-   details` read the framework folder, not the installed copy – they show the
-   folder's version even when an older copy is installed. The installed
-   version and commit are in Claude Code's own list:
-   ```
-   python3 -c "import json,os; e=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']['proavus@proavus'][0]; print(e['version'], e['gitCommitSha'][:7])"
-   git -C ~/Documents/Proavus/proavus log -1 --format=%h
-   ```
-   Both lines must show the same commit (and the version from
-   `CHANGELOG.md`).
-4. **Check the commands in a session** – this is what counts. Sessions
-   started before the installation do not see the plugin – restart the
-   desktop app or start a new session:
-   - **terminal:** run `claude` in any folder and type `/proavus:` – the
-     suggestions offer `/proavus:init`, `/proavus:setup`,
-     `/proavus:start`, `/proavus:end` and `/proavus:upgrade`;
-   - **desktop app:** open a new session in the Code tab and type `/proavus:`
-     in the message box – the same five commands appear.
+## What you need
 
-   A quick check that changes nothing: in an empty folder run
-   `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
-   the folder is not a family repository yet and offers `/proavus:init`.
-5. **Create your family repository** with `/proavus:init` (in a new session
-   in the folder where it should live). It also forbids Claude Code's
-   file-editing tools to touch the framework folder from the family
-   repository (`.claude/settings.local.json` there).
+- a computer with Windows or macOS;
+- a free account on [GitHub](https://github.com) – your family's research is
+  kept there, privately;
+- the [Claude desktop app](https://claude.ai/download) with a paid plan
+  (Pro or higher).
 
-## A family member joins (`/proavus:setup`)
+You do not need to know anything about programming. Claude installs
+everything else and asks you before every step.
 
-The maintainer invites the member to the private family repository (GitHub →
-repository → Settings → Collaborators) and, while Proavus is private, to
-`petrbelohlavek/proavus` too. The member creates a GitHub account, installs
-the Claude desktop app and, in a new session in the Code tab (any folder,
-e.g. Documents), writes:
+## Getting started
 
-> Set up Proavus for me: install git and the GitHub CLI, log me in to GitHub
-> in the browser, download https://github.com/petrbelohlavek/proavus (branch
-> `stable`) into `Documents/Proavus/proavus` and follow
-> `skills/setup/SKILL.md` in it. My family repository is
-> `<owner>/proavus-<family>`.
+1. Create your GitHub account and install the Claude app.
+2. Open the Claude app, go to the **Code** tab, start a new session and
+   write: *"Set up Proavus for me."* Claude guides you through the rest:
+   it installs what is needed, logs you in to GitHub in your browser and
+   creates your family's private repository.
+3. Every research session starts with **`/proavus:start`** – Claude shows
+   where you stopped last time and what to do next.
+4. Tell Claude whom you are looking for, and read the records together.
+5. Every session ends with **`/proavus:end`** – the findings are checked
+   and saved with their sources.
 
-On a computer where the plugin is already installed, `/proavus:setup` is
-enough. The guide asks before every step and skips what is done, so it can
-be run again after a restart:
+**Never type a password or a code from GitHub into the chat.** Passwords
+belong only in GitHub's own page in your browser.
 
-1. git, `gh` and `uv` (macOS: Homebrew, or the system installers; Windows:
-   `winget`);
-2. GitHub login in the browser (`gh auth login --web`, `gh auth setup-git`)
-   and the advice to turn on two-factor login;
-3. the plugin from the catalogue (the `stable` branch, as above);
-4. checks that the family repository is private and what the account may do
-   (`tools/family_repo.py access`), then clones it;
-5. adds the member to `repo.yaml` – abbreviation, name, role (researcher,
-   helper, maintainer) – with a commit (admin, maintain) or a pull request
-   for the maintainer (write);
-6. hands over to `/proavus:start` in the family folder.
+## A family member joins
 
-Every commit in a family repository is checked first: `.githooks/pre-commit`
-runs the validator on what is being saved and stops a commit with errors
-(ADR 0049); `/proavus:setup`, `/proavus:start` and `/proavus:upgrade`
-switch it on in each clone.
+Research is better together. Whoever looks after the family's repository
+invites the others on GitHub. A new member installs the Claude app and types
+**`/proavus:setup`** – Claude installs what is needed, logs them in and adds
+them to the family's research. Turn on two-step login on GitHub for
+everyone: the repository holds data about living relatives.
 
-**Never type a password, a token or a recovery code into the chat** – the
-password goes only into GitHub's page in the browser or into a system window.
+## Your data stay yours
 
-**Update to a new release:**
-```
-git -C ~/Documents/Proavus/proavus pull
-claude plugin marketplace update proavus
-claude plugin uninstall proavus@proavus
-claude plugin install proavus@proavus
-```
-then check as in step 3 and restart the desktop app (or start a new
-session); in each family repository run `/proavus:upgrade`.
-`claude plugin update proavus@proavus` alone is not enough: it installs only
-a **new version number** and reports "already at the latest version" when the
-content changed under the same number – reinstalling always takes what is in
-the folder.
+- Your family's research is in **your own private repository**; only the
+  people you invite can see it.
+- For living relatives only the name, birth and family links are kept – for
+  children not even the birth date.
+- Proavus never publishes anything. Sharing the family map outside the
+  family hides the living automatically.
 
-**Remove:** `claude plugin uninstall proavus@proavus` and
-`claude plugin marketplace remove proavus`.
+## What you get
 
-The tools run straight from this folder (`${CLAUDE_PLUGIN_ROOT}` is the
-folder itself), and Claude Code also copies the folder – including files git
-ignores – into its plugin cache. Keep nothing private in the framework
-folder.
-
-## Using the commands
-
-Type the commands in the message box of a Claude Code session (desktop app
-or `claude` in a terminal): type `/proavus:` and pick one. What matters is
-the **folder the session runs in** – it is shown under the message box.
-
-| Command | When | Where | What it does |
-|---|---|---|---|
-| `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, switches on the check before every commit, puts it on GitHub and checks it is private |
-| `/proavus:setup` | once per computer and member | a new session in any folder (not the framework) | installs git, gh, uv and the plugin, logs in to GitHub, clones the private family repository, adds the member to `repo.yaml` (commit or pull request), recommends two-factor login |
-| `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
-| `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
-| `/proavus:upgrade` | when `/proavus:start` says the Proavus copy is older than the plugin | a session in the family repository, with nothing unsaved | shows what changes, asks about new settings (e.g. the map's starting person), updates `.proavus/`, the Proavus blocks, the check workflow and `schema_version`, migrates data if needed, validates and saves |
-
-Never in the `proavus` framework folder: `/proavus:start` and
-`/proavus:end` stop there, `/proavus:init` refuses a folder that is not
-empty. Forgot one? `/proavus:start` can be run at any time; after a missed
-`/proavus:end` open a session in the family folder and run it – the work is
-still in the files, just not saved yet. Details for family members are in
-the family repository's README.
-
-## The family map
-
-`tools/build_views.py` turns a family repository into one self-contained
-HTML page: it works offline, loads nothing from the internet and is never
-saved in git. Below is the fictional test family from `tests/fixtures/family/`.
-Card colour shows how well each person is documented, the line shows how
-sure each relationship is.
+A family map you open in any browser: every person, how well each fact is
+proven, and where it comes from. Below is the map of a made-up test family.
 
 <p align="center"><img src="docs/images/map-tree.en.png" alt="Family map: ancestor tree in generation columns with cards coloured by evidence and lines by confidence" width="800"></p>
 
-A click on a card opens the detail with every fact, its confidence and its
-source:
+## Want to know more?
 
-<p align="center"><img src="docs/images/map-detail.en.png" alt="Person detail: facts with sources, relationships, open conflict and question" width="700"></p>
+- [Technical guide](TECHNICAL.md) – installing by hand, all commands, tools
+  and the data format
+- [The ten rules of Proavus](method/rules.md) – how the research is done
+- [Licence](TECHNICAL.md#licence) – the method and the tools are free to use
 
-## What is here
-
-| Part | Where |
-|---|---|
-| Ten binding rules | [method/rules.md](method/rules.md) |
-| Reading records | [method/reading-records.md](method/reading-records.md) |
-| Data schema v0 | [schema/](schema/README.md) |
-| Validator | `uv run tools/validate.py <family-repo>` |
-| Family map | `uv run tools/build_views.py <family-repo>` → `views/mapa.html` |
-| Bringing older research in | [docs/import.md](docs/import.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, example in [examples/import/](examples/import/) |
-| Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
-| Regional packages | [regions/cz/](regions/cz/pitfalls.md) (Czech lands), [regions/at/](regions/at/pitfalls.md) (Austria, Vienna): schema extension, pitfalls, portal catalogue – `uv run tools/archive_fetch.py portals` (ADR 0050) |
-| Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |
-
-## Licence
-
-| Part | Licence |
-|---|---|
-| Method and documentation (`method/`, `docs/`, `regions/`, README) | CC BY 4.0 |
-| Code (`tools/`, `tests/`, hooks, workflows) | MIT |
-| Schema, vocabularies, family repository template | CC0 1.0 |
-| Name and logo (`brand/`) | all rights reserved |
-
-Details in [`REUSE.toml`](REUSE.toml) and [`LICENSES/`](LICENSES/).
 © 2026 Petr Bělohlávek and Proavus contributors.

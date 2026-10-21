@@ -56,7 +56,8 @@ GitHub zdarma ([0003](decisions/0003-github-free-pilot-and-target.md)).
 ```
 proavus/
 ├── brand/                              logo, ikona, favicon, náhled pro sociální sítě (vyhrazená práva)
-├── README.md (EN) · README.cs.md       přepínač jazyků; krátká verze nahoře (5 kroků), detailní pod ní
+├── README.md (EN) · README.cs.md       pro každého; přepínač jazyka a úrovně (ADR 0053)
+├── TECHNICAL.md                       technický návod, jen anglicky
 ├── docs/                               architektura, rozhodnutí (ADR), your-private-repo
 ├── AGENTS.md · CLAUDE.md               vstup pro agenty (CLAUDE.md jen odkazuje na AGENTS.md)
 ├── LICENSES/ · REUSE.toml              licence podle částí repa (kap. 9)
@@ -140,11 +141,11 @@ vzdálené repo není soukromé; kontrola ve frameworku odmítne soubory dat rod
 
 ### 2.3 README a jazykové verze
 
-README (EN i CS) má **krátkou verzi** nahoře (jedna věta + 5 kroků:
-účet a aplikace → „Nastav mi Proavus podle …“ → `/start` → popsat, koho
-hledám → `/end`) a **detailní verzi** pod ní (co je Proavus, jak funguje,
-instalace, sezení, práce s rodinou, ochrana dat, regiony, ověřené modely,
-přispívání a licence).
+README (EN i CS) je **pro každého** (co Proavus udělá, obrázek dvou druhů
+repozitářů, co je potřeba, jak začít, připojení člena, soukromí, mapa);
+technické věci (instalace, příkazy, nástroje, licence) jsou v
+**`TECHNICAL.md`**, jen anglicky. Přepínač jazyka a úrovně je nahoře na
+každé stránce ([ADR 0053](decisions/0053-readme-for-everyone.md)).
 
 Jazyky: jeden soubor na jazyk s příponou (`README.cs.md`, `rules.cs.md`)
 a přepínačem na prvním řádku; vlajky jako malé SVG spolu s názvem jazyka
