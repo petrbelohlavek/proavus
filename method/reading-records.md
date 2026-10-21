@@ -124,7 +124,8 @@ Where else to look:
 Record the search in coverage (found or not), link the record from the
 session, and write the next step. Tasks a machine cannot do (logging in to a
 portal, paying a fee) go to `human_tasks` with the exact address of the
-record, as `{task, status: open}`; close them later with `status: done` or
+record, as `{task, status: open, question: <Q-ID>}` (and `conflict` or
+`inquiry` if the task serves one); close them later with `status: done` or
 `dropped`, `by` and `on`. A letter or request to an office, archive or
 parish is an `inquiry` (`inquiries/`) – addressee, date sent, state, and
 later the answer and the records made from it.

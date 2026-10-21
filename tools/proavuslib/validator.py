@@ -7,6 +7,7 @@ Each rule of method/rules.md that a machine can check is checked here
 from __future__ import annotations
 
 import datetime as _dt
+import re
 import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +25,12 @@ BIRTH_FACTS = ("birth", "baptism")
 DEATH_FACTS = ("death", "burial")
 # Coverage ranges given only as a query (ADR 0035).
 QUERY_METHODS = {"database-search", "full-text-search", "index"}
+# Question states after which no task for it should stay open (ADR 0047).
+CLOSED_QUESTION = ("answered", "bounded", "abandoned")
+# A task that looks like a letter or request to an office: an e-mail address or the
+# Czech words for answer, inquiry, request in any form (ADR 0047).
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+")
+INQUIRY_WORDS = re.compile(r"\b(odpoved|dotaz|zadost)")
 # Sex implied by a participant's role when the record does not state it (ADR 0040).
 ROLE_SEX = {
     "father": "male", "groom": "male", "groom-father": "male", "bride-father": "male", "spouse-father": "male",
@@ -541,6 +548,24 @@ class RepoValidator:
                 self.report.error(s.path, f"session dated {date} belongs in sessions/{date[:4]}/")
             if len(parts) < 3:
                 self.report.error(s.path, "sessions are stored by year: sessions/YYYY/")
+            for task in s.data.get("human_tasks") or []:
+                self._check_task(s, task)
+
+    def _check_task(self, s: Entity, task) -> None:
+        """An open human task (ADR 0047): not for a closed question; a letter or request is an inquiry."""
+        if isinstance(task, str):
+            task = {"task": task, "status": "open"}
+        if not isinstance(task, dict) or task.get("status") != "open":
+            return
+        text = str(task.get("task", ""))
+        q = self._resolve(task.get("question")) if isinstance(task.get("question"), str) else None
+        if q is not None and q.data.get("status") in CLOSED_QUESTION:
+            self.report.warn(s.path, f"open task {clip(text)!r} is for question {q.id}, which is {q.data['status']} – "
+                             "close the task (status done or dropped, by, on) or point it to an open question")
+        if not task.get("inquiry") and (EMAIL.search(text) or INQUIRY_WORDS.search(_plain(text))):
+            self.report.warn(s.path, f"open task {clip(text)!r} looks like a letter or request to an office – "
+                             "consider an inquiry (inquiries/, ADR 0036) with addressee, date sent and state, "
+                             "and link it from the task as inquiry")
 
     # ------------------------------------------------------------ inquiries
     def _check_inquiries(self) -> None:
@@ -560,6 +585,15 @@ class RepoValidator:
         person = self._resolve(root)
         if person is None or person.type != "person":
             self.report.error("repo.yaml", f"map.root: {root} is not a person in people/")
+
+
+def _plain(text: str) -> str:
+    """Lower case without diacritics, for matching words."""
+    return "".join(c for c in unicodedata.normalize("NFKD", text.lower()) if not unicodedata.combining(c))
+
+
+def clip(text: str, n: int = 60) -> str:
+    return text if len(text) <= n else text[: n - 1] + "…"
 
 
 def _strings(data, prefix=""):

@@ -202,8 +202,8 @@ def _session_key(s):
     return (str(s.data.get("date", "")), s.id)
 
 
-def open_tasks(sessions) -> list[tuple[str, str, str | None]]:
-    """Open human tasks (ADR 0037, 0039): (session ID, task, for whom).
+def open_task_items(sessions) -> list[tuple[str, dict]]:
+    """Open human tasks (ADR 0037, 0039): (session ID, task as {task, status, …}).
 
     Tasks with a state: the open ones from all sessions. Plain-text tasks cannot
     be closed, so only those of the latest session count.
@@ -214,10 +214,21 @@ def open_tasks(sessions) -> list[tuple[str, str, str | None]]:
     for s in sessions:
         for task in s.data.get("human_tasks") or []:
             if isinstance(task, str) and s.id == latest:
-                out.append((s.id, task, None))
+                out.append((s.id, {"task": task, "status": "open"}))
             elif isinstance(task, dict) and task.get("status") == "open":
-                out.append((s.id, str(task.get("task", "")), task.get("for")))
+                out.append((s.id, task))
     return out
+
+
+def open_tasks(sessions) -> list[tuple[str, str, str | None]]:
+    """Open human tasks as (session ID, task, for whom) – the short form of the map."""
+    return [(sid, str(t.get("task", "")), t.get("for")) for sid, t in open_task_items(sessions)]
+
+
+def task_line(lab: Labeler, task: dict) -> str:
+    """A task in words, with whom it is for and the conflict or inquiry it serves (ADR 0047)."""
+    text = str(task.get("task", "")) + (f" ({task['for']})" if task.get("for") else "")
+    return text + "".join(f" – {lab.ref(task[k])}" for k in ("conflict", "inquiry") if task.get(k))
 
 
 def waiting_inquiries(inquiries) -> list:
@@ -242,7 +253,26 @@ def _related(v: RepoValidator, person_ids: set[str]) -> set[str]:
     return out
 
 
-def question_summary(v: RepoValidator, lab: Labeler, q) -> list[str]:
+def _worked_on(v: RepoValidator, s, q, searches: list, records: set[str]) -> bool:
+    """Did session s really work on question q (ADR 0047)? It lists q and q is its only
+    question, or it made a search for q, holds one of q's records, sent an inquiry
+    about q or gave a human task for q."""
+    asked = [x for x in s.data.get("questions") or [] if isinstance(x, str)]
+    if q.id not in asked:
+        return False
+    if len(asked) == 1:
+        return True
+    d = s.data
+    if {c.id for c in searches} & set(d.get("coverage") or []) or records & set(d.get("records") or []):
+        return True
+    for i in d.get("inquiries") or []:
+        inquiry = v.entities.get(v.aliases.get(i, i)) if isinstance(i, str) else None
+        if inquiry is not None and q.id in (inquiry.data.get("questions") or []):
+            return True
+    return any(isinstance(t, dict) and t.get("question") == q.id for t in d.get("human_tasks") or [])
+
+
+def question_summary(v: RepoValidator, lab: Labeler, q, tasks: list[dict] | None = None) -> list[str]:
     """What is known and open about one research question (ADR 0039)."""
     d = q.data
     head = f"### {d.get('title', q.id)} ({q.id})"
@@ -261,7 +291,7 @@ def question_summary(v: RepoValidator, lab: Labeler, q) -> list[str]:
                                  + [r for c in searches for r in c.data.get("found") or []]))
     if records:
         lines.append("- records: " + "; ".join(lab.ref(r) for r in records))
-    sessions = sorted((s for s in v.of_type("session") if q.id in (s.data.get("questions") or [])), key=_session_key)
+    sessions = sorted((s for s in v.of_type("session") if _worked_on(v, s, q, searches, set(records))), key=_session_key)
     if sessions:
         s = sessions[-1]
         lines.append(f"- last session {s.data.get('date')} ({s.data.get('by')}): next step – {s.data.get('next_step', '')}")
@@ -273,14 +303,20 @@ def question_summary(v: RepoValidator, lab: Labeler, q) -> list[str]:
     for i in waiting_inquiries(v.of_type("inquiry")):
         if q.id in (i.data.get("questions") or []):
             lines.append(f"- inquiry: {lab.ref(i)} – {inquiry_state(i)}")
-    session_ids = {s.id for s in sessions}
-    for sid, task, who in open_tasks(v.of_type("session")):
-        if sid in session_ids:
-            lines.append(f"- open task: {task}" + (f" ({who})" if who else ""))
+    for task in tasks or []:
+        lines.append(f"- open task: {task_line(lab, task)}")
     next_sources = (d.get("plan") or {}).get("next_sources") or []
     if next_sources:
         lines.append("- planned sources: " + "; ".join(str(x) for x in next_sources))
     return lines + [""]
+
+
+def loose_task(lab: Labeler, sid: str, task: dict) -> str:
+    """A task not listed under an open question: with its session, and the question
+    it names if that one is no longer open."""
+    q = lab.get(task.get("question"))
+    where = f" – for {lab.ref(q)}, {q.data.get('status')}" if q is not None else ""
+    return f"{task_line(lab, task)}{where} – {sid}"
 
 
 def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
@@ -315,10 +351,20 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
         lines.append("")
 
     open_q = sorted((q for q in of("question") if q.data.get("status") in ("open", "in-progress")), key=lambda q: q.id)
+    # Each open task once (ADR 0047): under the open question it serves, the others in their own block.
+    tasks = open_task_items(of("session"))
+    by_question: dict[str, list[dict]] = {q.id: [] for q in open_q}
+    loose = []
+    for sid, task in tasks:
+        qid = v.aliases.get(task.get("question"), task.get("question"))
+        if qid in by_question:
+            by_question[qid].append(task)
+        else:
+            loose.append((sid, task))
     lines += ["## Open questions", ""]
     if open_q:
         for q in open_q:
-            lines += question_summary(v, lab, q)
+            lines += question_summary(v, lab, q, by_question[q.id])
     else:
         lines += ["No open questions yet – start by writing one.", ""]
 
@@ -336,18 +382,20 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     read_once = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "read-once"]
     disputed = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "disputed"]
     conflicts = [c for c in of("conflict") if c.data.get("status") in ("open", "unresolved")]
-    tasks = open_tasks(of("session"))
     inquiries = waiting_inquiries(of("inquiry"))
     lines += ["## Waiting for a human", ""]
     for title, items in (("records read once (second reading needed before identity)", [lab.ref(r) for r in read_once]),
                          ("disputed readings", [lab.ref(r) for r in disputed]),
                          ("open conflicts", [lab.ref(c) for c in conflicts]),
-                         ("open human tasks", [f"{task}" + (f" ({who})" if who else "") + f" – {sid}" for sid, task, who in tasks]),
+                         ("open human tasks without an open question", [loose_task(lab, sid, task) for sid, task in loose]),
                          ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries])):
         lines.append(f"- {title}: {len(items)}")
         lines += [f"  - {item}" for item in items[:10]]
         if len(items) > 10:
             lines.append(f"  - … and {len(items) - 10} more")
+    under = len(tasks) - len(loose)
+    if under:
+        lines.append(f"- open human tasks under their questions above: {under}")
     lines.append("")
 
     counts = {t: len(of(t)) for t in ("person", "record", "assertion", "relationship", "coverage", "source")}

@@ -79,5 +79,11 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
 Old forms stay valid; `/proavus:upgrade` rewrites them with the 0.3.0
 migration (`tools/migrate.py`, ADR 0030).
 
+## New in 0.4
+
+- a human task may name the `question` it serves, and a `conflict` or an
+  `inquiry` (ADR 0047); START-HERE lists it under that question only. The
+  0.4.0 migration fills in `question` where it is unambiguous.
+
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

@@ -13,7 +13,7 @@ that version) and runs when an upgrade crosses it (ADR 0030):
 - a **major** version (breaking schema change, ADR 0018) must have one –
   without it the upgrade is refused;
 - a **minor** version may have one that rewrites data into the new preferred
-  form while the old form stays valid (e.g. 0.3.0: crop → crops).
+  form while the old form stays valid (e.g. 0.3.0: crop → crops; 0.4.0: tasks name their question).
 
 A migration changes files in place, is safe to run twice and returns the
 paths it changed. Exit codes: 0 done or nothing to do, 3 a needed migration
@@ -82,8 +82,56 @@ def to_0_3_0(repo: Path) -> list[str]:
     return _rewrite(repo, "records", crops) + _rewrite(repo, "sessions", tasks)
 
 
+def _headers(repo: Path, folder: str) -> dict[str, dict]:
+    """Headers of the entity files in a folder by ID."""
+    out = {}
+    base = repo / folder
+    for path in sorted(base.rglob("*.md")) if base.is_dir() else []:
+        try:
+            data, _ = split(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("id"), str):
+            out[data["id"]] = data
+    return out
+
+
+def to_0_4_0(repo: Path) -> list[str]:
+    """Human tasks name the question they serve (ADR 0047) – only where it is unambiguous:
+    the task's inquiry is about one question, or else the session has only one question.
+    Plain-text tasks given a question become {task, status: open, question}."""
+    inquiries = _headers(repo, "inquiries")
+
+    def question_of(task: dict, session: list[str]) -> str | None:
+        inquiry = inquiries.get(task.get("inquiry")) if isinstance(task.get("inquiry"), str) else None
+        if inquiry is not None:
+            about = [q for q in inquiry.get("questions") or [] if isinstance(q, str)]
+            return about[0] if len(about) == 1 else None
+        return session[0] if len(session) == 1 else None
+
+    def tasks(data: dict) -> bool:
+        current = data.get("human_tasks")
+        if not isinstance(current, list):
+            return False
+        session = list(dict.fromkeys(q for q in data.get("questions") or [] if isinstance(q, str)))
+        changed = False
+        for n, task in enumerate(current):
+            item = {"task": task, "status": "open"} if isinstance(task, str) else task
+            if not isinstance(item, dict) or item.get("question"):
+                continue
+            question = question_of(item, session)
+            if question:
+                item["question"] = question
+                current[n] = item
+                changed = True
+        return changed
+
+    return _rewrite(repo, "sessions", tasks)
+
+
 MIGRATIONS: dict[str, Callable[[Path], list[str]]] = {
     "0.3.0": to_0_3_0,
+    "0.4.0": to_0_4_0,
 }
 
 

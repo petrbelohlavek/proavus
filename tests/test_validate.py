@@ -346,6 +346,7 @@ if __name__ == "__main__":
 
 INQ = "IN-20261020-ab-i01"
 SESSION = "S-20261020-ab-s01"
+QUESTION = "Q-20261020-ab-q01"
 ORAL = "O-20261020-ab-o01"
 
 
@@ -483,6 +484,45 @@ class HumanTasks(FamilyRepoCase):
     def test_unknown_state(self):
         self.edit(SESSION, lambda d: d["human_tasks"][0].update(status="waiting"))
         self.assertError(self.validate(), "human_tasks")
+
+
+class TasksAndQuestions(FamilyRepoCase):
+    """ADR 0047: a task names its question; none stays open for a closed one; letters are inquiries."""
+
+    def test_task_links_must_exist(self):
+        self.edit(SESSION, lambda d: d["human_tasks"][0].update(question="Q-20261020-ab-q09", conflict="X-20261020-ab-x01",
+                                                                 inquiry="IN-20261020-ab-i01"))
+        self.assertError(self.validate(), "link to Q-20261020-ab-q09, which does not exist")
+
+    def test_open_task_for_a_closed_question(self):
+        for status in ("answered", "bounded", "abandoned"):
+            with self.subTest(status=status):
+                self.edit(QUESTION, lambda d: d.update(status=status, conclusion="Fictional conclusion."))
+                self.assertWarning(self.validate(), f"is for question {QUESTION}, which is {status} – close the task")
+
+    def test_closed_task_for_a_closed_question_is_fine(self):
+        self.edit(QUESTION, lambda d: d.update(status="answered", conclusion="Fictional conclusion."))
+        self.edit(SESSION, lambda d: d["human_tasks"][0].update(status="dropped", by="ab", on="2026-10-20"))
+        self.assertEqual(self.validate().warnings, [])
+
+    def test_letter_or_request_suggests_an_inquiry(self):
+        for text in ("Write to farnost-vzorkov@example.org about the burial register",
+                     "Počkat na odpověď archivu Vzorkov (fictional)",
+                     "Poslat dotaz na matriku Vzorkov (fictional)",
+                     "Podat ŽÁDOST o kopii zápisu",
+                     "Call the parish office"):     # plain text tasks count too
+            with self.subTest(text=text):
+                self.edit(SESSION, lambda d: d["human_tasks"].__setitem__(1, text))
+                report = self.validate()
+                if text.startswith("Call"):
+                    self.assertEqual(report.warnings, [])
+                else:
+                    self.assertWarning(report, "looks like a letter or request to an office – consider an inquiry")
+
+    def test_no_hint_when_linked_to_an_inquiry_or_closed(self):
+        self.edit(SESSION, lambda d: d["human_tasks"][0].update(task="Zaplatit poplatek za žádost", inquiry="IN-20261020-ab-i01"))
+        self.edit(SESSION, lambda d: d["human_tasks"][1].update(task="Odeslat dotaz e-mailem na podatelna@example.org"))
+        self.assertEqual(self.validate().warnings, [])
 
 
 class RelationshipCitations(FamilyRepoCase):

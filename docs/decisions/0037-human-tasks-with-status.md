@@ -1,6 +1,6 @@
 # 0037 Úkoly pro člověka se stavem
 
-- **Stav:** přijato (2026-10-20); úkoly zadané textem upřesňuje [ADR 0039](0039-start-here-readable.md)
+- **Stav:** přijato (2026-10-20); úkoly zadané textem upřesňuje [ADR 0039](0039-start-here-readable.md); vazbu na otázku přidává [ADR 0047](0047-tasks-per-question.md)
 - **Původně:** —
 
 ## Kontext

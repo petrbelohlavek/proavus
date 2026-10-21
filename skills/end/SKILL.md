@@ -16,7 +16,9 @@ Write `sessions/<YYYY>/<S-ID>.md` (new ID with
 `uv run .proavus/tools/new_id.py session <abbr>`): date, researcher, the
 questions, coverage and records of this session, the result in one or two
 sentences, **the next step**, `inquiries` sent or answered, and human
-tasks with exact addresses as `{task, status: open, for: <abbr>}`. Ask
+tasks with exact addresses as `{task, status: open, for: <abbr>, question:
+<Q-ID>}` – the question the task serves (also `conflict` or `inquiry` if it
+serves one); a letter or request to an office is an `inquiry`, not a task. Ask
 whether open tasks of earlier sessions (START-HERE lists them) were done:
 set `status: done` or `dropped` with `by` and `on` – only on the user's
 word. Show the result and next step to the user and adjust if they want.

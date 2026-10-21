@@ -189,7 +189,8 @@ class StartHere(unittest.TestCase):
     def test_only_open_human_tasks_and_inquiries(self):
         family_repo.start_here(self.repo, today=TODAY)
         text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
-        self.assertIn("- open human tasks: 1", text)
+        self.assertIn("- open human tasks without an open question: 0", text)
+        self.assertIn("- open human tasks under their questions above: 1", text)
         self.assertIn("Order the marriage register Vzorkov 1870–1878 in the reading room of Archiv Vzorkov (fictional) (ab)", text)
         self.assertNotIn("Pay the copying fee", text)          # done
         self.assertIn("- inquiries not closed: 1", text)
@@ -212,6 +213,79 @@ class StartHere(unittest.TestCase):
                      "- last session 2026-10-20 (ab): next step – Search the marriage register",
                      "- open task: Order the marriage register", "- planned sources: marriage register Vzorkov 1870–1878"):
             self.assertIn(line, section)
+
+    # -- tasks and sessions per question (ADR 0047)
+    def write(self, rel: str, header: str) -> None:
+        path = self.repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"---\n{header}---\n", encoding="utf-8")
+
+    def second_question(self, status: str = "open", extra: str = "") -> None:
+        self.write("questions/Q-20261020-ab-q02.md", "id: Q-20261020-ab-q02\ntype: question\n"
+                   f"title: When did Josef Pokusný die?\nstatus: {status}\nsubjects: [P-20261020-ab-j01]\n{extra}")
+
+    def session(self, n: str, header: str) -> None:
+        self.write(f"sessions/2026/S-20261021-ab-s{n}.md", f"id: S-20261021-ab-s{n}\ntype: session\ndate: 2026-10-21\nby: ab\n"
+                   f"result: Fictional result {n}.\n{header}")
+
+    def start(self) -> str:
+        summary, code = family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertEqual(code, 0, text)
+        return text
+
+    @staticmethod
+    def section(text: str, qid: str) -> str:
+        start = text.index(f"({qid})\n")
+        return text[start:text.index("\n### ", start) if "\n### " in text[start:] else text.index("## Last sessions")]
+
+    def test_task_only_under_its_question(self):
+        self.second_question()
+        self.session("01", "questions: [Q-20261020-ab-q01, Q-20261020-ab-q02]\nnext_step: Wait for the archive.\nhuman_tasks:\n"
+                     "  - task: Ask the cemetery office Vzorkov (fictional) for the grave register\n    status: open\n"
+                     "    question: Q-20261020-ab-q02\n    conflict: X-20261020-ab-x01\n"
+                     "  - task: Photograph the house Vzorkov 12 (fictional)\n    status: open\n")
+        text = self.start()
+        q1, q2 = self.section(text, "Q-20261020-ab-q01"), self.section(text, "Q-20261020-ab-q02")
+        self.assertIn("- open task: Order the marriage register", q1)
+        self.assertNotIn("cemetery office", q1)             # the session lists q01 too, but the task is for q02
+        self.assertIn("- open task: Ask the cemetery office Vzorkov (fictional) for the grave register – conflict about", q2)
+        self.assertNotIn("Order the marriage register", q2)
+        waiting = text[text.index("## Waiting for a human"):]
+        self.assertIn("- open human tasks without an open question: 1\n  - Photograph the house Vzorkov 12 (fictional) – S-20261021-ab-s01", waiting)
+        self.assertIn("- open human tasks under their questions above: 2", waiting)
+        for task in ("Order the marriage register", "cemetery office", "Photograph the house"):
+            self.assertEqual(text.count(task), 1, task)       # every task once
+
+    def test_task_for_a_closed_question_stays_visible(self):
+        self.second_question("answered", "conclusion: Fictional conclusion.\n")
+        self.session("01", "questions: [Q-20261020-ab-q02]\nnext_step: Nothing.\nhuman_tasks:\n"
+                     "  - task: Return the grave register copy\n    status: open\n    question: Q-20261020-ab-q02\n")
+        text = self.start()
+        self.assertIn("  - Return the grave register copy – for When did Josef Pokusný die? (Q-20261020-ab-q02), answered – S-20261021-ab-s01", text)
+        self.assertIn("WARN sessions/2026/S-20261021-ab-s01.md: open task 'Return the grave register copy' is for question", text)
+        self.assertEqual(text[text.index("## Open questions"):].count("Return the grave register copy"), 1)
+
+    def test_last_session_only_where_it_worked_on_the_question(self):
+        self.second_question()
+        # Lists both questions but holds only the anchor record of q01.
+        self.session("01", "questions: [Q-20261020-ab-q01, Q-20261020-ab-q02]\nrecords: [R-20261020-ab-r01]\n"
+                     "next_step: Compare the baptism with the marriage.\n")
+        text = self.start()
+        self.assertIn("- last session 2026-10-21 (ab): next step – Compare the baptism", self.section(text, "Q-20261020-ab-q01"))
+        self.assertNotIn("- last session", self.section(text, "Q-20261020-ab-q02"))
+        # Lists both questions, nothing of either: no question's last session.
+        self.session("02", "questions: [Q-20261020-ab-q01, Q-20261020-ab-q02]\nnext_step: Tidy up the notes.\n")
+        text = self.start()
+        self.assertNotIn("Tidy up the notes", self.section(text, "Q-20261020-ab-q01") + self.section(text, "Q-20261020-ab-q02"))
+        # A task for q02 ties the session to q02; a session with q02 alone is about it.
+        self.session("03", "questions: [Q-20261020-ab-q01, Q-20261020-ab-q02]\nnext_step: Wait for the cemetery office.\n"
+                     "human_tasks:\n  - task: Ask the cemetery office\n    status: open\n    question: Q-20261020-ab-q02\n")
+        text = self.start()
+        self.assertIn("next step – Wait for the cemetery office", self.section(text, "Q-20261020-ab-q02"))
+        self.assertNotIn("Wait for the cemetery office", self.section(text, "Q-20261020-ab-q01"))
+        self.session("04", "questions: [Q-20261020-ab-q02]\nnext_step: Read the death register 1900–1910.\n")
+        self.assertIn("next step – Read the death register", self.section(self.start(), "Q-20261020-ab-q02"))
 
     def test_read_once_records_listed_by_title(self):
         record = self.repo / "records" / "R-20261020-ab-r01.md"

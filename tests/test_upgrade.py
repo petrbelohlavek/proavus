@@ -222,6 +222,7 @@ class Migration(OldRepoCase):
         self.assertFalse(migrate.needed("0.3.0", "0.3.4"))     # nothing registered after 0.3.0
         self.assertFalse(migrate.needed("0.1.0", "0.2.0"))
         self.assertEqual(migrate.steps("0.1.0", "0.3.0"), ["0.3.0"])
+        self.assertTrue(migrate.needed("0.3.1", "0.4.0"))      # 0.4.0: tasks name their question
         self.assertEqual(migrate.migrate(self.repo, "0.3.0", "0.3.4"), [])
 
     def test_0_3_0_rewrites_old_forms(self):
@@ -238,6 +239,38 @@ class Migration(OldRepoCase):
         self.assertEqual(migrate.migrate(self.repo, "0.2.0", "0.3.0"), [])   # safe to run twice
         from proavuslib.validator import RepoValidator
         self.assertEqual(RepoValidator(self.repo, ROOT, today=TODAY).run().errors, [])
+
+    def session(self) -> dict:
+        return yaml.safe_load(self.path(SESSION).read_text(encoding="utf-8").split("---")[1])
+
+    def test_0_4_0_tasks_of_a_one_question_session(self):
+        migrate.migrate(self.repo, "0.2.0", "0.3.0")
+        changed = migrate.migrate(self.repo, "0.3.1", "0.4.0")
+        self.assertEqual(changed, [SESSION])
+        self.assertEqual(self.session()["human_tasks"][0], {"task": "Order the marriage register Vzorkov 1870–1878",
+                                                            "status": "open", "question": "Q-20261020-ab-q01"})
+        self.assertEqual(migrate.migrate(self.repo, "0.3.1", "0.4.0"), [])     # safe to run twice
+        from proavuslib.validator import RepoValidator
+        self.assertEqual(RepoValidator(self.repo, ROOT, today=TODAY).run().errors, [])
+
+    def test_0_4_0_plain_text_tasks_in_one_go(self):
+        self.assertEqual(migrate.steps("0.2.0", "0.4.0"), ["0.3.0", "0.4.0"])
+        migrate.migrate(self.repo, "0.2.0", "0.4.0")
+        self.assertEqual(self.session()["human_tasks"][1], {"task": "Ask the parish about the burial register",
+                                                            "status": "open", "question": "Q-20261020-ab-q01"})
+
+    def test_0_4_0_leaves_ambiguous_tasks(self):
+        self.path("questions/Q-20261020-ab-q02.md").write_text(
+            "---\nid: Q-20261020-ab-q02\ntype: question\ntitle: When did Josef Pokusný die?\nstatus: open\n---\n", encoding="utf-8")
+        text = self.path(SESSION).read_text(encoding="utf-8")
+        text = text.replace("questions: [Q-20261020-ab-q01]", "questions: [Q-20261020-ab-q01, Q-20261020-ab-q02]")
+        text = text.replace("  - Ask the parish about the burial register\n",
+                            "  - task: Pay the fee for the domicile inquiry\n    status: open\n    inquiry: IN-20261020-ab-i01\n")
+        self.path(SESSION).write_text(text, encoding="utf-8")
+        migrate.migrate(self.repo, "0.2.0", "0.4.0")
+        tasks = self.session()["human_tasks"]
+        self.assertNotIn("question", tasks[0])                                  # two questions, no clue
+        self.assertEqual(tasks[1]["question"], "Q-20261020-ab-q01")             # its inquiry is about q01 only
 
     def test_old_forms_stay_valid(self):
         from proavuslib.validator import RepoValidator

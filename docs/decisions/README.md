@@ -51,5 +51,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0044](0044-roles-spouse-parents-grandparents.md) | Role účastníků: rodiče manžela/manželky, děd a babička bez strany | přijato | — |
 | [0045](0045-edtf-unspecified-digits.md) | EDTF: jednotlivá nespecifikovaná číslice v měsíci a dni | přijato | — |
 | [0046](0046-marital-status.md) | Rodinný stav účastníka jako samostatné pole | přijato | — |
+| [0047](0047-tasks-per-question.md) | Úkol patří k otázce; poslední sezení jen z práce na otázce | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

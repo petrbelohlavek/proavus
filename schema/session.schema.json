@@ -16,7 +16,7 @@
     "result": { "type": "string", "minLength": 1 },
     "next_step": { "type": "string", "minLength": 1, "description": "Every session ends with the next step." },
     "human_tasks": {
-      "description": "Tasks only a human can do (log-in portals, fees, letters) with exact addresses (ADR 0037). A plain string is an open task.",
+      "description": "Tasks only a human can do (log-in portals, fees) with exact addresses (ADR 0037); question, conflict or inquiry they serve (ADR 0047). A plain string is an open task.",
       "type": "array",
       "items": { "anyOf": [{ "type": "string", "minLength": 1 }, { "$ref": "#/$defs/task" }] }
     }
@@ -33,7 +33,10 @@
         "for": { "$ref": "common.schema.json#/$defs/member", "description": "who should do it" },
         "by": { "$ref": "common.schema.json#/$defs/member", "description": "who closed it" },
         "on": { "$ref": "common.schema.json#/$defs/date", "description": "when it was closed" },
-        "note": { "type": "string" }
+        "note": { "type": "string" },
+        "question": { "$ref": "common.schema.json#/$defs/ref_question", "description": "the question the task serves (ADR 0047)" },
+        "conflict": { "$ref": "common.schema.json#/$defs/ref_conflict", "description": "the conflict it helps to resolve" },
+        "inquiry": { "$ref": "common.schema.json#/$defs/ref_inquiry", "description": "the inquiry it belongs to (e.g. paying its fee)" }
       },
       "x-hint": "a done or dropped task needs by and on",
       "if": { "properties": { "status": { "enum": ["done", "dropped"] } } },

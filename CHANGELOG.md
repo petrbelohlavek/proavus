@@ -4,6 +4,22 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
+## 0.4.0 – unreleased
+
+- Schema (core, additive): a human task may name the `question` it serves,
+  and a `conflict` or an `inquiry` (ADR 0047).
+- START-HERE shows each open task once: under the open question it serves;
+  tasks without one (or for a question no longer open, with its state) in
+  their own block. The last session of a question is only a session that
+  worked on it – its only question, or a search, record, inquiry or task of
+  that question.
+- Validator: warning for an open task of an answered, bounded or abandoned
+  question; advice to write an `inquiry` when an open task names an e-mail
+  address or the words odpověď / dotaz / žádost.
+- `migrate.py` 0.4.0: fills in `question` where it is unambiguous (the task's
+  inquiry is about one question, or the session has only one).
+- `/proavus:end` and `method/reading-records.md`: tasks with their question.
+
 ## 0.3.1 – 2026-10-21
 
 - README (EN, CS), installing and updating the plugin: clone and keep the

@@ -3,6 +3,7 @@
 - **Stav:** přijato (2026-10-20)
 - **Původně:** —
 - **Upřesňuje:** [ADR 0037](0037-human-tasks-with-status.md)
+- **Upřesněno:** [ADR 0047](0047-tasks-per-question.md) – úkoly a poslední sezení po otázkách
 
 ## Kontext
 
