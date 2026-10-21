@@ -8,6 +8,13 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## Unreleased
+
+- Fix: the name guard (`tools/guard_names.py`) blocks commits when the guard
+  list exists but has no entries (empty, or comments only), as it does when
+  the list is missing. Before, such a list let every check pass and guarded
+  nothing.
+
 ## 0.5.0 – 2026-10-21
 
 - `/proavus:setup` – a guide for a family member without technical

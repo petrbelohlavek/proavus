@@ -17,9 +17,9 @@ become public. These rules apply to every agent and person working here.
 
 - Hooks must be on: `git config core.hooksPath .githooks`. They block names
   from the guard list kept outside the repo (`../.guard-names`, or
-  `PROAVUS_GUARD_NAMES`). If the list is missing, commits are blocked – do
-  not work around it. Exceptions (the author's attribution) are in
-  `.guard-allow`.
+  `PROAVUS_GUARD_NAMES`). If the list is missing or has no entries (empty,
+  or comments only), commits are blocked – do not work around it.
+  Exceptions (the author's attribution) are in `.guard-allow`.
 - Tests: `uv run python -m unittest discover -s tests`
 - Licences: `uvx --from 'reuse[charset-normalizer]==6.2.0' reuse lint`
 - Push to `origin main` (private) after each finished step – one complete
