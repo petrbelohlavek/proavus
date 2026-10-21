@@ -53,5 +53,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0046](0046-marital-status.md) | Rodinný stav účastníka jako samostatné pole | přijato | — |
 | [0047](0047-tasks-per-question.md) | Úkol patří k otázce; poslední sezení jen z práce na otázce | přijato | — |
 | [0048](0048-setup-for-family-members.md) | Průvodce `/proavus:setup` pro člena rodiny | přijato | — |
+| [0049](0049-pre-commit-validation.md) | Validace před každým commitem v rodinném repu (hook `pre-commit`) | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

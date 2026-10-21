@@ -197,6 +197,18 @@ uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" protect-plugin "<folder>"
 
 (with `--also "<parent>/proavus"` if the framework was cloned in step 4).
 
+Switch on the check before every commit – `core.hooksPath` is set per
+computer, so every clone needs it (one sentence: git then refuses to save
+data with errors):
+
+```
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" hooks "<folder>"
+```
+
+If it says `.githooks/pre-commit` is missing, the family repository is older
+than Proavus 0.5.0: continue, and tell the user that the maintainer (or they
+themselves in the first session) should run `/proavus:upgrade`.
+
 ## 6. Add the member to repo.yaml
 
 Look at `members` in `<folder>/repo.yaml`. Already listed (the same name)?
@@ -209,6 +221,11 @@ uv run "<folder>/.proavus/tools/validate.py" "<folder>"
 
 The tool refuses an abbreviation that someone else already has – then offer
 another one. Validation must give 0 errors.
+
+If the commit is stopped with "Commit zastaven / Commit stopped", the
+pre-commit hook found validation errors in what is being saved: explain them
+plainly, fix them with the user and commit again. Never bypass the hook
+(`--no-verify`, changing `core.hooksPath`).
 
 Save it according to the access from step 5 (in `<folder>`, after the
 user's yes). Git needs a name and an e-mail for the history: if

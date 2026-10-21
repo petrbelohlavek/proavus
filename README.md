@@ -105,6 +105,11 @@ be run again after a restart:
    for the maintainer (write);
 6. hands over to `/proavus:start` in the family folder.
 
+Every commit in a family repository is checked first: `.githooks/pre-commit`
+runs the validator on what is being saved and stops a commit with errors
+(ADR 0049); `/proavus:setup`, `/proavus:start` and `/proavus:upgrade`
+switch it on in each clone.
+
 **Never type a password, a token or a recovery code into the chat** – the
 password goes only into GitHub's page in the browser or into a system window.
 
@@ -138,7 +143,7 @@ the **folder the session runs in** – it is shown under the message box.
 
 | Command | When | Where | What it does |
 |---|---|---|---|
-| `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, puts it on GitHub and checks it is private |
+| `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, switches on the check before every commit, puts it on GitHub and checks it is private |
 | `/proavus:setup` | once per computer and member | a new session in any folder (not the framework) | installs git, gh, uv and the plugin, logs in to GitHub, clones the private family repository, adds the member to `repo.yaml` (commit or pull request), recommends two-factor login |
 | `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
 | `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |

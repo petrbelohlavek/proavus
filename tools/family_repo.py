@@ -27,6 +27,9 @@ Usage:
       check that the repository's origin is private and not a fork of proavus
       exit 0 = private · 3 = public or a fork (do not write) · 4 = cannot tell
       · 5 = no remote yet
+  family_repo.py hooks DIR
+      switch on the pre-commit hook of the family repository (validation
+      before every commit): core.hooksPath = .githooks, hook executable
   family_repo.py access DIR|OWNER/NAME
       before cloning or saving: is the repository private, and may this GitHub
       account save to it directly or only through a pull request
@@ -422,6 +425,7 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
 BLOCK = re.compile(r"<!-- proavus:begin -->.*?<!-- proavus:end -->", re.S)
 BLOCK_FILES = ["CLAUDE.md", "AGENTS.md"]
 WORKFLOW = Path(".github") / "workflows" / "validate.yml"
+HOOK = Path(".githooks") / "pre-commit"   # validation before every commit (ADR 0049)
 MAP_SINCE = (0, 2, 0)  # map.root and map.lang exist since 0.2.0 (ADR 0027)
 MAP_LANGS = ("en", "cs")
 
@@ -657,6 +661,11 @@ def refresh_framework_files(repo: Path) -> tuple[list[str], list[str]]:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, dest)
         changed.append(WORKFLOW.as_posix())
+    source, dest = TEMPLATE / HOOK, repo / HOOK
+    if not dest.is_file() or dest.read_bytes() != source.read_bytes():
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, dest)
+        changed.append(HOOK.as_posix())
     return changed, warnings
 
 
@@ -676,6 +685,8 @@ def upgrade(repo: Path, map_root: str | None = None, map_lang: str | None = None
     if text != yaml_path.read_text(encoding="utf-8"):
         yaml_path.write_text(text, encoding="utf-8")
         changed.append("repo.yaml")
+    if (repo / ".git").exists():
+        setup_hooks(repo)
     report = RepoValidator(repo, repo / ".proavus").run()
     return UpgradeResult(plan.installed, plan.current, changed, warnings, report)
 
@@ -736,6 +747,32 @@ def check_private(repo: Path) -> int:
         return 3
     print(f"{info['nameWithOwner']} is private")
     return 0
+
+
+# ------------------------------------------------------------------ hooks
+def setup_hooks(repo: Path) -> list[str]:
+    """Switch on .githooks/pre-commit: core.hooksPath (per clone, not saved in git) and the executable bit."""
+    check_family_repo(repo, "hooks")
+    if not (repo / ".git").exists():
+        raise SystemExit(f"hooks: {repo} is not a git repository yet (git init first)")
+    hook = repo / HOOK
+    if not hook.is_file():
+        raise SystemExit(f"hooks: {HOOK.as_posix()} is missing – run /proavus:upgrade (Proavus 0.5.0 or later)")
+    done = []
+    git = ["git", "-C", str(repo)]
+    current = subprocess.run(git + ["config", "--local", "--get", "core.hooksPath"], capture_output=True, text=True).stdout.strip()
+    if current != ".githooks":
+        subprocess.run(git + ["config", "--local", "core.hooksPath", ".githooks"], check=True)
+        done.append("core.hooksPath = .githooks")
+    if not hook.stat().st_mode & 0o100:
+        hook.chmod(hook.stat().st_mode | 0o755)
+        done.append(f"{HOOK.as_posix()} executable")
+    staged = subprocess.run(git + ["ls-files", "--stage", "--", HOOK.as_posix()], capture_output=True, text=True).stdout
+    if staged and not staged.startswith("100755"):
+        # Windows does not keep the executable bit; git must store it for the other members' clones.
+        subprocess.run(git + ["update-index", "--chmod=+x", "--", HOOK.as_posix()], check=True)
+        done.append(f"{HOOK.as_posix()} executable in git")
+    return done
 
 
 # ----------------------------------------------------------------- access
@@ -838,7 +875,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--title", required=True)
     p.add_argument("--member", action="append", default=[], help='abbr:"Full name" (repeatable)')
     p.add_argument("--region", action="append", default=[], help="region code, e.g. cz (repeatable)")
-    for name in ("install-tools", "start-here", "check-private", "upgrade-plan"):
+    for name in ("install-tools", "start-here", "check-private", "upgrade-plan", "hooks"):
         sub.add_parser(name).add_argument("repo", nargs="?", default=".")
     p = sub.add_parser("protect-plugin")
     p.add_argument("repo", nargs="?", default=".")
@@ -870,6 +907,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "protect-plugin":
         added = protect_plugin(repo, [Path(a).expanduser() for a in args.also])
         print(f".claude/settings.local.json: {len(added)} new deny rules" + "".join(f"\n  {r}" for r in added))
+        return 0
+    if args.cmd == "hooks":
+        done = setup_hooks(repo)
+        print("pre-commit hook: " + ("; ".join(done) if done else "already on") + " – every commit is validated")
         return 0
     if args.cmd == "add-member":
         if add_member(repo, args.abbr, args.name, args.role):

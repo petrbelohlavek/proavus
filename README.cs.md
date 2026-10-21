@@ -104,6 +104,11 @@ znovu:
    (write);
 6. předá na `/proavus:start` ve složce rodiny.
 
+Každý commit v repu rodiny se nejdřív zkontroluje: `.githooks/pre-commit`
+spustí validátor na to, co se ukládá, a commit s chybou zastaví (ADR 0049);
+`/proavus:setup`, `/proavus:start` a `/proavus:upgrade` ho zapnou v každém
+klonu.
+
 **Heslo, token ani kód pro obnovení nikdy nepište do chatu** – heslo patří
 jen do stránky GitHubu v prohlížeči nebo do systémového okna.
 
@@ -135,7 +140,7 @@ nebo `claude` v terminálu): napište `/proavus:` a vyberte. Rozhoduje,
 
 | Příkaz | Kdy | Kde | Co dělá |
 |---|---|---|---|
-| `/proavus:init` | jednou | nové sezení ve složce, kde má repo rodiny vzniknout, nebo v jeho prázdném klonu | založí **soukromé** repo rodiny ze šablony, nainstaluje `.proavus/`, ochrání framework před úpravami, nahraje repo na GitHub a ověří, že je soukromé |
+| `/proavus:init` | jednou | nové sezení ve složce, kde má repo rodiny vzniknout, nebo v jeho prázdném klonu | založí **soukromé** repo rodiny ze šablony, nainstaluje `.proavus/`, ochrání framework před úpravami, zapne kontrolu před každým commitem, nahraje repo na GitHub a ověří, že je soukromé |
 | `/proavus:setup` | jednou na počítač a člena | nové sezení v libovolné složce (ne ve frameworku) | nainstaluje git, gh, uv a plugin, přihlásí ke GitHubu, naklonuje soukromé repo rodiny, zapíše člena do `repo.yaml` (commit nebo pull request), doporučí dvoufázové ověření |
 | `/proavus:start` | první zpráva každého sezení bádání | sezení v repu rodiny | kontrola soukromí, stažení práce ostatních, přehled (`START-HERE.md`), výběr nebo zápis výzkumné otázky |
 | `/proavus:end` | poslední zpráva každého sezení bádání | totéž sezení | záznam sezení s dalším krokem, rozhodnutí, která dělá jen člověk, validace (0 chyb), uložení na GitHub |

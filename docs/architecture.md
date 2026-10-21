@@ -89,7 +89,7 @@ proavus/
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
 ├── skills/                             init · setup · start · end · upgrade [v0]; později check · claim · review · feedback
-├── hooks/                              kontrola před uložením v rodinném repu (později)
+├── hooks/                              hooky pluginu (později); validace před commitem je v šabloně: templates/family/.githooks/pre-commit (ADR 0049) [v0]
 ├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu
 ├── evals/                              testy napříč modely (rukopis, past rejstříku, jmenovci)
@@ -378,6 +378,11 @@ větu z README. Průvodce `/setup` (uživatel potvrzuje každý krok):
 a oprávnění (`family_repo.py access`), naklonuje repo, zapíše člena do
 `repo.yaml` (`add-member`) commitem nebo pull requestem podle práv
 a doporučí dvoufázové ověření. Kroky jsou opakovatelné.
+
+Každý commit v rodinném repu kontroluje hook `.githooks/pre-commit`
+([ADR 0049](decisions/0049-pre-commit-validation.md)): validuje to, co se
+ukládá, a commit s chybou zastaví. Zapíná ho `family_repo.py hooks`
+(`core.hooksPath` platí pro jeden klon).
 
 `/check` kdykoli vyhodnotí, co nefunguje. Při běžné práci git uživatel nevidí.
 

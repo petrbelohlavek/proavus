@@ -75,10 +75,16 @@ makes – write it only on their word:
 2. `git pull --rebase` (on conflict stop and explain).
 3. `git add -A`, then `git status --short`. If anything outside the data
    folders changed (`CLAUDE.md`, `AGENTS.md`, `.proavus/`, `.claude/`,
-   `.github/`), ask before including it. `START-HERE.md` and `views/` are
+   `.github/`, `.githooks/`), ask before including it. `START-HERE.md` and `views/` are
    ignored by git – never force them in.
-4. `git commit -m "Session <S-ID> (<abbr>): <short result>"`
-5. `git push`
+4. Validate again after the pull (others' work came in):
+   `uv run .proavus/tools/validate.py .` – 0 errors.
+5. `git commit -m "Session <S-ID> (<abbr>): <short result>"`. If the commit
+   is stopped with "Commit zastaven / Commit stopped", the pre-commit hook
+   found validation errors in what is being saved: explain them plainly, fix
+   them with the user and commit again. Never bypass the hook
+   (`--no-verify`, changing `core.hooksPath`).
+6. `git push`
 
 ## 7. Close
 

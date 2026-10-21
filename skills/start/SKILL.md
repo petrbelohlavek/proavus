@@ -35,7 +35,19 @@ uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" check-private .
 If there is a remote: `git pull --rebase`. If it reports a conflict, stop and
 explain in plain words; resolve together, never discard others' work.
 
-## 4. Status
+## 4. The check before every commit
+
+```
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" hooks .
+```
+
+Switches on `.githooks/pre-commit` (validation of every commit) if this
+clone does not have it yet – it is set per computer (after the pull: another
+member's upgrade may have just brought it). If the hook is
+missing, the repository is older than Proavus 0.5.0: offer
+`/proavus:upgrade` (step 5). Never bypass the hook (`--no-verify`).
+
+## 5. Status
 
 ```
 uv run .proavus/tools/family_repo.py start-here .
@@ -48,7 +60,7 @@ starting new work).
 Read `AGENTS.md`, the family notes in `CLAUDE.md` and the binding rules
 `${CLAUDE_PLUGIN_ROOT}/method/rules.md` (Czech: `rules.cs.md`).
 
-## 5. Who is researching
+## 6. Who is researching
 
 Find the user's abbreviation in `repo.yaml` → `members`. If they are not
 listed: an open pull request `member-<abbr>` from `/proavus:setup` (`gh pr
@@ -58,7 +70,7 @@ abbreviation and role and add them with their yes
 (`uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" add-member . --abbr <abbr> --name
 "<name>" --role <role>`; saving as in `/proavus:setup` step 6).
 
-## 6. Choose the work
+## 7. Choose the work
 
 Show in a few lines: check result, open questions (with who is on them),
 the last next steps and human tasks, what waits for a human (records read
@@ -66,14 +78,15 @@ once, conflicts). Ask what to work on today ($ARGUMENTS may name a question).
 
 - Existing question: if someone else has claimed it, say so and ask.
   Otherwise set `claimed_by` and `status: in-progress`, then save right away
-  so others see the claim: `git add questions/<file>`, `git commit -m "Claim
+  so others see the claim: `uv run .proavus/tools/validate.py .` (0 errors;
+  otherwise fix first), `git add questions/<file>`, `git commit -m "Claim
   <Q-ID> (<abbr>)"`, `git pull --rebase`, `git push`.
 - New question: write `questions/<Q-ID>.md` with a new ID
   (`uv run .proavus/tools/new_id.py question <abbr>`), the title, an anchor
   record if one exists, and a plan: what this search can answer and what it
   cannot. Agree on it with the user.
 
-## 7. During the session
+## 8. During the session
 
 Follow the method:
 

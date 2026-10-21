@@ -500,5 +500,71 @@ class Access(unittest.TestCase):
         self.assertEqual(family_repo.access(str(folder)), 4)
 
 
+@unittest.skipUnless(shutil.which("uv") and os.name == "posix", "the hook starts through uv (#!/usr/bin/env -S uv run)")
+class PreCommitHook(unittest.TestCase):
+    """The family repository's pre-commit hook stops a commit with validation errors (ADR 0049)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls._tmp = tempfile.TemporaryDirectory()
+        cls.repo = Path(cls._tmp.name) / "proavus-pokusni"
+        family_repo.init(cls.repo, "Rodokmen rodiny Pokusných", ["ab:Ada Badatelová"], ["cz"])
+        subprocess.run(["git", "init", "-q", "-b", "main", str(cls.repo)], check=True)
+        cls.git("add", "-A")
+        cls.done = family_repo.setup_hooks(cls.repo)
+        cls.first = cls.git("commit", "-m", "Create family repository")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tmp.cleanup()
+
+    @classmethod
+    def git(cls, *args, check=True):
+        cmd = ["git", "-c", "user.name=Ada Badatelová", "-c", "user.email=ada@example.invalid", "-C", str(cls.repo), *args]
+        out = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        if check and out.returncode != 0:
+            raise AssertionError(out.stdout + out.stderr)
+        return out
+
+    def test_switched_on_and_executable_in_git(self):
+        self.assertIn("core.hooksPath = .githooks", self.done)
+        self.assertEqual(self.git("config", "core.hooksPath").stdout.strip(), ".githooks")
+        self.assertTrue(self.git("ls-files", "--stage", ".githooks/pre-commit").stdout.startswith("100755"))
+        self.assertEqual(family_repo.setup_hooks(self.repo), [])  # idempotent
+
+    def test_commit_with_an_error_is_stopped(self):
+        bad = self.repo / "people" / "P-20261021-zz-x01.md"
+        bad.write_text("---\nid: P-20261021-zz-x01\ntype: person\n---\n", encoding="utf-8")
+        self.git("add", "-A")
+        try:
+            out = self.git("commit", "-m", "Broken person", check=False)
+            self.assertNotEqual(out.returncode, 0)
+            self.assertIn("ERROR", out.stderr)
+            self.assertIn("Commit zastaven", out.stderr)
+            self.assertIn("Commit stopped", out.stderr)
+            self.assertNotIn("Broken person", self.git("log", "--format=%s").stdout)
+        finally:
+            self.git("rm", "-q", "-f", "--", str(bad))
+
+    def test_only_the_staged_version_counts(self):
+        """A broken file that is not staged does not stop a good commit."""
+        loose = self.repo / "people" / "P-20261021-zz-x02.md"
+        loose.write_text("---\nnot: valid\n---\n", encoding="utf-8")
+        readme = self.repo / "README.md"
+        readme.write_text(readme.read_text(encoding="utf-8") + "\nFictional note.\n", encoding="utf-8")
+        try:
+            self.git("add", "README.md")
+            self.git("commit", "-q", "-m", "Note in README")
+        finally:
+            loose.unlink()
+
+    def test_refuses_folder_without_git(self):
+        other = Path(self._tmp.name) / "no-git"
+        family_repo.init(other, "x", ["ab:A"], [])
+        with self.assertRaises(SystemExit) as cm:
+            family_repo.setup_hooks(other)
+        self.assertIn("not a git repository", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

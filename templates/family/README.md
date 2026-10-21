@@ -19,7 +19,9 @@ Private family repository built with [Proavus](https://github.com/petrbelohlavek
    with the next step, asks you about what needs your decision, checks the
    data (0 errors) and saves everything to GitHub.
 
-You never need to use git yourself. If something does not work, tell
+You never need to use git yourself. Before every save, the data are
+checked: a save with errors is stopped ("Commit zastaven / Commit stopped")
+– tell Claude, it fixes the errors with you. If something does not work, tell
 Claude what happened. (`/proavus:init` created this repository; it is not
 needed again.) When `/proavus:start` says the Proavus copy is older than
 the plugin, type `/proavus:upgrade` in a session in this folder: it shows

@@ -91,9 +91,22 @@ setting.
 
 In the folder: if there is no `.git` yet, `git init -b main`; otherwise
 `git branch -M main` (an empty clone may start on another branch name). Then
-`git add -A` and
-`git commit -m "Create family repository (Proavus <version>)"`
-(version from `.proavus/VERSION`).
+`git add -A` and switch on the check before every commit (one sentence for
+the user: from now on git refuses to save data with errors):
+
+```
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" hooks "<folder>"
+uv run .proavus/tools/validate.py .
+```
+
+(it sets `core.hooksPath` to `.githooks` – per computer, not saved in git –
+and marks the hook executable in git for the other members' clones). With 0
+errors: `git commit -m "Create family repository (Proavus <version>)"`
+(version from `.proavus/VERSION`). If the commit is stopped with "Commit
+zastaven / Commit stopped", the pre-commit hook found validation errors in
+what is being saved: explain them plainly, fix them with the user and commit
+again. Never bypass the hook
+(`--no-verify`, changing `core.hooksPath`).
 
 ## 7. Put it on GitHub (private)
 

@@ -148,7 +148,7 @@ class Upgrade(OldRepoCase):
         self.assertIn(f'schema_version: "{current}"', text)
         self.assertIn(f"map:\n  root: {NELA}\n  lang: cs\n", text)
         self.assertIn("# family comment, must stay", text)
-        self.assertEqual(sorted(result.changed), sorted([".proavus/", RECORD, SESSION, "CLAUDE.md", "AGENTS.md", ".github/workflows/validate.yml", "repo.yaml"]))
+        self.assertEqual(sorted(result.changed), sorted([".proavus/", RECORD, SESSION, "CLAUDE.md", "AGENTS.md", ".github/workflows/validate.yml", ".githooks/pre-commit", "repo.yaml"]))
 
     def test_framework_files_refreshed_family_files_kept(self):
         family_repo.upgrade(self.repo, NELA, "cs")
@@ -160,6 +160,14 @@ class Upgrade(OldRepoCase):
             self.assertIn(FAMILY_NOTE, text)
         self.assertEqual(self.path(".github/workflows/validate.yml").read_bytes(), (TEMPLATE / ".github/workflows/validate.yml").read_bytes())
         self.assertEqual(self.path("README.md").read_text(), "# Our family\n")
+        self.assertEqual(self.path(".githooks/pre-commit").read_bytes(), (TEMPLATE / ".githooks/pre-commit").read_bytes())
+
+    def test_upgrade_switches_the_hook_on(self):
+        """A clone gets core.hooksPath from /proavus:upgrade (ADR 0049)."""
+        subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
+        family_repo.upgrade(self.repo, NELA, "cs")
+        out = subprocess.run(["git", "-C", str(self.repo), "config", "core.hooksPath"], capture_output=True, text=True)
+        self.assertEqual(out.stdout.strip(), ".githooks")
 
     def test_map_works_after_upgrade(self):
         family_repo.upgrade(self.repo, NELA, "cs")

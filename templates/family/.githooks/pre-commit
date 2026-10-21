@@ -1,0 +1,61 @@
+#!/usr/bin/env -S uv run --script --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""Proavus pre-commit hook: a commit with validation errors is stopped.
+
+Runs .proavus/tools/validate.py on exactly what is staged (a copy of the
+index), so the commit is checked as it will be saved. Started by uv, not by
+a system Python (Windows, newer macOS). Switched on by
+`family_repo.py hooks` (core.hooksPath = .githooks; /proavus:init, /setup,
+/start, /upgrade). Part of the Proavus framework – changed only by
+/proavus:upgrade.
+"""
+
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+STOP = (
+    "\nCommit zastaven: kontrola dat (validate.py) našla chyby – opravte je s Claudem\n"
+    "(/proavus:end) a uložte znovu. Nic se neztratilo, změny jsou ve složce.\n"
+    "Commit stopped: the data check (validate.py) found errors – fix them with Claude\n"
+    "(/proavus:end) and save again. Nothing is lost, the changes are in the folder.\n"
+)
+
+
+def say(text: str) -> None:
+    sys.stderr.write(text if text.endswith("\n") else text + "\n")
+
+
+def main() -> int:
+    root = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
+    if not (root / "repo.yaml").is_file():
+        return 0  # not a family repository (e.g. the hook copied elsewhere)
+    uv = shutil.which("uv")
+    if uv is None:
+        say("Commit zastaven: chybí program uv, data nejde zkontrolovat – spusťte /proavus:setup.\n"
+            "Commit stopped: uv is missing, the data cannot be checked – run /proavus:setup.")
+        return 1
+    with tempfile.TemporaryDirectory(prefix="proavus-commit-") as tmp:
+        staged = Path(tmp) / "staged"
+        subprocess.run(["git", "checkout-index", "--all", f"--prefix={staged.as_posix()}/"], cwd=root, check=True)
+        validate = staged / ".proavus" / "tools" / "validate.py"
+        if not validate.is_file():
+            say("Commit zastaven: v ukládané verzi chybí .proavus/tools/validate.py – spusťte /proavus:upgrade.\n"
+                "Commit stopped: .proavus/tools/validate.py is missing from what is being saved – run /proavus:upgrade.")
+            return 1
+        out = subprocess.run([uv, "run", "--quiet", "--script", str(validate), "--quiet", str(staged)],
+                             capture_output=True, text=True)
+    if out.returncode == 0:
+        return 0
+    say(out.stdout + out.stderr)
+    say(STOP)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

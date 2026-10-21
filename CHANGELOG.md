@@ -25,6 +25,21 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   rest of the file as written; refuses a taken abbreviation.
 - `/proavus:start`: a member missing in `repo.yaml` – first looks for an open
   pull request `member-<abbr>`, otherwise adds them with `add-member`.
+- Family repository template: `.githooks/pre-commit` (Python, started by
+  `uv`) validates exactly what is staged with `.proavus/tools/validate.py`
+  and stops a commit with errors, with a message in Czech and English
+  (ADR 0049).
+- `family_repo.py hooks`: sets `core.hooksPath = .githooks` (per clone) and
+  marks the hook executable, also in git for clones made on Windows.
+  `/proavus:init`, `/proavus:setup`, `/proavus:start` and `/proavus:upgrade`
+  switch it on; `upgrade` adds and refreshes the hook like the workflow.
+- Skills validate before every commit (`/proavus:init`, the claim in
+  `/proavus:start`, `/proavus:end` again after the pull, `/proavus:setup`,
+  `/proavus:upgrade`) and never bypass the hook.
+
+**Upgrading from 0.4.0:** `/proavus:upgrade` adds `.githooks/pre-commit` and
+switches it on in that clone; other members get it switched on by their next
+`/proavus:start`.
 
 ## 0.4.0 – 2026-10-21
 

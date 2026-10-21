@@ -9,7 +9,8 @@ disable-model-invocation: true
 Answer in the user's language, in plain words. The upgrade changes only the
 framework's files in the family repository (ADR 0009): `.proavus/`, the
 `<!-- proavus:begin/end -->` blocks in `CLAUDE.md` and `AGENTS.md`,
-`.github/workflows/validate.yml`, `schema_version` (and, with the user's
+`.github/workflows/validate.yml`, `.githooks/pre-commit` (and
+`core.hooksPath` of this clone), `schema_version` (and, with the user's
 answers, `map`) in `repo.yaml` – plus the data only if a migration is needed.
 The family's own text and data are never touched otherwise.
 
@@ -95,10 +96,12 @@ changed, refreshes the blocks and the workflow, sets `schema_version` and
 ## 6. Save
 
 1. `git status --short` – only `.proavus/`, `CLAUDE.md`, `AGENTS.md`,
-   `.github/workflows/validate.yml`, `repo.yaml` and – after a migration –
-   the migrated data files may have changed. Anything else: ask.
-2. `git add -A`, then commit with the line the tool printed after
-   `COMMIT:` and the versions of the CHANGELOG sections as the body, e.g.
+   `.github/workflows/validate.yml`, `.githooks/pre-commit`, `repo.yaml` and
+   – after a migration – the migrated data files may have changed. Anything else: ask.
+2. `git add -A` and `uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py"
+   hooks .` (the upgrade switches on the check before every commit; this
+   also marks the hook executable in git). Then commit with the line the
+   tool printed after `COMMIT:` and the versions of the CHANGELOG sections as the body, e.g.
    `git commit -m "Upgrade Proavus 0.1.0 → 0.3.0" -m "Proavus CHANGELOG: 0.2.0, 0.3.0"`.
 3. `check-private` again, then `git push` (exit 0 only; exit 5: commit
    only).
