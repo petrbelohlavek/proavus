@@ -4,6 +4,19 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
+## 0.3.1 – unreleased
+
+- README (EN, CS), installing and updating the plugin: clone and keep the
+  framework folder on the `stable` branch – Claude Code installs whatever is
+  checked out there; check the installed version and commit in
+  `~/.claude/plugins/installed_plugins.json` (one command) – `claude plugin
+  list` / `details` read the folder, not the installed copy; update by
+  `git pull`, `marketplace update`, `uninstall` and `install` –
+  `claude plugin update` alone installs only a new version number; the
+  session check now lists four commands including `/proavus:upgrade`.
+- The same update steps in `/proavus:upgrade` (exit 3) and in START-HERE
+  when the plugin is older than the repository.
+
 ## 0.3.0 – 2026-10-21
 
 **Upgrading from 0.2.0:** update the plugin (`claude plugin marketplace

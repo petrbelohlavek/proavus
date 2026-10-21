@@ -11,7 +11,7 @@
 tools for researching your family history with an LLM under the
 Genealogical Proof Standard.
 
-> **Work in progress (0.3.0).** The schema, the validator, the binding rules
+> **Work in progress (0.3.1).** The schema, the validator, the binding rules
 > and the first commands (`/proavus:init`, `/proavus:start`,
 > `/proavus:end`) exist; the guided setup (`/setup`) does not yet. Not ready
 > for general use.
@@ -36,24 +36,37 @@ repository: the repository is its own plugin catalogue
 app (Code tab) and the `claude` command in a terminal share the same
 settings, so you install once per computer – in a terminal.
 
-1. **Get the framework** into a folder outside iCloud Drive, Dropbox,
-   OneDrive or Google Drive, e.g.
-   `git clone https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
+**Claude Code installs whatever is checked out in that folder.** Use the
+`stable` branch – the last release. `main` is work in progress (only for
+developing Proavus).
+
+1. **Get the framework** (the `stable` branch) into a folder outside iCloud
+   Drive, Dropbox, OneDrive or Google Drive, e.g.
+   `git clone --branch stable https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
    (private for now – you need access).
 2. **Add the catalogue and install the plugin:**
    ```
    claude plugin marketplace add ~/Documents/Proavus/proavus
    claude plugin install proavus@proavus
    ```
-3. **Check the installation:**
-   - `claude plugin list` shows `proavus@proavus`, `Status: ✔ enabled`;
-   - `claude plugin details proavus@proavus` shows `Skills (3)  end, init, start`.
-4. **Check the commands in a session.** Sessions started before the
-   installation do not see the plugin – start a new one:
+3. **Check what is installed.** `claude plugin list` and `claude plugin
+   details` read the framework folder, not the installed copy – they show the
+   folder's version even when an older copy is installed. The installed
+   version and commit are in Claude Code's own list:
+   ```
+   python3 -c "import json,os; e=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']['proavus@proavus'][0]; print(e['version'], e['gitCommitSha'][:7])"
+   git -C ~/Documents/Proavus/proavus log -1 --format=%h
+   ```
+   Both lines must show the same commit (and the version from
+   `CHANGELOG.md`).
+4. **Check the commands in a session** – this is what counts. Sessions
+   started before the installation do not see the plugin – restart the
+   desktop app or start a new session:
    - **terminal:** run `claude` in any folder and type `/proavus:` – the
-     suggestions offer `/proavus:init`, `/proavus:start` and `/proavus:end`;
+     suggestions offer `/proavus:init`, `/proavus:start`, `/proavus:end`
+     and `/proavus:upgrade`;
    - **desktop app:** open a new session in the Code tab and type `/proavus:`
-     in the message box – the same three commands appear.
+     in the message box – the same four commands appear.
 
    A quick check that changes nothing: in an empty folder run
    `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
@@ -63,10 +76,20 @@ settings, so you install once per computer – in a terminal.
    file-editing tools to touch the framework folder from the family
    repository (`.claude/settings.local.json` there).
 
-**Update** after `git pull` in the framework folder:
-`claude plugin marketplace update proavus`, then
-`claude plugin update proavus@proavus` (it takes a new version number from
-`.claude-plugin/plugin.json`), then start a new session.
+**Update to a new release:**
+```
+git -C ~/Documents/Proavus/proavus pull
+claude plugin marketplace update proavus
+claude plugin uninstall proavus@proavus
+claude plugin install proavus@proavus
+```
+then check as in step 3 and restart the desktop app (or start a new
+session); in each family repository run `/proavus:upgrade`.
+`claude plugin update proavus@proavus` alone is not enough: it installs only
+a **new version number** and reports "already at the latest version" when the
+content changed under the same number – reinstalling always takes what is in
+the folder.
+
 **Remove:** `claude plugin uninstall proavus@proavus` and
 `claude plugin marketplace remove proavus`.
 

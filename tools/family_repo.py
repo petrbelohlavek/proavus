@@ -298,7 +298,8 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     current = framework_version()
     if installed and installed != current:
         if versions.parse(installed) > versions.parse(current):
-            hint = "the plugin is older – update it (`claude plugin update proavus@proavus`) before working"
+            hint = ("the plugin is older – update it before working (README of Proavus, \"Update to a new release\": "
+                    "git pull on stable, then reinstall the plugin)")
         else:
             hint = "the Proavus copy is older than the plugin – run `/proavus:upgrade`"
         lines += [f"> Proavus in this repository: {installed}, plugin: {current} – {hint}.", ""]

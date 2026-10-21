@@ -1,4 +1,4 @@
-<!-- source: README.md @ v0.3.0 -->
+<!-- source: README.md @ v0.3.1 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/proavus-logo-dark.svg">
@@ -11,7 +11,7 @@
 **Proavus** – rodokmen s AI podle důkazů, ne odhadů: metodika, datové schéma
 a nástroje pro bádání s LLM podle Genealogical Proof Standardu.
 
-> **Rozpracováno (0.3.0).** Existuje schéma, validátor, závazná pravidla
+> **Rozpracováno (0.3.1).** Existuje schéma, validátor, závazná pravidla
 > a první příkazy (`/proavus:init`, `/proavus:start`, `/proavus:end`);
 > průvodce instalací (`/setup`) zatím ne. Zatím není k běžnému použití.
 
@@ -35,24 +35,36 @@ plugin je celé repo, ADR 0014). Je potřeba Claude Code 2.1.275 nebo novější
 v terminálu sdílejí stejné nastavení, takže stačí nainstalovat jednou na
 počítač – v terminálu.
 
-1. **Stáhněte framework** do složky mimo iCloud Drive, Dropbox, OneDrive
-   nebo Google Drive, např.
-   `git clone https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
+**Claude Code instaluje to, co je v té složce právě checkoutnuté.** Používejte
+větev `stable` – poslední vydání. `main` je rozpracovaný (jen pro vývoj
+Proavus).
+
+1. **Stáhněte framework** (větev `stable`) do složky mimo iCloud Drive,
+   Dropbox, OneDrive nebo Google Drive, např.
+   `git clone --branch stable https://github.com/petrbelohlavek/proavus.git ~/Documents/Proavus/proavus`
    (zatím soukromé – potřebujete přístup).
 2. **Přidejte katalog a nainstalujte plugin:**
    ```
    claude plugin marketplace add ~/Documents/Proavus/proavus
    claude plugin install proavus@proavus
    ```
-3. **Zkontrolujte instalaci:**
-   - `claude plugin list` ukáže `proavus@proavus`, `Status: ✔ enabled`;
-   - `claude plugin details proavus@proavus` ukáže `Skills (3)  end, init, start`.
-4. **Zkontrolujte příkazy v sezení.** Sezení spuštěná před instalací plugin
-   nevidí – začněte nové:
+3. **Zkontrolujte, co je nainstalované.** `claude plugin list` a `claude
+   plugin details` čtou složku frameworku, ne nainstalovanou kopii – ukazují
+   verzi složky, i když je nainstalovaná starší. Nainstalovanou verzi a commit
+   má Claude Code ve vlastním seznamu:
+   ```
+   python3 -c "import json,os; e=json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))['plugins']['proavus@proavus'][0]; print(e['version'], e['gitCommitSha'][:7])"
+   git -C ~/Documents/Proavus/proavus log -1 --format=%h
+   ```
+   Oba řádky musí ukázat stejný commit (a verzi podle `CHANGELOG.md`).
+4. **Zkontrolujte příkazy v sezení** – to rozhoduje. Sezení spuštěná před
+   instalací plugin nevidí – restartujte desktopovou aplikaci nebo začněte
+   nové sezení:
    - **terminál:** spusťte `claude` v libovolné složce a napište `/proavus:` –
-     nabídka ukáže `/proavus:init`, `/proavus:start` a `/proavus:end`;
+     nabídka ukáže `/proavus:init`, `/proavus:start`, `/proavus:end`
+     a `/proavus:upgrade`;
    - **desktopová aplikace:** otevřete nové sezení na kartě Code a do pole
-     zprávy napište `/proavus:` – objeví se stejné tři příkazy.
+     zprávy napište `/proavus:` – objeví se stejné čtyři příkazy.
 
    Rychlá kontrola, která nic nemění: v prázdné složce spusťte
    `claude -p "/proavus:start" --permission-mode plan` – Proavus odpoví, že
@@ -62,10 +74,19 @@ počítač – v terminálu.
    souborů sahat z repa rodiny do složky frameworku (tamní
    `.claude/settings.local.json`).
 
-**Aktualizace** po `git pull` ve složce frameworku:
-`claude plugin marketplace update proavus`, potom
-`claude plugin update proavus@proavus` (převezme nové číslo verze z
-`.claude-plugin/plugin.json`) a nové sezení.
+**Aktualizace na nové vydání:**
+```
+git -C ~/Documents/Proavus/proavus pull
+claude plugin marketplace update proavus
+claude plugin uninstall proavus@proavus
+claude plugin install proavus@proavus
+```
+potom kontrola jako v kroku 3 a restart desktopové aplikace (nebo nové
+sezení); v každém repu rodiny pak `/proavus:upgrade`.
+Samotné `claude plugin update proavus@proavus` nestačí: nainstaluje jen
+**nové číslo verze** a při změně obsahu pod stejným číslem hlásí „already at
+the latest version“ – nová instalace vezme vždy to, co je ve složce.
+
 **Odebrání:** `claude plugin uninstall proavus@proavus` a
 `claude plugin marketplace remove proavus`.
 

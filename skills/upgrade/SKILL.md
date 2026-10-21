@@ -40,9 +40,11 @@ uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" upgrade-plan .
 
 - exit 1 – already current: say so and stop;
 - exit 3 – cannot upgrade: the repository is newer than the plugin (update
-  the plugin: `claude plugin marketplace update proavus`,
-  `claude plugin update proavus@proavus`, new session) or a needed migration
-  is missing – explain and stop, change nothing;
+  the plugin as in the README of Proavus, "Update to a new release":
+  `git pull` on the `stable` branch of the framework folder,
+  `claude plugin marketplace update proavus`, `claude plugin uninstall
+  proavus@proavus`, `claude plugin install proavus@proavus`, new session)
+  or a needed migration is missing – explain and stop, change nothing;
 - exit 0 – an upgrade is available.
 
 Summarise for the user in a few lines: from which version to which, what the
