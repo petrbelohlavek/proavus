@@ -55,6 +55,26 @@ midwife, officiant …) and what the record says about them: age, residence and
 house number, occupation, religion, status. Participants are not persons in
 the tree; the link is made later by an identity assertion.
 
+- **Roles relative to the principal:** the spouse's parents are
+  `spouse-father` / `spouse-mother` (a death entry naming the widow's
+  father); a grandfather or grandmother whose side or whose grandparent is
+  not stated is `grandfather` / `grandmother` with a `note` saying whose
+  (e.g. the groom's maternal grandfather of an illegitimate groom). `other`
+  only when no role fits – say what it is in `note`.
+- **Status and marital status are two fields** (ADR 0046):
+  `status_as_written` for origin and other status (*syn nemanželský*,
+  *legitimus*, *Häusler*), `marital_status_as_written` for the marital
+  status as written (*svobodný*, *vdova*, *coelebs*, *Witwer*) and, if the
+  record states it clearly, `marital_status`: `single`, `married`,
+  `widowed` or `divorced`. One entry may need both: *syn nemanželský,
+  svobodný* → `status_as_written: syn nemanželský`,
+  `marital_status_as_written: svobodný`, `marital_status: single`.
+- **Older records** keep both in `status_as_written`; that stays valid.
+  `/proavus:upgrade` lists the participants whose `status_as_written` looks
+  like a marital status – split them only together with the person who reads
+  the record, keep the wording exactly as written, and never guess a
+  normalised value the record does not state.
+
 Godparents, witnesses and neighbours (FAN) are often the key to identity –
 record them all, not only the family.
 

@@ -54,7 +54,8 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
   support `proved`, a probable or proved identity link, or a merge; these need
   `confirmed` (by, on) – a human decision in the session.
 - **Dates** are an EDTF subset: `1935`, `1935-04-12`, `1935?`, `1935~`,
-  `19XX`, `1904/1906`, `../1900`.
+  `19XX`, `1904/1906`, `../1900`, and single unspecified digits in month
+  and day, `1855-02-1X`, `1855-1X` (ADR 0045).
 - **Readings** (ADR 0033): `read_by` lists the members (humans) who read a
   record from the image, `read_by_agent` an AI reading; only a member in
   `read_by` may confirm it, and only a confirmed reading passes the identity
@@ -70,7 +71,10 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
 - human tasks with a state `open` / `done` / `dropped` (ADR 0037);
 - `relationship.citations` (ADR 0038);
 - `coverage.index_negative_accepted: {by, on, note}` and `person.distinct_from`
-  – decisions about warnings of the validator (ADR 0040).
+  – decisions about warnings of the validator (ADR 0040);
+- participant roles `spouse-father`, `spouse-mother`, `grandfather`,
+  `grandmother` (ADR 0044); `marital_status_as_written` and `marital_status`
+  (vocabulary `marital_statuses`) next to `status_as_written` (ADR 0046).
 
 Old forms stay valid; `/proavus:upgrade` rewrites them with the 0.3.0
 migration (`tools/migrate.py`, ADR 0030).

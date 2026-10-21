@@ -137,7 +137,9 @@
         "residence_place": { "$ref": "common.schema.json#/$defs/ref_place" },
         "occupation_as_written": { "type": "string" },
         "religion": { "type": "string", "x-vocab": "religions" },
-        "status_as_written": { "type": "string", "description": "e.g. legitimate / illegitimate, widow, single" },
+        "status_as_written": { "type": "string", "description": "other status as written, e.g. legitimate / illegitimate, house owner; marital status goes into marital_status_as_written (ADR 0046)" },
+        "marital_status_as_written": { "type": "string", "description": "marital status as written: ženatý, vdova, svobodná, coelebs, Witwer … (ADR 0046)" },
+        "marital_status": { "type": "string", "x-vocab": "marital_statuses", "description": "normalised marital status (single, married, widowed, divorced) – only what the record states" },
         "note": { "type": "string" }
       }
     }

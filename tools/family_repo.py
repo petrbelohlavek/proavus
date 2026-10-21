@@ -379,6 +379,7 @@ class UpgradePlan:
     message: str = ""
     map_missing: list[str] = field(default_factory=list)
     candidates: list[tuple[str, str]] = field(default_factory=list)
+    marital: list[tuple[str, str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -484,6 +485,28 @@ def map_candidates(repo: Path) -> list[tuple[str, str]]:
     return sorted(out, key=lambda x: (x[1].casefold(), x[0]))
 
 
+# Words of a marital status in status_as_written (cs, de, la), without diacritics (ADR 0046).
+MARITAL_WORDS = ("svobodn", "zenat", "vdan", "vdov", "ovdovel", "rozveden", "ledig", "verheirat", "verwitwet",
+                 "witwe", "witwer", "geschieden", "coelebs", "caelebs", "vidua", "viduus", "uxorat", "nupta",
+                 "conjugat", "solutus", "soluta")
+
+
+def marital_hints(repo: Path) -> list[tuple[str, str, str]]:
+    """Participants whose status_as_written seems to hold a marital status: (record ID, key, value)."""
+    v = RepoValidator(repo, FRAMEWORK)
+    v.run()
+    out = []
+    for rec in sorted(v.of_type("record"), key=lambda r: r.id):
+        for p in rec.data.get("participants") or []:
+            value = p.get("status_as_written") if isinstance(p, dict) else None
+            if not isinstance(value, str) or p.get("marital_status_as_written"):
+                continue
+            plain = RepoValidator._name_key(value)
+            if any(w in plain for w in MARITAL_WORDS):
+                out.append((rec.id, str(p.get("key")), value))
+    return out
+
+
 def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     check_family_repo(repo, "upgrade")
     installed = installed_version(repo)
@@ -511,6 +534,7 @@ def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
         plan.map_missing = [k for k in ("root", "lang") if k not in settings]
     if "root" in plan.map_missing:
         plan.candidates = map_candidates(repo)
+    plan.marital = marital_hints(repo)
     return plan
 
 
@@ -619,6 +643,11 @@ def print_plan(plan: UpgradePlan) -> None:
             print("Possible starting persons (nobody's parent yet):")
             for pid, name in plan.candidates:
                 print(f"  {pid}  {name}")
+    if plan.marital:
+        print("Marital status inside status_as_written – split into marital_status_as_written "
+              "(and marital_status) with the user, see method/reading-records.md §4:")
+        for rec, key, value in plan.marital:
+            print(f"  {rec} {key}: {value!r}")
 
 
 # ---------------------------------------------------------- check-private

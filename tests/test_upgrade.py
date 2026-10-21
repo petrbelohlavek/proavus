@@ -99,6 +99,14 @@ class Plan(OldRepoCase):
         self.assertIn("0.2.0", heads)
         self.assertNotIn("0.1.0", heads)
 
+    def test_marital_status_inside_status_is_listed(self):
+        record = self.path(RECORD)
+        record.write_text(record.read_text(encoding="utf-8").replace("    role: mother\n", "    role: mother\n    status_as_written: vdova\n"), encoding="utf-8")
+        plan = family_repo.plan_upgrade(self.repo)
+        self.assertEqual(plan.marital, [("R-20261020-ab-r01", "p3", "vdova")])
+        self.assertIn("Marital status inside status_as_written", self.cli("upgrade-plan").stdout)
+        self.assertNotIn(("R-20261020-ab-r01", "p1", "legitimus"), plan.marital)   # origin, not marital status
+
     def test_cli_plan(self):
         out = self.cli("upgrade-plan")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)

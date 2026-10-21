@@ -573,3 +573,56 @@ class DuplicateFacts(FamilyRepoCase):
         self.add("assertions/A-20261020-ab-o09.md", {"id": "A-20261020-ab-o09", "type": "assertion", "kind": "fact", "subject": MATEJ,
                  "fact_type": "occupation", "value": "weaver", "date": "1878", "citations": [{"source": SRC}], "confidence": "possible"})
         self.assertNotIn("with the same date", "\n".join(self.validate().warnings))
+
+
+class Roles(FamilyRepoCase):
+    """ADR 0044: spouse's parents and grandparents without a side."""
+
+    def test_new_roles_are_known(self):
+        def change(d):
+            d["participants"].append({"key": "p5", "name_as_written": "Wenceslaus Ukazka", "role": "spouse-father"})
+            d["participants"].append({"key": "p6", "name_as_written": "Ludmila", "role": "grandmother", "note": "the groom's"})
+        self.edit(REC, change)
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("unknown value", "\n".join(report.warnings))
+
+    def test_role_sex_of_new_roles(self):
+        self.edit(REC, lambda d: d["participants"].append({"key": "p5", "name_as_written": "Ludmila", "role": "spouse-mother"}))
+        self.add("assertions/A-20261020-ab-r05.md", {"id": "A-20261020-ab-r05", "type": "assertion", "kind": "identity",
+                 "participant": {"record": REC, "key": "p5"}, "person": MATEJ,
+                 "citations": [{"record": REC, "participant": "p5"}], "confidence": "possible"})
+        self.assertWarning(self.validate(), "(role spouse-mother) does not fit P-20261020-ab-m01, who is male")
+
+
+class PartialDates(FamilyRepoCase):
+    """ADR 0045: a date with single unspecified digits is valid."""
+
+    def test_accepted_in_data(self):
+        self.edit("A-20261020-ab-b01", lambda d: d.update(date="1878-03-1X"))
+        self.assertClean(self.validate())
+
+    def test_date_that_cannot_exist(self):
+        self.edit("A-20261020-ab-b01", lambda d: d.update(date="1878-02-3X"))
+        self.assertError(self.validate(), "A-20261020-ab-b01.md", "date")
+
+
+class MaritalStatus(FamilyRepoCase):
+    """ADR 0046: marital status in its own fields; old status_as_written stays valid."""
+
+    def test_both_fields_in_one_participant(self):
+        self.edit(REC, lambda d: d["participants"][0].update(
+            status_as_written="syn nemanželský", marital_status_as_written="svobodný", marital_status="single"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual(report.warnings, [])
+
+    def test_unknown_normalised_value_only_warns(self):
+        self.edit(REC, lambda d: d["participants"][2].update(marital_status_as_written="vdova", marital_status="widow"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertWarning(report, "unknown value 'widow' in vocabulary marital_statuses")
+
+    def test_old_combined_status_stays_valid(self):
+        self.edit(REC, lambda d: d["participants"][0].update(status_as_written="syn nemanželský, svobodný"))
+        self.assertClean(self.validate())
