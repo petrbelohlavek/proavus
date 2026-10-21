@@ -186,6 +186,13 @@ source:
 | Regional packages | [regions/cz/](regions/cz/pitfalls.md) (Czech lands), [regions/at/](regions/at/pitfalls.md) (Austria, Vienna): schema extension, pitfalls, portal catalogue – `uv run tools/archive_fetch.py portals` (ADR 0050) |
 | Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |
 
+## Contributing
+
+How to report a problem or a research need and how to work on the code:
+[CONTRIBUTING.md](CONTRIBUTING.md). Security and privacy problems only
+privately: [SECURITY.md](SECURITY.md). Everyone follows the
+[code of conduct](CODE_OF_CONDUCT.md).
+
 ## Licence
 
 | Part | Licence |
