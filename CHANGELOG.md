@@ -4,7 +4,7 @@ One version for the whole repository: method, schema, tools and plugin
 (ADR 0018). Format: added = minor, fix = patch, breaking schema change =
 major + `migrate.py`.
 
-## 0.3.1 – unreleased
+## 0.3.1 – 2026-10-21
 
 - README (EN, CS), installing and updating the plugin: clone and keep the
   framework folder on the `stable` branch – Claude Code installs whatever is
