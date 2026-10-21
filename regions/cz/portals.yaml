@@ -1,0 +1,47 @@
+# Portal catalogue of the regional package cz (ADR 0041, 0050).
+# Read by tools/archive_fetch.py (`archive_fetch.py portals`). access:
+#   automated – book, list, link, get (an adapter in archive_fetch.py, terms checked)
+#   link      – archive_fetch.py only builds a link to an image; a person opens it
+#   manual    – nothing automated, not even links; a person searches in the browser
+# A portal listed in two regions (same id) must agree in everything but notes.
+# Notes are experience from research – never names of a real family.
+portals:
+  - id: aron
+    name: ARON – ARchiv ONline (Východočeské archivy)
+    url: https://aron.vychodoceskearchivy.cz/
+    hosts: [aron.vychodoceskearchivy.cz]
+    access: automated
+    adapter: aron
+    why: public interface, robots.txt without restrictions (checked 2026-10-20)
+    notes:
+      - Registers of the former SOA Zámrsk – now SOA v Hradci Králové, archivní
+        oddělení Zámrsk; cite the archive under its current name.
+  - id: acta-publica
+    name: Acta Publica (Moravský zemský archiv)
+    url: https://www.mza.cz/actapublica/
+    hosts: [www.mza.cz, mza.cz]
+    access: link
+    adapter: acta-publica
+    why: its terms of use and robots.txt do not allow automated access without the archive's consent
+    notes:
+      - The application sits behind a Cloudflare check – the agent only builds
+        links (`archive_fetch.py link`), a person opens and reads the images.
+  - id: matricula
+    name: Matricula Online
+    url: https://data.matricula-online.eu/
+    hosts: [data.matricula-online.eu]
+    access: link
+    adapter: matricula
+    why: its robots.txt forbids automated access to the image pages (?pg=) and blocks AI agents
+    notes:
+      - Registers of some Czech dioceses; experience from Vienna is in regions/at.
+  - id: digi-ceskearchivy
+    name: Digitální archiv Jihočeských archivů (SOA Třeboň)
+    url: https://digi.ceskearchivy.cz/
+    hosts: [digi.ceskearchivy.cz]
+    access: manual
+    why: terms of automated access not checked yet – a person searches in the browser
+    notes:
+      - Indexes are separate books; an entry refers to "Kniha strana číslo"
+        (book, page, entry) – open the referenced book, the index alone is not
+        the record.

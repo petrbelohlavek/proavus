@@ -25,6 +25,9 @@ general – never names of a real family.
   numbering of the book.
 - **Page → image**: the portals number images, not pages; the offset moves
   inside a book. Check two anchors before relying on it.
+- **Separate index books** (e.g. SOA Třeboň, digi.ceskearchivy.cz): the index
+  is its own book and refers to "Kniha strana číslo" (book, page, entry) –
+  open the referenced book; the index entry is not the record.
 
 ## Searching
 
@@ -34,14 +37,33 @@ general – never names of a real family.
   and in the bride's home parish (the wedding was usually held there).
 - **Cemeteries**: maps and grave registers are incomplete; a grave shared by
   two people does not prove they were parent and child.
+- **Guardianship files of illegitimate children** (*poručenské*, later
+  *opatrovnické spisy*) were kept by the district court of the child's
+  **domicile** (*domovská příslušnost*) – also for a child born abroad (e.g.
+  in Vienna). Today they are in the State District Archive (*SOkA*) of that
+  district: ask by e-mail (an `inquiry`; the answer is due within 30 days).
+- **Domicile right** ("příslušný do …", "zuständig nach …"): record it as
+  written with the participant (`domicile_as_written`, ADR 0051) – it tells
+  which municipality and court dealt with the person.
+- **Side branches** (godparents, witnesses): agree on a budget and a stop
+  rule first (method/reading-records.md, §4).
 
 ## Archive portals
 
-| Portal | Automated access (`tools/archive_fetch.py`, ADR 0041) |
+The catalogue with what the agent may do on each portal and notes from
+research is [`portals.yaml`](portals.yaml)
+(`uv run tools/archive_fetch.py portals --region cz`, ADR 0041, 0050).
+
+| Portal | Automated access (`tools/archive_fetch.py`) |
 |---|---|
 | ARON – ARchiv ONline (Východočeské archivy) | book, list, get through its public interface; at most 10 images per call by default, a pause between images |
-| Acta Publica (Moravský zemský archiv) | link only – the terms of use and the app's robots.txt do not allow automated access without the archive's consent |
+| Acta Publica (Moravský zemský archiv) | link only – the terms of use and the app's robots.txt do not allow automated access without the archive's consent; behind a Cloudflare check: the agent builds links, a person reads |
 | Matricula Online (Czech dioceses among others) | link only – robots.txt forbids automated access to image pages and blocks AI agents |
+| Digitální archiv Jihočeských archivů (SOA Třeboň) | none – a person searches |
+
+- **Archive names change**: SOA Zámrsk is now *SOA v Hradci Králové,
+  archivní oddělení Zámrsk* – cite the current name (the registers are on
+  ARON).
 
 - A **ZIP of a whole book** offered by a portal is usually in a lower
   resolution than the viewer; crops for evidence come from the single image

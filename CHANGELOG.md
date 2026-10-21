@@ -37,6 +37,36 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   `/proavus:start`, `/proavus:end` again after the pull, `/proavus:setup`,
   `/proavus:upgrade`) and never bypass the hook.
 
+- Regional package `at` (Austria, Vienna; ADR 0050): `schema-ext.yaml`,
+  `pitfalls.md` from the pilot (Matricula indexes and locators, two volumes a
+  year, baptisms leading to the parents' marriage, abbreviated parishes, the
+  wife's given name, margin notes, books blocked for 100 years and after
+  cremation, Friedhöfe Wien, WStLA and Standesamt, ANNO and Lehmann) and
+  `portals.yaml`. Switch it on with `regions` and `extensions: [at]` (also
+  together with `cz`) in `repo.yaml`; `/proavus:init` offers it.
+- Portal catalogue `regions/*/portals.yaml`: access (`automated`, `link`,
+  `manual`), why, and notes from research for every portal;
+  `archive_fetch.py portals [--region R]` lists it; a `manual` portal
+  (Friedhöfe Wien, WStLA, ANNO, Lehmann, digi.ceskearchivy.cz) is refused
+  with its address and notes, nothing is fetched. Copied into `.proavus/`;
+  `archive_fetch.py` now needs PyYAML.
+- `regions/cz/pitfalls.md`: guardianship files of illegitimate children at
+  the district court of the domicile (today the State District Archive),
+  separate index books of SOA Třeboň ("Kniha strana číslo"), SOA Zámrsk now
+  SOA v Hradci Králové, archivní oddělení Zámrsk, Acta Publica behind
+  Cloudflare (links only).
+- Schema (regional, additive): `domicile_as_written` and `domicile_place`
+  for a record participant in `cz` and `at`; event `church-exit` in `at`
+  (ADR 0051). Two extensions may share a field only with the same
+  definition – otherwise an extension error.
+- Schema (core, additive): `coverage.searched_by` – `member` or `agent` (on
+  the member's instruction), with `agent_model` (ADR 0052). `/proavus:start`
+  and `/proavus:end` write it for every new search.
+- Method: `reading-records.md` §4 – domicile right; a budget and a stop rule
+  before following godparents, witnesses or neighbours into other books.
+  `/proavus:start` reads the pitfalls of the repository's regions and checks
+  the portal catalogue before using a portal.
+
 **Upgrading from 0.4.0:** `/proavus:upgrade` adds `.githooks/pre-commit` and
 switches it on in that clone; other members get it switched on by their next
 `/proavus:start`.

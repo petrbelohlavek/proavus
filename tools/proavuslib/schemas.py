@@ -50,7 +50,13 @@ class SchemaSet:
             if node is None:
                 self.extension_errors.append(f"extension {name!r}: unknown target {target!r}")
                 continue
-            node.setdefault("properties", {}).update(copy.deepcopy(fields))
+            props = node.setdefault("properties", {})
+            for field, definition in fields.items():
+                if field in props and props[field] != definition:
+                    # Two regions may share a field (e.g. domicile in cz and at), never redefine it.
+                    self.extension_errors.append(f"extension {name!r}: {target}.{field} is already defined differently")
+                    continue
+                props[field] = copy.deepcopy(definition)
         for vocab_name, values in (data.get("vocab") or {}).items():
             self.vocab.setdefault(vocab_name, set()).update(v["id"] for v in values)
 

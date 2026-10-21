@@ -30,7 +30,8 @@ Git.Git GitHub.cli astral-sh.uv`; then `gh auth login` in the browser and
   contain it;
 - title of the tree (any language, e.g. "Rodokmen rodiny Novákových");
 - the user's full name and a 2–4 letter lowercase abbreviation (used in IDs);
-- regions researched (offer `cz`; others have no regional package yet);
+- regions researched (offer `cz` – Czech lands – and `at` – Austria, Vienna;
+  others have no regional package yet; several are fine, e.g. `cz` and `at`);
 - parent folder (suggest `~/Documents/Proavus/`). It must not be inside
   iCloud Drive, Dropbox, OneDrive or Google Drive (they damage `.git`) and
   must not be inside the `proavus` framework folder.
@@ -59,7 +60,7 @@ a clear yes.
 ## 4. Create the files
 
 ```
-uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" init "<folder>" --title "<title>" --member <abbr>:"<Full name>" --region cz
+uv run "${CLAUDE_PLUGIN_ROOT}/tools/family_repo.py" init "<folder>" --title "<title>" --member <abbr>:"<Full name>" --region cz --region at
 ```
 
 The tool refuses a folder with anything but `.git` and `.claude/` in it –

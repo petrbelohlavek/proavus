@@ -40,6 +40,11 @@
     "found": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
     "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
     "by": { "$ref": "common.schema.json#/$defs/member" },
+    "searched_by": {
+      "description": "Who did the search (ADR 0052): member – the member in `by` searched themselves; agent – an AI agent searched on the instruction of `by`.",
+      "enum": ["member", "agent"]
+    },
+    "agent_model": { "type": "string", "minLength": 1, "description": "The model that searched, with searched_by: agent." },
     "on": { "$ref": "common.schema.json#/$defs/date" },
     "access_note": { "type": "string" },
     "index_negative_accepted": {
@@ -53,6 +58,9 @@
         "note": { "type": "string", "minLength": 1 }
       }
     }
+  },
+  "dependentSchemas": {
+    "agent_model": { "required": ["searched_by"], "properties": { "searched_by": { "const": "agent" } } }
   },
   "unevaluatedProperties": false
 }

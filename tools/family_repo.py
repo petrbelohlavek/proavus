@@ -118,7 +118,7 @@ def install_tools(repo: Path) -> None:
     shutil.copytree(TOOLS_DIR / "proavuslib", target / "tools" / "proavuslib", ignore=ignore)
     for name in COPY_DIRS:
         shutil.copytree(FRAMEWORK / name, target / name, ignore=ignore)
-    for ext in sorted((FRAMEWORK / "regions").glob("*/schema-ext.yaml")):
+    for ext in sorted([*(FRAMEWORK / "regions").glob("*/schema-ext.yaml"), *(FRAMEWORK / "regions").glob("*/portals.yaml")]):
         dest = target / "regions" / ext.parent.name
         dest.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ext, dest / ext.name)

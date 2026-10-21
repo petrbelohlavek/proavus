@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["pyyaml==6.0.2"]
 # ///
 """Book metadata, image lists and image downloads from archive portals (ADR 0041).
 
@@ -14,14 +14,18 @@ Usage:
                                          download images into DIR (outside any
                                          repository); --dry-run lists what would
                                          be downloaded; at most --max (default 10)
+  archive_fetch.py portals [--region at] the portal catalogue: what this tool
+                                         may do there and notes from research
 
-Portals:
-  ARON (ARchiv ONline, Východočeské archivy) – book, list, link, get through
-      its public interface.
-  Matricula Online, Acta Publica (MZA) – link only. Their operators do not
-      allow automated access to the images (robots.txt, terms of use), so this
-      tool never fetches anything from them: open the link and save the image
+Portals (catalogue: regions/*/portals.yaml, ADR 0050):
+  automated – ARON (ARchiv ONline, Východočeské archivy): book, list, link,
+      get through its public interface.
+  link – Matricula Online, Acta Publica (MZA): their operators do not allow
+      automated access to the images (robots.txt, terms of use), so this tool
+      never fetches anything from them: open the link and save the image
       yourself.
+  manual – the other catalogued portals (e.g. Friedhöfe Wien, WStLA, ANNO):
+      nothing automated, a person searches in the browser.
 
 Downloading needs the user's explicit yes to the list from --dry-run
 (/proavus:start). Full images never go into the family repository – only
@@ -40,6 +44,10 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
+
+REGIONS = Path(__file__).resolve().parent.parent / "regions"   # framework or .proavus/
+ACCESS = ("automated", "link", "manual")
 USER_AGENT = "Proavus-archive-fetch (personal genealogical research; https://github.com/petrbelohlavek/proavus)"
 DEFAULT_MAX, HARD_MAX = 10, 50           # images per call
 MAX_IMAGE_BYTES = 40 * 1024 * 1024       # one image larger than this is refused
@@ -181,11 +189,76 @@ class ActaPublica(Manual):
         return f"https://www.mza.cz/actapublica/matrika/hledani?{q}"
 
 
+class Unautomated:
+    """A catalogued portal without any automation: a person searches in the browser."""
+    automated = False
+
+    def __init__(self, entry: dict):
+        self.name, self.entry = entry["name"], entry
+
+    def refuse(self, what: str):
+        notes = "".join(f"\n  – {n}" for n in self.entry.get("notes", []))
+        raise NotAllowed(f"{self.name}: {what} is not done automatically – {self.entry['why']}. "
+                         f"Search it yourself in the browser: {self.entry['url']}{notes}")
+
+    def book(self):
+        self.refuse("reading the book")
+
+    def images(self):
+        self.refuse("listing the images")
+
+    def link(self, n: int):
+        self.refuse("building a link")
+
+
 PORTALS = (Aron, Matricula, ActaPublica)
+ADAPTERS = {"aron": Aron, "matricula": Matricula, "acta-publica": ActaPublica}
 
 
-def portal_for(url: str, fetch=http_get):
+# ---------------------------------------------------------------- catalogue
+def load_catalog(regions: Path = REGIONS) -> dict[str, dict]:
+    """Portals of all regional packages by id; a portal in several regions has the notes of each."""
+    out: dict[str, dict] = {}
+    for path in sorted(regions.glob("*/portals.yaml")):
+        region = path.parent.name
+        for entry in (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("portals") or []:
+            pid = entry["id"]
+            if entry.get("access") not in ACCESS:
+                raise FetchError(f"{path}: portal {pid}: access must be one of {', '.join(ACCESS)}")
+            if (entry.get("access") == "manual") != (entry.get("adapter") is None) or (entry.get("adapter") and entry["adapter"] not in ADAPTERS):
+                raise FetchError(f"{path}: portal {pid}: automated and link portals name an adapter ({', '.join(ADAPTERS)}), manual ones none")
+            same = {k: v for k, v in entry.items() if k != "notes"}
+            notes = [(region, n) for n in entry.get("notes") or []]
+            if pid in out:
+                if {k: v for k, v in out[pid].items() if k not in ("notes", "regions")} != same:
+                    raise FetchError(f"{path}: portal {pid} differs from its entry in another region (only notes may differ)")
+                out[pid]["regions"].append(region)
+                out[pid]["notes"] += notes
+            else:
+                out[pid] = {**same, "regions": [region], "notes": notes}
+    return out
+
+
+def print_catalog(catalog: dict[str, dict], region: str | None = None) -> None:
+    shown = [e for e in catalog.values() if region is None or region in e["regions"]]
+    for e in shown:
+        print(f"{e['name']}  [{e['access']}]  {e['url']}  ({', '.join(e['regions'])})")
+        print(f"  {e['why']}")
+        for r, note in e["notes"]:
+            if region is None or r == region:
+                print(f"  – {note}" if region else f"  – ({r}) {note}")
+    print(f"{len(shown)} portals – automated: this tool reads and downloads (after a yes); "
+          "link: it only builds links; manual: a person searches")
+
+
+def portal_for(url: str, fetch=http_get, catalog: dict[str, dict] | None = None):
     host = urllib.parse.urlsplit(url).netloc.lower()
+    catalog = load_catalog() if catalog is None else catalog
+    for entry in catalog.values():
+        if host in entry["hosts"]:
+            if entry.get("adapter"):
+                return ADAPTERS[entry["adapter"]](url, fetch)
+            return Unautomated({**entry, "notes": [n for _, n in entry["notes"]]})
     for cls in PORTALS:
         if host in cls.hosts:
             return cls(url, fetch)
@@ -287,6 +360,8 @@ def human_size(n: int | None) -> str:
 def main(argv: list[str] | None = None, fetch=http_get) -> int:
     parser = argparse.ArgumentParser(description="Book metadata, image lists and downloads from archive portals (Proavus).")
     sub = parser.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("portals")
+    p.add_argument("--region", help="only the portals of this regional package, e.g. at")
     for name in ("book", "list", "link", "get"):
         p = sub.add_parser(name)
         p.add_argument("url", help="book URL (or ARON record ID, Acta Publica book number)")
@@ -303,6 +378,9 @@ def main(argv: list[str] | None = None, fetch=http_get) -> int:
         p.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args(argv)
     try:
+        if args.cmd == "portals":
+            print_catalog(load_catalog(), args.region)
+            return 0
         portal = portal_for(args.url, fetch)
         if args.cmd == "link":
             print(portal.link(args.image))

@@ -197,6 +197,77 @@ class ManualPortals(Case):
         self.assertIn("unknown portal", err)
 
 
+class Catalogue(Case):
+    """regions/*/portals.yaml – what the tool may do on each portal (ADR 0050)."""
+
+    def test_regions_and_access(self):
+        catalog = af.load_catalog()
+        self.assertEqual(catalog["matricula"]["regions"], ["at", "cz"])
+        self.assertEqual({k: v["access"] for k, v in catalog.items()}, {
+            "matricula": "link", "friedhoefe-wien": "manual", "wstla": "manual", "anno": "manual",
+            "lehmann": "manual", "aron": "automated", "acta-publica": "link", "digi-ceskearchivy": "manual"})
+
+    def test_adapters_agree_with_the_code(self):
+        catalog = af.load_catalog()
+        for entry in catalog.values():
+            cls = af.ADAPTERS.get(entry.get("adapter"))
+            if cls is None:
+                continue
+            self.assertEqual(sorted(entry["hosts"]), sorted(cls.hosts), entry["id"])
+            self.assertEqual(entry["access"], "automated" if cls.automated else "link", entry["id"])
+            if not cls.automated:
+                self.assertEqual(entry["why"], cls.why, entry["id"])
+        self.assertEqual({e["adapter"] for e in catalog.values() if e.get("adapter")}, set(af.ADAPTERS))
+
+    def test_manual_portal_refuses_everything(self):
+        url = "https://www.friedhoefewien.at/verstorbenensuche?name=Pokusny"
+        for cmd in (("book", url), ("list", url), ("link", url, "--image", "1"),
+                    ("get", url, "--images", "1", "--out", str(self.out))):
+            code, _, err = self.run_cli(*cmd)
+            self.assertEqual(code, 3, cmd)
+            self.assertIn("Search it yourself in the browser: https://www.friedhoefewien.at/", err)
+            self.assertIn("burial date", err)
+        self.assertEqual(self.net.calls, [])
+
+    def test_portals_command(self):
+        code, out, _ = self.run_cli("portals", "--region", "at")
+        self.assertEqual(code, 0)
+        self.assertIn("Friedhöfe Wien – Verstorbenensuche  [manual]", out)
+        self.assertIn("aus gesetzlichen Gründen gesperrt", out)
+        self.assertNotIn("ARON", out)
+        self.assertNotIn("Registers of some Czech dioceses", out)   # cz note of Matricula
+        code, out, _ = self.run_cli("portals")
+        self.assertIn("(cz) Registers of some Czech dioceses", out)
+
+    def write_region(self, region, entries):
+        import yaml
+        folder = Path(self._tmp.name) / "regions" / region
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "portals.yaml").write_text(yaml.safe_dump({"portals": entries}), encoding="utf-8")
+        return folder.parent
+
+    def test_regions_must_agree(self):
+        entry = {"id": "x", "name": "X", "url": "https://x.example/", "hosts": ["x.example"], "access": "manual", "why": "w", "notes": ["a"]}
+        self.write_region("aa", [entry])
+        regions = self.write_region("bb", [{**entry, "notes": ["b"]}])
+        self.assertEqual([n for _, n in af.load_catalog(regions)["x"]["notes"]], ["a", "b"])
+        self.write_region("bb", [{**entry, "access": "link", "adapter": "matricula"}])
+        with self.assertRaises(af.FetchError) as cm:
+            af.load_catalog(regions)
+        self.assertIn("differs from its entry in another region", str(cm.exception))
+
+    def test_bad_entries(self):
+        entry = {"id": "x", "name": "X", "url": "https://x.example/", "hosts": ["x.example"], "why": "w"}
+        for bad, fragment in (({"access": "sometimes"}, "access must be one of"),
+                              ({"access": "link"}, "name an adapter"),
+                              ({"access": "manual", "adapter": "aron"}, "name an adapter"),
+                              ({"access": "link", "adapter": "nope"}, "name an adapter")):
+            regions = self.write_region("aa", [{**entry, **bad}])
+            with self.assertRaises(af.FetchError) as cm:
+                af.load_catalog(regions)
+            self.assertIn(fragment, str(cm.exception))
+
+
 class Helpers(unittest.TestCase):
     def test_ranges(self):
         self.assertEqual(af.parse_range("3"), [3])

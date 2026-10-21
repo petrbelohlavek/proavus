@@ -75,8 +75,19 @@ the tree; the link is made later by an identity assertion.
   the record, keep the wording exactly as written, and never guess a
   normalised value the record does not state.
 
+- **Domicile right** (*domovská příslušnost*, *Heimatrecht*: "příslušný do
+  …", "zuständig nach …"): with the regional extension `cz` or `at` write
+  it as written into `domicile_as_written` and, as interpretation, the
+  place into `domicile_place` (ADR 0051). It names the municipality – and
+  the district court – that kept the person's files.
+
 Godparents, witnesses and neighbours (FAN) are often the key to identity –
-record them all, not only the family.
+record them all, not only the family. **Following** one of them into other
+books is a side branch: agree first on a **budget** (e.g. two books or one
+session) and a **stop rule** (e.g. "stop when their own baptism is found,
+or when the budget is spent") and write both into the question's plan
+(`next_sources`, or `will_not_answer` for what stays out). When the budget
+is spent, stop and decide with the user – do not drift.
 
 ## 5. Reading state
 

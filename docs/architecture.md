@@ -75,8 +75,8 @@ proavus/
 ├── schema/                             DATOVÝ MODEL: JSON Schema pro záhlaví souborů (kap. 5) [v0]
 │   └── vocab/                          slovníky hodnot
 ├── regions/                            REGIONÁLNÍ BALÍČKY (rozšiřuje komunita)
-│   ├── cz/       schema-ext.yaml [v0] · pitfalls.md [v0] · sources.yaml · law.md · glossary.md · scripts.md
-│   ├── at-wien/  sources.yaml · pitfalls.md
+│   ├── cz/       schema-ext.yaml [v0] · pitfalls.md [v0] · portals.yaml [v0] · law.md · glossary.md · scripts.md
+│   ├── at/       schema-ext.yaml · pitfalls.md · portals.yaml [v0] (Vídeň a rakouské země, ADR 0050)
 │   └── _template/
 ├── tools/                              Python přes `uv run` (ADR 0011, 0021); family_repo.py: init, .proavus, START-HERE, kontrola soukromí [v0]
 │   ├── validate.py                     schéma, odkazy, brána identity, žijící osoby, data, negativy [v0]
@@ -280,7 +280,7 @@ Podrobně v [`schema/README.md`](../schema/README.md). Klíčové body:
 |---|---|---|
 | 1. Pevné jádro | entity, ID, odkazy, tvrzení, účastníci, jistota, lokátor | přidání = menší verze (smí mít sjednocující migraci, ADR 0030); zásadní změna = hlavní verze + `migrate.py` |
 | 2. Slovníky | typy událostí a faktů, typy jmen, role, podtypy vztahů, vyznání… | přidáním hodnoty (menší verze) |
-| 3. Regionální rozšíření | `regions/cz/schema-ext.yaml` (číslo popisné, panství) | zapne rodina v `repo.yaml` |
+| 3. Regionální rozšíření | `regions/cz/schema-ext.yaml` (číslo popisné, panství, domovská příslušnost), `regions/at/schema-ext.yaml` (domovská příslušnost, vystoupení z církve) | zapne rodina v `repo.yaml` |
 | 4. Záchranná síť | `schema_gap:` u věci, kterou schéma neumí | kdykoli; výzkum se nezastaví |
 
 **Cesta nového případu:** `schema_gap` při bádání → `/feedback` bez dat

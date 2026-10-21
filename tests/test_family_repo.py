@@ -58,6 +58,10 @@ class Init(unittest.TestCase):
         self.assertEqual((copy / "VERSION").read_text().strip(), family_repo.framework_version())
         self.assertFalse((copy / "tools" / "guard_names.py").exists())
         self.assertTrue((copy / "regions" / "cz" / "schema-ext.yaml").is_file())
+        self.assertTrue((copy / "regions" / "at" / "portals.yaml").is_file())   # archive_fetch.py portals from the copy
+        out = subprocess.run([sys.executable, str(copy / "tools" / "archive_fetch.py"), "portals", "--region", "at"], capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("Friedhöfe Wien", out.stdout)
         target = Path(self._tmp.name) / "fixture"
         shutil.copytree(FIXTURE, target)
         out = subprocess.run([sys.executable, str(copy / "tools" / "validate.py"), str(target)], capture_output=True, text=True)

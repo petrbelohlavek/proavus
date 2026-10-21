@@ -25,7 +25,8 @@ word. Show the result and next step to the user and adjust if they want.
 
 ## 2. Nothing searched is lost
 
-Check that every search done today has a `coverage/` file – including
+Check that every search done today has a `coverage/` file with
+`searched_by` (member or agent) – including
 negative and "not accessible" results, with ranges and all name variants.
 
 ## 3. Identity gate

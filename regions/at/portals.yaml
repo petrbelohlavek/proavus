@@ -1,0 +1,64 @@
+# Portal catalogue of the regional package at (ADR 0041, 0050); format as in
+# regions/cz/portals.yaml. Notes are experience from research – never names
+# of a real family.
+portals:
+  - id: matricula
+    name: Matricula Online
+    url: https://data.matricula-online.eu/
+    hosts: [data.matricula-online.eu]
+    access: link
+    adapter: matricula
+    why: its robots.txt forbids automated access to the image pages (?pg=) and blocks AI agents
+    notes:
+      - "Vienna: parishes are listed by district; some districts have no
+        parish of the district's name – search the whole list."
+      - "Books younger than 100 years are blocked (\"aus gesetzlichen Gründen
+        gesperrt\") – also baptisms in hospital parishes; ask the parish or
+        the diocesan archive (inquiry)."
+      - "Index at the beginning and at the end of a book; big parishes have
+        two volumes a year (first and second half)."
+  - id: friedhoefe-wien
+    name: Friedhöfe Wien – Verstorbenensuche
+    url: https://www.friedhoefewien.at/
+    hosts: [www.friedhoefewien.at, friedhoefewien.at]
+    access: manual
+    why: terms of automated access not checked – a person searches; results change between searches
+    notes:
+      - "The date is the burial date (Bestattungsdatum), not the death date."
+      - "Older burials only in the historical mode of the search."
+      - "The detail shows the age at death and the grave (group / row / number)."
+      - "Results are not stable – repeat the search and save a screenshot with
+        the date; cite the query in coverage (ranges.query)."
+      - "Covers the city's cemeteries only, not denominational ones (Jewish,
+        Protestant, …)."
+  - id: wstla
+    name: Wiener Stadt- und Landesarchiv (WStLA) – WAIS
+    url: https://www.wais.wien.gv.at/
+    hosts: [www.wais.wien.gv.at]
+    access: manual
+    why: archive catalogue and paid research service – a person searches and writes the inquiry
+    notes:
+      - "An e-mail gets a procedural answer only; research goes through the
+        paid form \"Archivbestände – Auskunft\" (a rate per half hour, with a
+        cap) – write an inquiry with the fee as a human task."
+      - "Standesamt (civil registers since 1938): acknowledgement of receipt,
+        fees; duplicate requests cost more – send one request and wait."
+  - id: anno
+    name: ANNO – AustriaN Newspapers Online (ÖNB)
+    url: https://anno.onb.ac.at/
+    hosts: [anno.onb.ac.at]
+    access: manual
+    why: terms of automated access not checked – a person searches
+    notes:
+      - "The full text misses death notices (Parte) – page through the
+        issues after the death date; a negative full-text search is not a
+        negative."
+  - id: lehmann
+    name: Lehmann – Adressbuch Wien (Wienbibliothek digital)
+    url: https://digital.wienbibliothek.at/
+    hosts: [digital.wienbibliothek.at]
+    access: manual
+    why: terms of automated access not checked – a person searches
+    notes:
+      - "No text layer – search by the alphabetical pages of each year, not by
+        full text (coverage method page-through)."

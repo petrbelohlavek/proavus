@@ -58,7 +58,9 @@ Proavus copy is older than the plugin, tell the user and offer
 `/proavus:upgrade` (they type it; it needs a clean state, so do it before
 starting new work).
 Read `AGENTS.md`, the family notes in `CLAUDE.md` and the binding rules
-`${CLAUDE_PLUGIN_ROOT}/method/rules.md` (Czech: `rules.cs.md`).
+`${CLAUDE_PLUGIN_ROOT}/method/rules.md` (Czech: `rules.cs.md`), and for
+each region in `repo.yaml` (`regions`) its pitfalls
+`${CLAUDE_PLUGIN_ROOT}/regions/<region>/pitfalls.md` (e.g. `cz`, `at`).
 
 ## 6. Who is researching
 
@@ -92,7 +94,17 @@ Follow the method:
 
 - Before searching a book, check `coverage/` – was it searched already, with
   which name variants?
-- Record every search in `coverage/` (also negatives and "not accessible").
+- Record every search in `coverage/` (also negatives and "not accessible"),
+  with who searched: `searched_by: member` when the member searched
+  themselves, `searched_by: agent` (and `agent_model: <your model>`) when
+  you searched on their instruction; `by` is always the member.
+- Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
+  (or from the plugin) says what you may do there – `automated`, `link`
+  (links only, a person reads) or `manual` (a person searches) – and lists
+  the notes from earlier research.
+- Following a godparent, witness or neighbour into other books is a side
+  branch: agree on a budget and a stop rule first and write them into the
+  question's plan (`${CLAUDE_PLUGIN_ROOT}/method/reading-records.md` §4).
 - Transcribe records per `${CLAUDE_PLUGIN_ROOT}/method/reading-records.md`:
   locator first, verbatim transcript with `[ ]`, then interpretation and
   participants.

@@ -1,0 +1,18 @@
+# Regional schema extension AT (schema layer 3), switched on in a family
+# repository by `extensions: [at]` in repo.yaml (ADR 0015, 0050). A field that
+# cz defines too has the same definition here, so both can be switched on.
+name: at
+description: Austria (Vienna and the Austrian lands of the Habsburg monarchy) – domicile, later notes on church exit
+fields:
+  record#participant:
+    domicile_as_written:
+      description: Domicile right (Heimatrecht) as written, e.g. "zuständig nach Wien" (ADR 0051)
+      type: string
+    domicile_place:
+      description: Place of the domicile right – place ID (interpretation of domicile_as_written)
+      $ref: "common.schema.json#/$defs/ref_place"
+vocab:
+  event_types:
+    - id: church-exit
+      en: "leaving the church (Kirchenaustritt), often a later note in the register"
+      cs: "vystoupení z církve (často pozdější poznámka v matrice)"

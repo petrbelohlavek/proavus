@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 
 from helpers import FamilyRepoCase, ROOT
 
@@ -665,4 +667,80 @@ class MaritalStatus(FamilyRepoCase):
 
     def test_old_combined_status_stays_valid(self):
         self.edit(REC, lambda d: d["participants"][0].update(status_as_written="syn nemanželský, svobodný"))
+        self.assertClean(self.validate())
+
+
+class Domicile(FamilyRepoCase):
+    """ADR 0051: domicile right with a participant – regional field of cz and at, the same in both."""
+
+    VIENNA_LIKE = "zuständig nach Vzorkov"
+
+    def set_extensions(self, value):
+        text = self.path("repo.yaml").read_text(encoding="utf-8").replace("extensions: [cz]", f"extensions: {value}")
+        self.path("repo.yaml").write_text(text, encoding="utf-8")
+
+    def add_domicile(self):
+        self.edit(REC, lambda d: d["participants"][1].update(
+            domicile_as_written=self.VIENNA_LIKE, domicile_place="PL-20261020-ab-v01"))
+
+    def test_with_cz(self):
+        self.add_domicile()
+        self.assertClean(self.validate())
+
+    def test_with_at_and_both(self):
+        self.edit(REC, lambda d: d["participants"][1].pop("house_number"))   # house_number is cz only
+        self.edit("A-20261020-ab-d01", lambda d: d.pop("house_number"))
+        self.add_domicile()
+        for value in ("[at]", "[cz, at]"):
+            self.set_extensions(value)
+            self.assertClean(self.validate())
+
+    def test_needs_an_extension(self):
+        self.add_domicile()
+        self.set_extensions("[]")
+        self.assertError(self.validate(), "domicile_as_written")
+
+    def test_place_must_exist(self):
+        self.edit(REC, lambda d: d["participants"][1].update(domicile_place="PL-20261020-ab-zzz"))
+        self.assertError(self.validate(), "domicile_place: link to PL-20261020-ab-zzz")
+
+    def test_church_exit_is_a_known_event_with_at(self):
+        self.set_extensions("[cz, at]")
+        self.edit(REC, lambda d: d["annotations"].append({"text": "ausgetreten 1925", "event": "church-exit", "event_date": "1925"}))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual(report.warnings, [])
+
+    def test_two_extensions_never_redefine_a_field(self):
+        from proavuslib.schemas import SchemaSet
+        root = Path(self._tmp.name) / "framework"
+        shutil.copytree(ROOT / "schema", root / "schema")
+        shutil.copytree(ROOT / "regions", root / "regions")
+        ext = root / "regions" / "at" / "schema-ext.yaml"
+        ext.write_text(ext.read_text(encoding="utf-8").replace("      type: string\n", "      type: integer\n", 1), encoding="utf-8")
+        errors = SchemaSet(root, ["cz", "at"]).extension_errors
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("record#participant.domicile_as_written is already defined differently", errors[0])
+        self.assertEqual(SchemaSet(ROOT, ["cz", "at"]).extension_errors, [])
+
+
+class SearchedBy(FamilyRepoCase):
+    """ADR 0052: coverage says whether the member searched or an agent on their instruction."""
+
+    def test_member_and_agent(self):
+        self.edit("C-20261020-ab-c01", lambda d: d.update(searched_by="member"))
+        self.edit("C-20261020-ab-c02", lambda d: d.update(searched_by="agent", agent_model="claude-opus-5-5"))
+        self.assertClean(self.validate())
+
+    def test_agent_model_only_with_agent(self):
+        self.edit("C-20261020-ab-c01", lambda d: d.update(searched_by="member", agent_model="claude-opus-5-5"))
+        self.assertError(self.validate(), "C-20261020-ab-c01", "agent")
+        self.edit("C-20261020-ab-c01", lambda d: d.pop("searched_by"))
+        self.assertError(self.validate(), "C-20261020-ab-c01", "searched_by")
+
+    def test_unknown_value(self):
+        self.edit("C-20261020-ab-c01", lambda d: d.update(searched_by="robot"))
+        self.assertError(self.validate(), "C-20261020-ab-c01", "robot")
+
+    def test_old_coverage_without_it_stays_valid(self):
         self.assertClean(self.validate())

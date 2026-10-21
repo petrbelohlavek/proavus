@@ -85,5 +85,15 @@ migration (`tools/migrate.py`, ADR 0030).
   `inquiry` (ADR 0047); START-HERE lists it under that question only. The
   0.4.0 migration fills in `question` where it is unambiguous.
 
+## New in 0.5
+
+- `coverage.searched_by`: `member` (the member in `by` searched themselves)
+  or `agent` (an AI agent on their instruction), with `agent_model`
+  (ADR 0052); optional, older coverage stays valid;
+- regional extension `at` (Austria, Vienna): `record.participants[].domicile_as_written`
+  and `domicile_place` – the same two fields also in `cz` – and the event
+  `church-exit` (ADR 0050, 0051). Two extensions may share a field only
+  with the same definition.
+
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

@@ -54,5 +54,8 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0047](0047-tasks-per-question.md) | Úkol patří k otázce; poslední sezení jen z práce na otázce | přijato | — |
 | [0048](0048-setup-for-family-members.md) | Průvodce `/proavus:setup` pro člena rodiny | přijato | — |
 | [0049](0049-pre-commit-validation.md) | Validace před každým commitem v rodinném repu (hook `pre-commit`) | přijato | — |
+| [0050](0050-region-at-and-portal-catalogue.md) | Regionální balíček `at` a katalog portálů v `regions/*/portals.yaml` | přijato | — |
+| [0051](0051-domicile-right.md) | Domovská příslušnost u účastníka zápisu (rozšíření `cz` a `at`) | přijato | — |
+| [0052](0052-coverage-searched-by.md) | Coverage: kdo hledal – člen sám, nebo agent na jeho pokyn | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

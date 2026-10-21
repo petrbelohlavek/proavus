@@ -177,6 +177,7 @@ Kliknutím na kartu se otevře detail se všemi údaji, jejich jistotou a zdroje
 | Mapa rodiny | `uv run tools/build_views.py <repo-rodiny>` → `views/mapa.html` |
 | Převod staršího bádání | [docs/import.cs.md](docs/import.cs.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, příklad v [examples/import/](examples/import/) |
 | Snímky z archivů | `uv run tools/archive_fetch.py list <odkaz na knihu>` (ARON; Acta Publica a Matricula jen odkazy, ADR 0041) |
+| Regionální balíčky | [regions/cz/](regions/cz/pitfalls.md) (české země), [regions/at/](regions/at/pitfalls.md) (Rakousko, Vídeň): rozšíření schématu, úskalí, katalog portálů – `uv run tools/archive_fetch.py portals` (ADR 0050) |
 | Architektura a rozhodnutí | [docs/architecture.md](docs/architecture.md), [docs/decisions/](docs/decisions/) |
 
 ## Licence

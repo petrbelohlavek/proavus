@@ -2,7 +2,7 @@
 # repository by `extensions: [cz]` in repo.yaml. Proven fields may later be
 # promoted to the core.
 name: cz
-description: Czech lands (Bohemia, Moravia, Silesia) – house numbers and estates
+description: Czech lands (Bohemia, Moravia, Silesia) – house numbers, estates and domicile
 fields:
   # target: <entity>  or  <entity>#<$defs name>  (e.g. record#participant)
   record#participant:
@@ -12,6 +12,12 @@ fields:
     estate:
       description: Panství / dominium as written
       type: string
+    domicile_as_written:
+      description: Domicile right (Heimatrecht) as written, e.g. "zuständig nach Wien" (ADR 0051)
+      type: string
+    domicile_place:
+      description: Place of the domicile right – place ID (interpretation of domicile_as_written)
+      $ref: "common.schema.json#/$defs/ref_place"
   assertion:
     house_number:
       description: Číslo popisné for a residence fact
