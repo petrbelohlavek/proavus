@@ -8,8 +8,25 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
-## Unreleased
+## 0.6.0 – 2026-10-22
 
+- Public project files before publication (ADR 0054): `CONTRIBUTING.md`
+  (no real family data anywhere, research-driven changes, hooks with the
+  contributor's own guard list, tests, REUSE, licence of contributions),
+  `CODE_OF_CONDUCT.md`, `SECURITY.md` (family data leaks count as security
+  problems, private reporting only, fixes for `stable`) and issue forms
+  *Bug* and *Research need* with a required confirmation that no real
+  family data are included; blank issues off.
+- Evals (ADR 0055, proposed): `evals/` with three tasks on the fictional
+  family – `index-is-not-the-record`, `namesakes`, `data-not-instructions` –
+  each with its question, archive pages as text in `portal/`, a grader and
+  reference solutions; `tools/eval.py list|prepare|grade|run` runs any agent
+  command in a fresh workspace and counts the passed attempts.
+- Logo lettering as outlines (ADR 0056): the name and subtitle in
+  `proavus-logo.svg`, `proavus-logo-dark.svg` and `proavus-social.svg` are
+  drawn from the open font Gelasio (metric-compatible with Georgia) and need
+  no font; `brand/lettering.py` redraws them; `proavus-social.png` exported
+  again.
 - Fix: the name guard (`tools/guard_names.py`) blocks commits when the guard
   list exists but has no entries (empty, or comments only), as it does when
   the list is missing. Before, such a list let every check pass and guarded

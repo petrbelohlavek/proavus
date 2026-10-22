@@ -1,0 +1,37 @@
+name: Research need
+description: Your research met something Proavus cannot handle yet – a record type, an archive, a pitfall.
+labels: [research]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proavus grows from real research (ADR 0013). Describe the situation you
+        met – **with made-up people**: issues are public, never include real
+        names, dates, places or record images (CONTRIBUTING.md).
+  - type: textarea
+    id: situation
+    attributes:
+      label: The situation
+      description: What were you researching, in which kind of source? E.g. "a marriage record from 1850 where the bride's domicile is in another parish".
+    validations:
+      required: true
+  - type: textarea
+    id: missing
+    attributes:
+      label: What is missing
+      description: What could you not record, check or find – and what did you do instead?
+    validations:
+      required: true
+  - type: input
+    id: region
+    attributes:
+      label: Region and archive
+      description: Country, region, archive or portal – no family details.
+      placeholder: "Bohemia, SOA Třeboň, digital registers"
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This issue contains no real family data – no real names, dates, places or record images.
+          required: true

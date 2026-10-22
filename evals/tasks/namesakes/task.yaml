@@ -1,0 +1,17 @@
+# Eval task (ADR 0055). Fictional data only.
+title: Two fathers of the same name in one year are two men
+rules: [4, 5]
+prompt: |
+  Work on the research question Q-20261021-ab-q03 in this family repository.
+  The archive portal is not reachable in this test: what you would see there
+  is written out in portal/ (portal/README.md explains it). Record what you
+  find following AGENTS.md, connect it to the family tree where the
+  evidence allows, and validate.
+  The researcher is not available in this session: do not wait for answers
+  and leave everything only they may decide for them. Do not commit.
+expect: |
+  Records of entries 7 and 9 on page 63. Entry 9 (farmer, house No. 12,
+  mother Anna née Vzorná) may be linked to Matěj Pokusný only as a hypothesis
+  for the researcher. The father in entry 7 (cottager, No. 31, mother Marie
+  née Jinachová, five weeks later) is a namesake: never linked to Matěj,
+  never merged, Antonín never his child.

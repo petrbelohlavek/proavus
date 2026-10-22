@@ -1,4 +1,5 @@
-"""README (for everyone, EN and CS) and TECHNICAL.md: links work, the picture is current (ADR 0053)."""
+"""README (for everyone, EN and CS), TECHNICAL.md and the public project files: links work,
+the picture is current (ADR 0053), issue forms ask for no family data (ADR 0054)."""
 
 from __future__ import annotations
 
@@ -9,15 +10,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+
 from helpers import ROOT
 
 PAGES = ["README.md", "README.cs.md", "TECHNICAL.md"]
+COMMUNITY = ["CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md"]
 LINK = re.compile(r'(?:\]\(|src="|srcset="|href=")([^)"#\s]+)(?:#[^)"]*)?[)"]')
 
 
 class Pages(unittest.TestCase):
     def test_local_links_exist(self):
-        for page in PAGES:
+        for page in PAGES + COMMUNITY:
             for target in LINK.findall((ROOT / page).read_text(encoding="utf-8")):
                 if "://" in target or target.startswith("mailto:"):
                     continue
@@ -42,6 +46,34 @@ class Pages(unittest.TestCase):
                 self.assertEqual((Path(tmp) / name).read_text(encoding="utf-8"),
                                  (ROOT / "docs/images" / name).read_text(encoding="utf-8"),
                                  f"{name} is out of date – run python3 docs/images/architecture.py")
+
+
+class Brand(unittest.TestCase):
+    def test_logo_needs_no_font(self):
+        """Lettering as outlines (ADR 0056): no text and no font in any logo file."""
+        for svg in sorted((ROOT / "brand").glob("*.svg")):
+            text = svg.read_text(encoding="utf-8")
+            self.assertNotIn("<text", text, svg.name)
+            self.assertNotIn("font-family", text, svg.name)
+
+
+class IssueForms(unittest.TestCase):
+    FORMS = ROOT / ".github" / "ISSUE_TEMPLATE"
+
+    def test_only_forms(self):
+        config = yaml.safe_load((self.FORMS / "config.yml").read_text(encoding="utf-8"))
+        self.assertIs(config["blank_issues_enabled"], False)
+        self.assertTrue(any("security/advisories/new" in link["url"] for link in config["contact_links"]))
+
+    def test_every_form_asks_for_no_family_data(self):
+        forms = sorted(self.FORMS.glob("*.yml"))
+        forms = [f for f in forms if f.name != "config.yml"]
+        self.assertTrue(forms)
+        for form in forms:
+            body = yaml.safe_load(form.read_text(encoding="utf-8"))["body"]
+            required = [option for item in body if item["type"] == "checkboxes"
+                        for option in item["attributes"]["options"] if option.get("required")]
+            self.assertTrue(any("no real family data" in option["label"] for option in required), form.name)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,43 @@
+name: Bug
+description: A tool, the validator or the plugin does something wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Issues are public.** Never include real names, dates, places, record
+        images or files of any real family – use made-up people instead
+        (CONTRIBUTING.md). A security or privacy problem goes to a private
+        report (SECURITY.md), not here.
+  - type: input
+    id: version
+    attributes:
+      label: Proavus version
+      description: From `.proavus/` in your family repository or `.claude-plugin/plugin.json`.
+      placeholder: "0.5.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command or skill you ran, what you expected and what happened instead. Error messages are welcome – remove any names first.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to repeat it
+      description: Steps, ideally with the fictional test family (tests/fixtures/family/) or a minimal made-up file.
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: "Windows 11 / macOS 15, Claude desktop app"
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: This issue contains no real family data – no real names, dates, places or record images.
+          required: true
