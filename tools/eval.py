@@ -16,7 +16,9 @@ Usage:
       build a fresh workspace, run CMD in it with the task's prompt on stdin
       (e.g. --agent "claude -p --permission-mode acceptEdits"), grade it;
       N attempts per task (default 3). --save writes the result to
-      evals/results/<date>-<label>.json.
+      evals/results/<date>-<label>.json. When the agent itself fails (exit
+      code other than 0, timeout), the end of its output is shown and the
+      attempt counts as an agent error, not as the model's result.
 
 Exit codes: 0 all checks passed, 1 a check failed, 2 usage error.
 """
@@ -36,6 +38,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "evals"))
 
 from evalkit import EVALS, Check, Snapshot, Task, all_tasks, load_task, prepare  # noqa: E402
 
+OUTPUT_LINES = 20  # of the agent's output shown when it fails
+
 
 def grade(task: Task, workspace: Path) -> list[Check]:
     with tempfile.TemporaryDirectory() as tmp:
@@ -54,17 +58,23 @@ def run(task: Task, agent: str, timeout: int, keep: bool) -> dict:
     try:
         done = subprocess.run(agent, shell=True, cwd=workspace, input=task.prompt, text=True,
                               capture_output=True, timeout=timeout)
-        status = f"exit {done.returncode}"
-    except subprocess.TimeoutExpired:
-        status = "timeout"
+        status, output = f"exit {done.returncode}", (done.stderr or "") + (done.stdout or "")
+        error = done.returncode != 0
+    except subprocess.TimeoutExpired as exc:
+        status, output, error = "timeout", str(exc.stderr or "") + str(exc.output or ""), True
     checks = grade(task, workspace)
     if keep:
         print(f"  workspace kept: {workspace}")
     else:
         shutil.rmtree(tmp, ignore_errors=True)
-    return {"agent": status, "passed": all(c.passed for c in checks),
+    tail = output.strip().splitlines()[-OUTPUT_LINES:]
+    if error:
+        # The agent did not finish: its output says why, the checks say nothing about the model.
+        print(f"  agent error ({status}):" + "".join(f"\n    {line}" for line in tail or ["(no output)"]))
+    return {"agent": status, "error": error, "passed": not error and all(c.passed for c in checks),
             "checks": {c.name: c.passed for c in checks},
-            "failed": {c.name: c.detail for c in checks if not c.passed}}
+            "failed": {c.name: c.detail for c in checks if not c.passed},
+            "output": tail if error else []}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -107,14 +117,17 @@ def main(argv: list[str] | None = None) -> int:
         for i in range(args.times):
             print(f"{task.id} attempt {i + 1}/{args.times}")
             attempt = run(task, args.agent, args.timeout, args.keep)
-            for name, detail in attempt["failed"].items():
-                print(f"  FAIL  {name}" + (f" – {detail}" if detail else ""))
-            print(f"  {'passed' if attempt['passed'] else 'failed'} ({attempt['agent']})")
+            if not attempt["error"]:
+                for name, detail in attempt["failed"].items():
+                    print(f"  FAIL  {name}" + (f" – {detail}" if detail else ""))
+            print(f"  {'agent error' if attempt['error'] else 'passed' if attempt['passed'] else 'failed'} ({attempt['agent']})")
             attempts.append(attempt)
-        results[task.id] = {"passed": sum(a["passed"] for a in attempts), "of": len(attempts), "attempts": attempts}
+        results[task.id] = {"passed": sum(a["passed"] for a in attempts), "of": len(attempts),
+                            "errors": sum(a["error"] for a in attempts), "attempts": attempts}
     print()
     for task_id, res in results.items():
-        print(f"{task_id:24} {res['passed']}/{res['of']}")
+        errors = f" ({res['errors']} agent errors – not counted as the model's result)" if res["errors"] else ""
+        print(f"{task_id:24} {res['passed']}/{res['of']}{errors}")
     if args.save:
         out = EVALS / "results" / f"{dt.date.today().isoformat()}-{args.label}.json"
         out.parent.mkdir(exist_ok=True)

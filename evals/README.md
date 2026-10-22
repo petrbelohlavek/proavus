@@ -51,7 +51,9 @@ uv run tools/eval.py run all --agent "claude -p --permission-mode acceptEdits" -
 ```
 
 `--agent` is any shell command; it runs in the workspace with the prompt on
-stdin. `--keep` keeps the workspaces for a look. By hand:
+stdin. `--keep` keeps the workspaces for a look. If the agent itself
+fails (an exit code other than 0, a timeout), the end of its output is shown
+and the attempt counts as an agent error, not as the model's result. By hand:
 `eval.py prepare TASK DIR`, work in `DIR` with any agent, then
 `eval.py grade TASK DIR`.
 
