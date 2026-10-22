@@ -41,11 +41,19 @@ class Pages(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             script = Path(tmp) / "architecture.py"
             script.write_text((ROOT / "docs/images/architecture.py").read_text(encoding="utf-8"), encoding="utf-8")
+            (Path(tmp) / "lettering.json").write_text((ROOT / "docs/images/lettering.json").read_text(encoding="utf-8"), encoding="utf-8")
             subprocess.run([sys.executable, str(script)], check=True)
             for name in ("proavus-architecture.svg", "proavus-architecture-dark.svg"):
                 self.assertEqual((Path(tmp) / name).read_text(encoding="utf-8"),
                                  (ROOT / "docs/images" / name).read_text(encoding="utf-8"),
                                  f"{name} is out of date – run python3 docs/images/architecture.py")
+
+    def test_picture_needs_no_font(self):
+        """Lettering as outlines (ADR 0057): no text and no font in the README picture."""
+        for svg in sorted((ROOT / "docs/images").glob("proavus-architecture*.svg")):
+            text = svg.read_text(encoding="utf-8")
+            self.assertNotIn("<text", text, svg.name)
+            self.assertNotIn("font-family", text, svg.name)
 
 
 class Brand(unittest.TestCase):

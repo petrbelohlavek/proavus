@@ -57,3 +57,11 @@ SPDX-License-Identifier = "CC-BY-4.0"
 path = "brand/lettering.py"
 SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
 SPDX-License-Identifier = "MIT"
+
+# Words of the README picture as outlines drawn from Gelasio (SIL OFL 1.1)
+# and DejaVu Sans Mono (Bitstream Vera licence); a drawing, not a font,
+# under the same licence as the picture (ADR 0057)
+[[annotations]]
+path = "docs/images/lettering.json"
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
+SPDX-License-Identifier = "CC-BY-4.0"

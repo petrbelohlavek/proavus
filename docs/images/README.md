@@ -8,6 +8,11 @@
 sentences in the picture, only names that read the same in every language;
 the explanation is in each README below it.
 
+The words are outlines, not text (ADR 0057): `architecture.py` takes them
+from `lettering.json`. A new or changed word goes into `WORDS` in
+`lettering.py`, which is run once with the two fonts named in its
+docstring (`uv run docs/images/lettering.py GELASIO.ttf DEJAVU_MONO.ttf`).
+
 ## The family map
 
 Screenshots of `views/mapa.html` built from the **fictional** test family

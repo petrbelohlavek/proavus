@@ -8,6 +8,14 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## Unreleased
+
+- Docs: the README picture of the two kinds of repositories draws its
+  words as outlines (Gelasio, DejaVu Sans Mono) from
+  `docs/images/lettering.json`, made once by `docs/images/lettering.py`;
+  it needs no font and looks the same everywhere (ADR 0057). A test checks
+  it has no text and no font.
+
 ## 0.6.1 – 2026-10-22
 
 - Fix: `eval.py run` shows the end of the agent's output when the agent

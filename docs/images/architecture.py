@@ -6,17 +6,28 @@ language – so one picture serves every README. Writes
 proavus-architecture.svg and proavus-architecture-dark.svg next to this file:
 
     python3 docs/images/architecture.py
+
+The words are outlines from lettering.json (ADR 0057), so the picture needs
+no font; a new word is drawn there first with lettering.py.
 """
+import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+WORDS = json.loads((HERE / "lettering.json").read_text(encoding="utf-8"))
 
 THEMES = {
     "light": dict(ink="#1F3A5F", sepia="#B8742A", panel="#F6F1E7", paper="#FFFFFF", onink="#FFFFFF", red="#B23A3A", muted="#7A8798"),
     "dark":  dict(ink="#F6F1E7", sepia="#D08A3C", panel="#14263D", paper="#1F3A5F", onink="#14263D", red="#E06464", muted="#AFC0D6"),
 }
-SERIF = "font-family=\"Georgia, 'Times New Roman', serif\""
-MONO = "font-family=\"'SFMono-Regular', Menlo, Consolas, 'DejaVu Sans Mono', monospace\""
+
+
+def word(text, cx, y, fill):
+    """A word as outlines, centred on cx with its baseline at y (like text-anchor="middle")."""
+    if text not in WORDS:
+        raise SystemExit(f"architecture: no outlines for {text!r} – add it to WORDS in lettering.py and run it")
+    w = WORDS[text]
+    return f'<path transform="translate({cx - w["width"] / 2:.2f} {y})" d="{w["d"]}" fill="{fill}" aria-hidden="true"/>'
 
 
 def person(x, y, s, fill):
@@ -77,7 +88,7 @@ def house(x, y, name, people, t):
 {padlock(x + w / 2, y + 26, t, 0.85)}
 {pedigree(x + 78, y + 74, t, 0.95)}
 {badge(x + 170, y + 130, t, 25)}
-<text x="{x + w / 2}" y="{y + 190}" text-anchor="middle" font-size="19" fill="{t["ink"]}" {MONO}>{name}</text>'''
+{word(name, x + w / 2, y + 190, t["ink"])}'''
     for i in range(people):
         out += person(x + w + 30 + i * 27, y + 100, 1.0, t["ink"])
     return out
@@ -92,7 +103,7 @@ def svg(t):
     # left: Proavus – one for everyone, open to the world
     b += f'<rect x="20" y="{top}" width="420" height="{height}" rx="28" fill="{t["panel"]}"/>'
     b += mark(100, 92, 0.52, t)
-    b += f'<text x="230" y="362" text-anchor="middle" font-size="54" fill="{t["ink"]}" {SERIF}>Proavus</text>'
+    b += word("Proavus", 230, 362, t["ink"])
     # the world: a globe surrounded by many people
     gx, gy, r = 230, 520, 46
     b += (f'<g fill="none" stroke="{t["ink"]}" stroke-width="4"><circle cx="{gx}" cy="{gy}" r="{r}"/>'
