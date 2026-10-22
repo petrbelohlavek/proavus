@@ -133,7 +133,10 @@ Where else to look:
 ## 6. Hand over
 
 Record the search in coverage (found or not), link the record from the
-session, and write the next step. Tasks a machine cannot do (logging in to a
+session, and write the next step. An index and the book it points to are two
+sources and two searches: one coverage for the index (what it gave), one for
+the pages of the book you read – the record found there goes into the
+book's `found`. Tasks a machine cannot do (logging in to a
 portal, paying a fee) go to `human_tasks` with the exact address of the
 record, as `{task, status: open, question: <Q-ID>}` (and `conflict` or
 `inquiry` if the task serves one); close them later with `status: done` or

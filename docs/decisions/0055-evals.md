@@ -1,6 +1,6 @@
 # 0055 Evaly: úlohy pro agenta na fiktivní rodině, hodnocení skriptem
 
-- **Stav:** navrženo (2026-10-21)
+- **Stav:** přijato (2026-10-22); navrženo 2026-10-21
 - **Původně:** —
 
 ## Kontext
@@ -53,3 +53,7 @@ hodnocení jiným modelem (levné na psaní, ale samo nejisté), ruční hodnoce
 - Stav se změní na „přijato“ po prvním zaznamenaném běhu; výsledky pak
   patří do `TECHNICAL.md` (model, verze Proavus, úspěšnost).
 - Nová úloha vzniká z chyby viděné ve skutečném bádání (ADR 0013).
+- První běh (2026-10-22, Claude Code, 5 pokusů na úlohu): 14 z 15.
+  Jediná chyba – hledání v rejstříku a v knize zapsané jako jedno – vedla
+  k upřesnění metody (`reading-records.md` §6, `/proavus:start`): rejstřík
+  a kniha jsou dvě hledání a dva záznamy coverage.

@@ -20,7 +20,7 @@ public framework, and one **private** family repository per family
 (`proavus-<family>`) with a pinned copy of the tools in `.proavus/`
 (ADR 0014). Never put family data in a fork of Proavus: forks are public.
 
-> **Work in progress (0.6.0).** The schema, the validator, the binding rules
+> **Work in progress (0.6.1).** The schema, the validator, the binding rules
 > and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
 > `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
 
@@ -184,7 +184,7 @@ source:
 | Bringing older research in | [docs/import.md](docs/import.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, example in [examples/import/](examples/import/) |
 | Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
 | Regional packages | [regions/cz/](regions/cz/pitfalls.md) (Czech lands), [regions/at/](regions/at/pitfalls.md) (Austria, Vienna): schema extension, pitfalls, portal catalogue – `uv run tools/archive_fetch.py portals` (ADR 0050) |
-| Evals – does an agent follow the method? | [evals/](evals/README.md) – `uv run tools/eval.py list` (ADR 0055) |
+| Evals – does an agent follow the method? | [evals/](evals/README.md) – `uv run tools/eval.py list` (ADR 0055); results of the runs are in [evals/README.md](evals/README.md#results) |
 | Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |
 
 ## Contributing

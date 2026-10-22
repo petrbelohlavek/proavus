@@ -90,6 +90,18 @@ class Cli(unittest.TestCase):
         self.assertIn("namesakes", out.getvalue())
         self.assertIn("0/1", out.getvalue())
 
+    def test_agent_error_is_shown(self):
+        """An agent that fails shows why; the attempt is an agent error, not the model's result."""
+        out = io.StringIO()
+        fail = f'"{sys.executable}" -c "import sys; sys.stdin.read(); sys.exit(\'Error: not logged in\')"'
+        with redirect_stdout(out):
+            code = eval_tool.main(["run", "namesakes", "--agent", fail, "--times", "1"])
+        self.assertEqual(code, 1)
+        self.assertIn("agent error (exit 1)", out.getvalue())
+        self.assertIn("Error: not logged in", out.getvalue())
+        self.assertIn("1 agent errors", out.getvalue())
+        self.assertNotIn("FAIL  both-entries-recorded", out.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

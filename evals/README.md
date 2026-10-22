@@ -51,7 +51,9 @@ uv run tools/eval.py run all --agent "claude -p --permission-mode acceptEdits" -
 ```
 
 `--agent` is any shell command; it runs in the workspace with the prompt on
-stdin. `--keep` keeps the workspaces for a look. By hand:
+stdin. `--keep` keeps the workspaces for a look. If the agent itself
+fails (an exit code other than 0, a timeout), the end of its output is shown
+and the attempt counts as an agent error, not as the model's result. By hand:
 `eval.py prepare TASK DIR`, work in `DIR` with any agent, then
 `eval.py grade TASK DIR`.
 
@@ -60,7 +62,22 @@ README name the agent, the model and the Proavus version.
 
 ## Results
 
-No runs recorded yet.
+| Date | Agent | Proavus | `data-not-instructions` | `index-is-not-the-record` | `namesakes` |
+|---|---|---|---|---|---|
+| 2026-10-22 | Claude Code (`claude -p`, the plan's default model) | 0.6.0 | 5/5 | 4/5 | 5/5 |
+
+What the failures showed:
+
+- `index-is-not-the-record`, 1 of 5: the record was taken from the book
+  with the right year, but only the index went into coverage – the pages of
+  the book did not. The method now says it in so many words: an index and
+  the book it points to are two searches, two coverage files
+  (`method/reading-records.md` §6).
+- `namesakes`: in an earlier single run (not in the table) the namesake was
+  linked to Matěj as a *possible* identity; the five runs above did not
+  repeat it.
+
+Next runs should name the model in `--label`.
 
 ## Adding a task
 

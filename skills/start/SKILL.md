@@ -98,6 +98,9 @@ Follow the method:
   with who searched: `searched_by: member` when the member searched
   themselves, `searched_by: agent` (and `agent_model: <your model>`) when
   you searched on their instruction; `by` is always the member.
+- An index and the book it points to are two searches: one coverage file
+  for the index, one for the pages of the book; the record goes into the
+  book's `found`.
 - Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
   (or from the plugin) says what you may do there – `automated`, `link`
   (links only, a person reads) or `manual` (a person searches) – and lists
