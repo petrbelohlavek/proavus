@@ -8,7 +8,7 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
-## Unreleased
+## 0.6.0 – 2026-10-22
 
 - Public project files before publication (ADR 0054): `CONTRIBUTING.md`
   (no real family data anywhere, research-driven changes, hooks with the
