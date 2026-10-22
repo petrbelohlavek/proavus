@@ -4,6 +4,9 @@ START-HERE.md
 *.sqlite
 *.sqlite3
 
+# Raw eval results stay local; the summary goes into evals/README.md
+evals/results/
+
 # Python / uv
 __pycache__/
 *.pyc
