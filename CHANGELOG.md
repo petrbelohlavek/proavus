@@ -27,6 +27,10 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   drawn from the open font Gelasio (metric-compatible with Georgia) and need
   no font; `brand/lettering.py` redraws them; `proavus-social.png` exported
   again.
+- Fix: the name guard (`tools/guard_names.py`) blocks commits when the guard
+  list exists but has no entries (empty, or comments only), as it does when
+  the list is missing. Before, such a list let every check pass and guarded
+  nothing.
 
 ## 0.5.0 – 2026-10-21
 

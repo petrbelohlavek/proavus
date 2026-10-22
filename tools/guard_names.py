@@ -20,7 +20,8 @@ Usage:
   guard_names.py --all             check all tracked and untracked, non-ignored files
   guard_names.py PATH ...          check given files
 
-Exit codes: 0 clean, 1 hit found, 2 guard list missing or unreadable.
+Exit codes: 0 clean, 1 hit found, 2 guard list missing, unreadable or empty
+(no entries besides comments – a list that guards nothing blocks too).
 """
 
 from __future__ import annotations
@@ -142,6 +143,13 @@ def main(argv: list[str] | None = None) -> int:
         print(
             f"guard: guard list not found at {list_path} "
             "(set PROAVUS_GUARD_NAMES). Commit blocked.",
+            file=sys.stderr,
+        )
+        return 2
+    if not names:
+        print(
+            f"guard: guard list at {list_path} has no entries "
+            "(fill it in or set PROAVUS_GUARD_NAMES). Commit blocked.",
             file=sys.stderr,
         )
         return 2

@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
+import io
+import os
 import re
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import helpers  # noqa: F401  (puts tools/ on sys.path)
 from helpers import ROOT
@@ -149,6 +155,32 @@ class Guard(unittest.TestCase):
         g = guard_names.Guard(["Pokusný"], ["Ada Pokusná-Pokusný"])
         self.assertEqual(g.hits("© Ada Pokusná-Pokusný"), [])
         self.assertEqual(g.hits("Matěj Pokusný"), [(1, 1)])
+
+    def run_with_list(self, content: str | None) -> tuple[int, str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            list_path = Path(tmp) / ".guard-names"
+            if content is not None:
+                list_path.write_text(content, encoding="utf-8")
+            err = io.StringIO()
+            with mock.patch.dict(os.environ, {"PROAVUS_GUARD_NAMES": str(list_path)}), \
+                    contextlib.redirect_stderr(err):
+                code = guard_names.main(["--all"])
+        return code, err.getvalue()
+
+    def test_missing_list_blocks(self):
+        code, err = self.run_with_list(None)
+        self.assertEqual(code, 2)
+        self.assertIn("Commit blocked.", err)
+
+    def test_empty_list_blocks(self):
+        # A fictional list with comments only: it guards nothing, so it blocks.
+        for content in ("", "\n  \n", "# Pokusný\n# fictional list\n"):
+            with self.subTest(content=content):
+                code, err = self.run_with_list(content)
+                self.assertEqual(code, 2)
+                self.assertIn("no entries", err)
+                self.assertIn("Commit blocked.", err)
+                self.assertNotIn("Pokusný", err)  # never prints the list
 
     def test_repo_is_clean_when_list_present(self):
         list_path = guard_names.guard_list_path(ROOT)
