@@ -51,3 +51,9 @@ SPDX-License-Identifier = "LicenseRef-Proavus-Brand"
 path = "brand/README.md"
 SPDX-FileCopyrightText = "2026 Petr Bělohlávek"
 SPDX-License-Identifier = "CC-BY-4.0"
+
+# Script that draws the lettering of the logo – code, MIT
+[[annotations]]
+path = "brand/lettering.py"
+SPDX-FileCopyrightText = "2026 Petr Bělohlávek and Proavus contributors"
+SPDX-License-Identifier = "MIT"

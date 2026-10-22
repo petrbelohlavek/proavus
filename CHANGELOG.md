@@ -22,6 +22,11 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   each with its question, archive pages as text in `portal/`, a grader and
   reference solutions; `tools/eval.py list|prepare|grade|run` runs any agent
   command in a fresh workspace and counts the passed attempts.
+- Logo lettering as outlines (ADR 0056): the name and subtitle in
+  `proavus-logo.svg`, `proavus-logo-dark.svg` and `proavus-social.svg` are
+  drawn from the open font Gelasio (metric-compatible with Georgia) and need
+  no font; `brand/lettering.py` redraws them; `proavus-social.png` exported
+  again.
 
 ## 0.5.0 – 2026-10-21
 

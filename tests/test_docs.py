@@ -48,6 +48,15 @@ class Pages(unittest.TestCase):
                                  f"{name} is out of date – run python3 docs/images/architecture.py")
 
 
+class Brand(unittest.TestCase):
+    def test_logo_needs_no_font(self):
+        """Lettering as outlines (ADR 0056): no text and no font in any logo file."""
+        for svg in sorted((ROOT / "brand").glob("*.svg")):
+            text = svg.read_text(encoding="utf-8")
+            self.assertNotIn("<text", text, svg.name)
+            self.assertNotIn("font-family", text, svg.name)
+
+
 class IssueForms(unittest.TestCase):
     FORMS = ROOT / ".github" / "ISSUE_TEMPLATE"
 

@@ -18,8 +18,12 @@ descent with three nodes on the right; the sepia node is the ancestor found.
 
 Colours: ink blue `#1F3A5F`, sepia `#B8742A`, parchment `#F6F1E7`.
 
-Before the public release: the lettering uses the system font Georgia and must
-be converted to outlines (or an open font chosen).
+Lettering: the open font **Gelasio** Regular (SIL OFL 1.1, metric-compatible
+with Georgia, in which the logo was designed), stored as outlines – the
+files need no font and look the same everywhere. To change the lettering,
+edit `LETTERING` in `lettering.py` and run it with the font file (how to get
+it is in the script); then export `proavus-social.png` again (1280×640)
+(ADR 0056).
 
 Third-party files added here later (for example language flags) keep their
 own licence, recorded in `REUSE.toml`.
