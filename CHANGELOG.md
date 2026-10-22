@@ -14,6 +14,12 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   fails (exit code other than 0, timeout) and counts the attempt as an agent
   error, not as the model's result; before, the output was dropped and the
   attempt looked like a model that did nothing.
+- Evals: first run recorded (Claude Code, five attempts per task: 5/5, 4/5,
+  5/5) in `evals/README.md`; ADR 0055 accepted.
+- Method: an index and the book it points to are two searches and two
+  coverage files; the record found goes into the book's `found`
+  (`method/reading-records.md` §6, `/proavus:start`) – the one failure of
+  the evals.
 
 ## 0.6.0 – 2026-10-22
 
