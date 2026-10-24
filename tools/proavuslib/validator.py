@@ -227,6 +227,26 @@ class RepoValidator:
             if reading.get("status") == "confirmed" and confirmed.get("by") not in (reading.get("read_by") or []):
                 self.report.error(rec.path, f"reading confirmed by {confirmed.get('by')!r}, who is not among the members who read it (read_by) – "
                                             "only a person who read the entry may confirm it (ADR 0033)")
+            if confirmed:
+                self._check_second_reading(rec, reading, confirmed)
+
+    def _check_second_reading(self, rec: Entity, reading: dict, confirmed: dict) -> None:
+        """How the second reading was done must fit who read the entry and when (ADR 0059)."""
+        basis, by, read_by = confirmed.get("basis"), confirmed.get("by"), reading.get("read_by") or []
+        read_on, on = str(reading.get("read_on") or ""), str(confirmed.get("on") or "")
+        if read_on and on and read_on > on:
+            self.report.error(rec.path, f"reading confirmed on {on}, before the first reading on {read_on} (read_on)")
+        if basis is None:
+            self.report.warn(rec.path, "confirmed reading without basis – write how the second reading was done: "
+                                       "basis (member-after-agent, member-later or second-member) and checked (ADR 0059)")
+        elif basis == "member-after-agent" and not reading.get("read_by_agent"):
+            self.report.error(rec.path, "basis member-after-agent needs read_by_agent – the agent's first reading")
+        elif basis == "member-later" and not (read_on and on and read_on < on):
+            self.report.error(rec.path, "basis member-later needs read_on, the day of the first reading, before confirmed.on – "
+                                        "a second reading by the same member is on a later day")
+        elif basis == "second-member" and (len(set(read_by)) < 2 or (read_by and by == read_by[0])):
+            self.report.error(rec.path, "basis second-member needs two members in read_by, the first reader first, "
+                                        "and confirmed.by another member than the first reader")
 
     @staticmethod
     def crops(rec: Entity) -> list[str]:

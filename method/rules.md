@@ -23,8 +23,12 @@ is checked by `tools/validate.py`; the text explains why.
 
 5. **Identity needs a second reading.** A reading done once may support a
    hypothesis, never "proved", an identity link or a merge of two persons.
-   Confirm the decisive reading from the crop and record who confirmed it and
-   when. This is the human's decision in the session.
+   The second reading is a person reading the decisive items again from the
+   crop, after and apart from the first reading: after the agent and blind
+   to its reading, on a later day, or by another member. Agreeing with a
+   transcript one has seen is not a second reading. Record who confirmed it,
+   when and how. The identity link itself is the human's decision in the
+   session.
 
 6. **An index is not proof of absence.** Record every search in coverage:
    source, ranges, all name variants, method (index / page by page /

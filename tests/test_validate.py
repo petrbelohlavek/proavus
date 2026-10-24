@@ -465,6 +465,80 @@ class Readings(FamilyRepoCase):
         self.assertError(self.validate(), "read_by")
 
 
+class SecondReading(FamilyRepoCase):
+    """ADR 0059: how the second reading was done – after the agent, later, or by another member."""
+
+    def confirm(self, **changes):
+        def change(d):
+            d["reading"].update({k: v for k, v in changes.items() if k != "confirmed"})
+            d["reading"]["confirmed"].update(changes.get("confirmed", {}))
+        self.edit(REC, change)
+
+    def add_member(self):
+        text = self.path("repo.yaml").read_text(encoding="utf-8")
+        self.path("repo.yaml").write_text(text.replace("    role: researcher\n", "    role: researcher\n  - abbr: cd\n    name: Cyril Druhý\n"), encoding="utf-8")
+
+    def test_fixture_after_the_agent_is_clean(self):
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("without basis", "\n".join(report.warnings))
+
+    def test_without_basis_is_a_warning(self):
+        def change(d):
+            for k in ("basis", "from", "checked"):
+                d["reading"]["confirmed"].pop(k)
+        self.edit(REC, change)
+        report = self.validate()
+        self.assertClean(report)
+        self.assertWarning(report, "confirmed reading without basis")
+
+    def test_basis_needs_checked_items(self):
+        self.edit(REC, lambda d: d["reading"]["confirmed"].pop("checked"))
+        self.assertError(self.validate(), "checked")
+
+    def test_after_the_agent_needs_the_agent(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.assertError(self.validate(), "basis member-after-agent needs read_by_agent")
+
+    def test_same_member_later(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.confirm(read_on="2026-10-18", confirmed={"basis": "member-later"})
+        self.assertClean(self.validate())
+
+    def test_same_member_the_same_day_is_not_a_second_reading(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.confirm(confirmed={"basis": "member-later"})
+        report = self.validate()
+        self.assertError(report, "basis member-later needs read_on, the day of the first reading, before confirmed.on")
+
+    def test_same_member_later_needs_the_first_day(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_on"))
+        self.confirm(confirmed={"basis": "member-later"})
+        self.assertError(self.validate(), "basis member-later needs read_on")
+
+    def test_second_member(self):
+        self.add_member()
+        self.confirm(read_by=["cd", "ab"], confirmed={"basis": "second-member"})
+        self.assertClean(self.validate())
+
+    def test_second_member_is_not_the_first_reader(self):
+        self.add_member()
+        self.confirm(read_by=["ab", "cd"], confirmed={"basis": "second-member"})
+        self.assertError(self.validate(), "basis second-member needs two members in read_by")
+
+    def test_second_member_needs_two_readers(self):
+        self.confirm(confirmed={"basis": "second-member"})
+        self.assertError(self.validate(), "basis second-member needs two members in read_by")
+
+    def test_confirmed_before_the_first_reading(self):
+        self.confirm(read_on="2026-10-21")
+        self.assertError(self.validate(), "reading confirmed on 2026-10-20, before the first reading on 2026-10-21")
+
+    def test_unknown_basis(self):
+        self.confirm(confirmed={"basis": "agent-twice"})
+        self.assertError(self.validate(), "basis")
+
+
 class Speakers(FamilyRepoCase):
     """ADR 0034: several speakers; speaker stays for one."""
 

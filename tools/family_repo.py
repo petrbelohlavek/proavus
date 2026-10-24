@@ -443,6 +443,7 @@ class UpgradePlan:
     candidates: list[tuple[str, str]] = field(default_factory=list)
     marital: list[tuple[str, str, str]] = field(default_factory=list)
     volumes: list[tuple[str, str]] = field(default_factory=list)
+    unexplained: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -588,6 +589,18 @@ def volume_hints(repo: Path) -> list[tuple[str, str]]:
     return out
 
 
+def unexplained_confirmations(repo: Path) -> list[str]:
+    """Records with a confirmed reading that does not say how it was confirmed (ADR 0059)."""
+    v = RepoValidator(repo, FRAMEWORK)
+    v.run()
+    out = []
+    for rec in sorted(v.of_type("record"), key=lambda r: r.id):
+        reading = rec.data.get("reading") if isinstance(rec.data.get("reading"), dict) else {}
+        if isinstance(reading.get("confirmed"), dict) and not reading["confirmed"].get("basis"):
+            out.append(rec.id)
+    return out
+
+
 def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     check_family_repo(repo, "upgrade")
     installed = installed_version(repo)
@@ -617,6 +630,7 @@ def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
         plan.candidates = map_candidates(repo)
     plan.marital = marital_hints(repo)
     plan.volumes = volume_hints(repo)
+    plan.unexplained = unexplained_confirmations(repo)
     return plan
 
 
@@ -742,6 +756,11 @@ def print_plan(plan: UpgradePlan) -> None:
               "(and list the volumes in source.volumes), see method/reading-records.md §1:")
         for rec, page in plan.volumes:
             print(f"  {rec} page: {page!r}")
+    if plan.unexplained:
+        print("Confirmed readings without basis – ask the person who confirmed them how the second reading was done "
+              "and add basis and checked only from their answer, see method/reading-records.md §5:")
+        for rec in plan.unexplained:
+            print(f"  {rec}")
 
 
 # ---------------------------------------------------------- check-private

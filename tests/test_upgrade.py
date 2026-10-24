@@ -117,6 +117,16 @@ class Plan(OldRepoCase):
     def test_plain_page_is_no_volume(self):
         self.assertEqual(family_repo.plan_upgrade(self.repo).volumes, [])
 
+    def test_confirmation_without_basis_is_listed(self):
+        record = self.path(RECORD)
+        record.write_text(record.read_text(encoding="utf-8").replace("    basis: member-after-agent\n", ""), encoding="utf-8")
+        plan = family_repo.plan_upgrade(self.repo)
+        self.assertEqual(plan.unexplained, ["R-20261020-ab-r01"])
+        self.assertIn("Confirmed readings without basis", self.cli("upgrade-plan").stdout)
+
+    def test_explained_confirmation_is_not_listed(self):
+        self.assertEqual(family_repo.plan_upgrade(self.repo).unexplained, [])
+
     def test_cli_plan(self):
         out = self.cli("upgrade-plan")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)

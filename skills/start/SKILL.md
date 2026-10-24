@@ -134,8 +134,10 @@ Follow the method:
   user opens it and saves the image; do not fetch those portals in any other
   way (browser automation included).
 - Your own first reading of a record: `reading: {status: read-once,
-  read_by_agent: <your model>}`. Add the member to `read_by` only after they
-  read the crop themselves.
+  read_by_agent: <your model>, read_on: <today>}`. Add the member to
+  `read_by` only after they read the crop themselves; for a second reading
+  ask them to read the decisive items before you show yours (blind), then
+  record `basis` and `checked` (`${CLAUDE_PLUGIN_ROOT}/method/reading-records.md` §5).
 - Family map on request (tree, "show me the ancestors"):
   `uv run .proavus/tools/build_views.py .` writes `views/mapa.html` (never
   committed) – tell the user to open it in a browser. It starts from

@@ -24,6 +24,16 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   shown); with several other versions, the equally strong one is marked.
   A place ID in one assertion and the same name as written in the other is
   no longer shown as another version.
+- Second reading defined (ADR 0059): a person reads the decisive items
+  again from the crop, after and apart from the first reading – after the
+  agent and blind to its reading (`member-after-agent`), the same member on
+  a later day (`member-later`, with the new `reading.read_on`), or another
+  member (`second-member`). The reading's `confirmed` takes `basis`,
+  `checked` (the items read) and `from` (crop or image). The validator
+  checks that the basis fits `read_by`, `read_by_agent` and `read_on` and
+  warns about a confirmation without basis; `upgrade-plan` lists them.
+  Rule 5, `reading-records.md` §5, the `AGENTS.md` block and `/proavus:start`
+  and `/proavus:end` describe the blind second reading.
 
 ## 0.6.2 – 2026-10-23
 

@@ -93,15 +93,44 @@ is spent, stop and decide with the user – do not drift.
 
 ## 5. Reading state
 
-A new record is `read-once`. Record who read it: members (people) in
-`read_by`, a reading by an AI agent as `read_by_agent` (the model) – never
-write a member into `read_by` for a reading they did not do themselves. A
-reading that decides identity (a name, a house number, a date that separates
-two candidates) must be read a second time, carefully, from the crop – by a
-person: the same researcher in a later moment or another member. Then add
-them to `read_by` and set `status: confirmed` with `confirmed: {by, on}`;
-only a member who read the entry may confirm it. If two readings disagree,
-set `disputed` and open a conflict.
+A new record is `read-once`. Record who read it and when: members (people)
+in `read_by` (the first reader first), a reading by an AI agent as
+`read_by_agent` (the model), the day in `read_on` – never write a member
+into `read_by` for a reading they did not do themselves.
+
+A reading that decides identity (a name, a house number, a date that
+separates two candidates) must be read a second time from the crop by a
+person (ADR 0059). The second reading reads the **decisive items** again,
+after the first reading and apart from it. There are three ways:
+
+- **after the agent** (`member-after-agent`) – the usual way when one person
+  researches with the agent: the agent read first; it names the items and
+  asks the person to read them from the crop **without showing its own
+  reading**; only then the two readings are compared;
+- **the same member later** (`member-later`): the member read it first
+  themselves and reads the items again on a later day (`read_on` before
+  `confirmed.on`);
+- **another member** (`second-member`): `read_by` lists the first reader
+  first, `confirmed.by` is the other one.
+
+Agreeing with a transcript you have just seen is not a second reading. When
+the readings match, add the person to `read_by` and set `status: confirmed`
+with
+
+```yaml
+confirmed:
+  by: ab
+  on: 2026-10-24
+  basis: member-after-agent
+  from: crop
+  checked: [house number of p1, date of baptism, name of the father]
+```
+
+Only a member who read the entry may confirm it. If the readings disagree,
+set `disputed` and open a conflict. The identity link that rests on the
+reading (`assertion.confirmed`) is a different thing: a decision of the
+researcher in the session, which the same person who read the entry may
+make.
 
 Typical traps:
 

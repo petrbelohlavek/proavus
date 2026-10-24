@@ -81,7 +81,7 @@
       "dependentRequired": { "url": ["accessed"] }
     },
     "reading": {
-      "description": "Reading state: read-once until a second, careful reading of the crop (ADR 0016). read_by = members (humans) who read it from the image; read_by_agent = read by an AI agent. Only a member who read it may confirm it (ADR 0033).",
+      "description": "Reading state: read-once until a second reading of the decisive items from the crop by a person (ADR 0016, 0059). read_by = members (humans) who read it from the image, the first reader first; read_by_agent = read by an AI agent. Only a member who read it may confirm it (ADR 0033).",
       "type": "object",
       "required": ["status"],
       "additionalProperties": false,
@@ -92,7 +92,8 @@
           "description": "Read by an AI agent: true, or the model name.",
           "anyOf": [{ "const": true }, { "type": "string", "minLength": 1 }]
         },
-        "confirmed": { "$ref": "common.schema.json#/$defs/confirmation" },
+        "read_on": { "$ref": "common.schema.json#/$defs/date", "description": "date of the first reading (ADR 0059)" },
+        "confirmed": { "$ref": "#/$defs/reading_confirmation" },
         "uncertain": {
           "description": "Readings marked uncertain in the transcript with [ ].",
           "type": "array",
@@ -106,6 +107,29 @@
       ],
       "if": { "properties": { "status": { "const": "confirmed" } } },
       "then": { "required": ["confirmed", "read_by"], "properties": { "read_by": { "minItems": 1 } } }
+    },
+    "reading_confirmation": {
+      "description": "Who confirmed the reading by a second reading, when and how (ADR 0033, 0059).",
+      "type": "object",
+      "required": ["by", "on"],
+      "additionalProperties": false,
+      "properties": {
+        "by": { "$ref": "common.schema.json#/$defs/member" },
+        "on": { "$ref": "common.schema.json#/$defs/date" },
+        "basis": {
+          "description": "How the second reading was done: member-after-agent – the agent read first, the member read the decisive items blind from the crop; member-later – the same member read again on a later day; second-member – another member read it.",
+          "enum": ["member-after-agent", "member-later", "second-member"]
+        },
+        "from": { "description": "What the second reading was made from.", "enum": ["crop", "image"] },
+        "checked": {
+          "description": "The decisive items read the second time (name, house number, date, parents …).",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "note": { "type": "string" }
+      },
+      "dependentRequired": { "basis": ["checked"] }
     },
     "annotation": {
       "description": "One later note on the entry (ADR 0032). Text as written, with [ ] for uncertain readings.",

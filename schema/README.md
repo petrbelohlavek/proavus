@@ -59,7 +59,9 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
 - **Readings** (ADR 0033): `read_by` lists the members (humans) who read a
   record from the image, `read_by_agent` an AI reading; only a member in
   `read_by` may confirm it, and only a confirmed reading passes the identity
-  gate.
+  gate. The confirmation says how the second reading was done (ADR 0059):
+  `basis` (`member-after-agent`, `member-later` with `read_on` on an earlier
+  day, `second-member`) and the decisive items in `checked`.
 
 ## New in 0.3
 
