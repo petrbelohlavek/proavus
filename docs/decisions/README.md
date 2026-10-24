@@ -67,5 +67,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0060](0060-index-pointers.md) | Index jako ukazatel: `coverage.pointers` | přijato | — |
 | [0061](0061-page-image-anchors.md) | Strana → snímek z kotev: `source.image_map` | přijato | — |
 | [0062](0062-registers-skill.md) | Skill pro hledání v matrikách (`/proavus:registers`) | přijato | — |
+| [0063](0063-merging-assertions.md) | Sloučení zdvojených tvrzení: `merge_assertions.py` | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

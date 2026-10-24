@@ -526,8 +526,27 @@ class RepoValidator:
                     self.report.warn(a.path, f"may be the same person as {b.id} (same name, birth {sa[0]}–{sa[1]} and {sb[0]}–{sb[1]}) – "
                                              "merge them with aliases after the identity gate, or add distinct_from if they are namesakes")
 
-    def _check_duplicate_facts(self) -> None:
-        """Two assertions of the same type, date and value about one person: join their citations (ADR 0040)."""
+    def place_key(self, a: Entity) -> tuple[str, str]:
+        """(place ID, place as written) of an assertion, for comparing places."""
+        return (self.aliases.get(a.data.get("place"), a.data.get("place")) or "",
+                str(a.data.get("place_as_written") or "").strip().casefold())
+
+    def same_place(self, x: tuple[str, str], y: tuple[str, str]) -> bool:
+        """Same place, or one of them names none. Two place IDs must be equal; a place ID and a name as
+        written agree when the name is one of the place's names or the other's name as written."""
+        if not any(x) or not any(y):
+            return True
+        if x[0] and y[0]:
+            return x[0] == y[0]
+        if not x[0] and not y[0]:
+            return x[1] == y[1]
+        (pid, written), text = (x, y[1]) if x[0] else (y, x[1])
+        place = self._resolve(pid)
+        names = {str(n.get("value", "")).strip().casefold() for n in (place.data.get("names") or []) if isinstance(n, dict)} if place else set()
+        return text in names | {written}
+
+    def duplicate_fact_groups(self) -> list[list[Entity]]:
+        """Fact assertions with the same subject, type, date, value and place (ADR 0040, 0063)."""
         groups: dict[tuple, list[Entity]] = {}
         for a in sorted(self.of_type("assertion"), key=lambda a: a.id):
             d = a.data
@@ -535,10 +554,38 @@ class RepoValidator:
                 continue
             subject = self.aliases.get(d.get("subject"), d.get("subject"))
             groups.setdefault((subject, d.get("fact_type"), str(d.get("date")), str(d.get("value", ""))), []).append(a)
-        for (subject, fact_type, date, _), same in groups.items():
-            if len(same) > 1:
-                self.report.warn(same[0].path, f"{len(same)} {fact_type} assertions about {subject} with the same date {date} "
-                                               f"({', '.join(a.id for a in same)}) – join their citations into one assertion")
+        out = []
+        for same in groups.values():
+            while same:
+                first, rest = same[0], same[1:]
+                group = [first] + [b for b in rest if self.same_place(self.place_key(first), self.place_key(b))]
+                same = [b for b in same if b not in group]
+                out.append(group)
+        return out
+
+    def _check_duplicate_facts(self) -> None:
+        """Two assertions of the same type, date, value and place about one person: merge them (ADR 0040, 0063).
+        The same date with another place is not a duplicate but two versions – a conflict."""
+        noted = {frozenset(x.data.get("about") or []) for x in self.of_type("conflict")}
+        groups = self.duplicate_fact_groups()
+        for g in groups:
+            if len(g) > 1:
+                d = g[0].data
+                subject = self.aliases.get(d.get("subject"), d.get("subject"))
+                ids = " ".join(a.id for a in g)
+                self.report.warn(g[0].path, f"{len(g)} {d.get('fact_type')} assertions about {subject} with the same date {d.get('date')} "
+                                            f"({', '.join(a.id for a in g)}) – join their citations into one assertion: "
+                                            f"uv run .proavus/tools/merge_assertions.py plan . {ids}")
+        singles = [g[0] for g in groups if len(g) == 1]
+        for i, a in enumerate(singles):
+            for b in singles[i + 1:]:
+                da, db = a.data, b.data
+                same = (self.aliases.get(da.get("subject"), da.get("subject")) == self.aliases.get(db.get("subject"), db.get("subject"))
+                        and da.get("fact_type") == db.get("fact_type") and str(da.get("date")) == str(db.get("date"))
+                        and str(da.get("value", "")) == str(db.get("value", "")))
+                if same and not any({a.id, b.id} <= ids for ids in noted):
+                    self.report.warn(a.path, f"{a.id} and {b.id}: the same {da.get('fact_type')} on {da.get('date')} in two places – "
+                                             "not a duplicate but two versions: write a conflict (or correct the place)")
 
     # ------------------------------------------------------------- coverage
     def _check_coverage(self) -> None:

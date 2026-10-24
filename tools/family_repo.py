@@ -71,7 +71,7 @@ TEMPLATE = FRAMEWORK / "templates" / "family"
 EMPTY_REPO_ENTRIES = {".git", ".claude"}
 # What goes into .proavus/ (ADR 0014). guard_names.py is framework-only.
 COPY_DIRS = ["schema"]
-COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py", "locate.py"]
+COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py", "locate.py", "merge_assertions.py"]
 COPY_METHOD = ["rules.md", "rules.cs.md", "reading-records.md"]
 
 PROAVUS_README = """# .proavus – pinned copy of the Proavus framework

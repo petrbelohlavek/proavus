@@ -59,6 +59,16 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   reading, coverage of the book with `followed`, and negative results.
   Claude also uses it on its own when a question leads to a register;
   `/proavus:start` points to it.
+- Merging duplicate assertions (ADR 0063): new `tools/merge_assertions.py`
+  – `plan` shows which assertion stays, the joined citations and every file
+  whose links change, and stops where the researcher must decide (another
+  confidence, another evaluation of the same citation, a confirmation on
+  the assertion that would go, another place); `apply` writes it after
+  their yes, rewrites the links, deletes the merged files and validates.
+  Copied into `.proavus/`. The validator's duplicate check now also
+  compares the place: the same date in two places is reported as two
+  versions to write into a conflict, not as a duplicate, and the advice to
+  join citations names the command.
 
 ## 0.6.2 – 2026-10-23
 

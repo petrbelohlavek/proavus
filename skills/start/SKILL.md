@@ -125,6 +125,13 @@ Follow the method:
   proved relationship) without the user's explicit yes in this session after
   looking at the crop.
 - Three empty searches in a row → suggest a different kind of source.
+- The check says "join their citations into one assertion": show the plan
+  (`uv run .proavus/tools/merge_assertions.py plan . <A-ID> <A-ID>`) in
+  plain words – which assertion stays, the citations, the files whose links
+  change – and run `apply` with the same IDs only after the user's yes. A
+  STOP in the plan (another confidence, another evaluation of a citation, a
+  confirmation on the one that would go) is the user's decision first;
+  "the same … in two places" is not a duplicate but a conflict.
 - Tasks only a human can do (log-ins, fees) – note them with the exact
   address for the session record. A letter or request to an office, archive
   or parish becomes an `inquiry` (`uv run .proavus/tools/new_id.py inquiry
