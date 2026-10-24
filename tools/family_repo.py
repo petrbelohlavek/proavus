@@ -331,6 +331,14 @@ def loose_task(lab: Labeler, sid: str, task: dict) -> str:
     return f"{task_line(lab, task)}{where} – {sid}"
 
 
+def pointer_target(lab, to) -> str:
+    """Where an index pointer leads, in words: the book and the place in it (ADR 0060)."""
+    to = to if isinstance(to, dict) else {}
+    where = ", ".join(f"{k} {to[k]}" for k in ("volume", "page", "folio", "entry", "image") if to.get(k) is not None)
+    book = lab.ref(to["source"]) if to.get("source") else "?"
+    return f"{book}, {where}" if where else book
+
+
 def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     today = today or dt.date.today()
     v = RepoValidator(repo, FRAMEWORK, today=today)
@@ -395,12 +403,14 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     disputed = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "disputed"]
     conflicts = [c for c in of("conflict") if c.data.get("status") in ("open", "unresolved")]
     inquiries = waiting_inquiries(of("inquiry"))
+    pointers = [f"{lab.ref(cov)}: {ptr.get('name_as_written')} → {pointer_target(lab, ptr.get('to'))}" for cov, ptr in v.open_pointers()]
     lines += ["## Waiting for a human", ""]
     for title, items in (("records read once (second reading needed before identity)", [lab.ref(r) for r in read_once]),
                          ("disputed readings", [lab.ref(r) for r in disputed]),
                          ("open conflicts", [lab.ref(c) for c in conflicts]),
                          ("open human tasks without an open question", [loose_task(lab, sid, task) for sid, task in loose]),
-                         ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries])):
+                         ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries]),
+                         ("index pointers not followed into the book yet", pointers)):
         lines.append(f"- {title}: {len(items)}")
         lines += [f"  - {item}" for item in items[:10]]
         if len(items) > 10:

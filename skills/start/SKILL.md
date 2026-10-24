@@ -100,7 +100,10 @@ Follow the method:
   you searched on their instruction; `by` is always the member.
 - An index and the book it points to are two searches: one coverage file
   for the index, one for the pages of the book; the record goes into the
-  book's `found`.
+  book's `found`. Each index hit is a `pointers` item of the index coverage
+  (name as written, `to: {source, volume, page, entry}`) – never a record or
+  an assertion; after the book search set its `followed: <C-ID of the book
+  search>`. START-HERE lists the pointers not followed yet.
 - Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
   (or from the plugin) says what you may do there – `automated`, `link`
   (links only, a person reads) or `manual` (a person searches) – and lists

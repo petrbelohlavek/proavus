@@ -97,5 +97,15 @@ migration (`tools/migrate.py`, ADR 0030).
   `church-exit` (ADR 0050, 0051). Two extensions may share a field only
   with the same definition.
 
+## New in 0.7
+
+- volume of a source: `record.locator.volume`, `coverage.ranges[].volume`,
+  `source.volumes` (ADR 0058);
+- second reading: `reading.read_on` and `confirmed.basis`, `checked`, `from`
+  of a reading (ADR 0059);
+- `coverage.pointers` of an index search: the name as the index gives it
+  and where it leads (`to`), `followed` by the coverage of the book search;
+  a pointer is a lead, not a record (ADR 0060).
+
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

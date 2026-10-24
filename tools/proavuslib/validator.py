@@ -106,6 +106,8 @@ class RepoValidator:
         self._check_duplicate_facts()
         self._check_coverage()
         self._check_volumes()
+        self._check_pointers()
+        self._check_index_citations()
         self._check_sessions()
         self._check_inquiries()
         self._check_map()
@@ -550,7 +552,7 @@ class RepoValidator:
                 index_only.append(cov)
             elif accepted and not (result == "negative" and method == "index"):
                 self.report.warn(cov.path, "index_negative_accepted only fits a negative result from an index (method index, result negative)")
-            if result in ("found", "partial") and not cov.data.get("found"):
+            if result in ("found", "partial") and not cov.data.get("found") and not cov.data.get("pointers"):
                 self.report.warn(cov.path, f"result {result!r} but no records listed in 'found'")
             if cov.data.get("inquiry") and method != "inquiry":
                 self.report.warn(cov.path, "links an inquiry but method is not 'inquiry'")
@@ -586,6 +588,12 @@ class RepoValidator:
                 self.report.error(rec.path, f"locator.volume {loc['volume']!r} is not one of the volumes of {rec.data.get('source')} "
                                             f"({', '.join(map(str, vols))})")
         for cov in self.of_type("coverage"):
+            for ptr in cov.data.get("pointers") or []:
+                to = ptr.get("to") if isinstance(ptr, dict) and isinstance(ptr.get("to"), dict) else {}
+                target = listed.get(to.get("source"))
+                if target and to.get("volume") is not None and self._volume_key(to["volume"]) not in {self._volume_key(v) for v in target}:
+                    self.report.error(cov.path, f"pointer to volume {to['volume']!r}, which is not one of the volumes of {to.get('source')} "
+                                                f"({', '.join(map(str, target))})")
             vols = listed.get(cov.data.get("source"))
             if not vols:
                 continue
@@ -595,6 +603,69 @@ class RepoValidator:
                 if self._volume_key(r["volume"]) not in {self._volume_key(v) for v in vols}:
                     self.report.error(cov.path, f"range volume {r['volume']!r} is not one of the volumes of {cov.data.get('source')} "
                                                 f"({', '.join(map(str, vols))})")
+
+    # ------------------------------------------------------------- pointers
+    @staticmethod
+    def _page_spans(text) -> list[tuple[int, int]] | None:
+        """Page ranges of a coverage range ("12-140", "30-60, 70", "57"); None if not plain page numbers."""
+        spans = []
+        for part in str(text).split(","):
+            m = re.fullmatch(r"\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*", part)
+            if not m:
+                return None
+            spans.append((int(m.group(1)), int(m.group(2) or m.group(1))))
+        return spans
+
+    def open_pointers(self) -> list[tuple[Entity, dict]]:
+        """Pointers from an index that no book search has followed yet (ADR 0060)."""
+        return [(cov, ptr) for cov in sorted(self.of_type("coverage"), key=lambda c: c.id)
+                for ptr in cov.data.get("pointers") or [] if isinstance(ptr, dict) and not ptr.get("followed")]
+
+    def _check_pointers(self) -> None:
+        """An index points to a book; the book search follows the pointer (ADR 0060)."""
+        for cov in sorted(self.of_type("coverage"), key=lambda c: c.id):
+            pointers = [p for p in cov.data.get("pointers") or [] if isinstance(p, dict)]
+            if not pointers:
+                continue
+            if cov.data.get("method") != "index":
+                self.report.error(cov.path, f"pointers belong to a search of an index (method index), not method {cov.data.get('method')!r}")
+            if cov.data.get("result") not in ("found", "partial"):
+                self.report.error(cov.path, f"the index gave pointers, so the result is found or partial, not {cov.data.get('result')!r}")
+            for ptr in pointers:
+                to = ptr.get("to") if isinstance(ptr.get("to"), dict) else {}
+                if to.get("source") == cov.data.get("source"):
+                    self.report.error(cov.path, f"pointer of {ptr.get('name_as_written')!r} leads to the index itself – name the book it points to")
+                book = self._resolve(ptr.get("followed") or "")
+                if book is None or book.type != "coverage":
+                    continue
+                if book.data.get("source") != to.get("source"):
+                    self.report.error(cov.path, f"pointer of {ptr.get('name_as_written')!r} leads to {to.get('source')}, "
+                                                f"but {book.id} searched {book.data.get('source')}")
+                    continue
+                ranges = [r for r in book.data.get("ranges") or [] if isinstance(r, dict)]
+                if to.get("volume") is not None and any(r.get("volume") is not None for r in ranges):
+                    ranges = [r for r in ranges if r.get("volume") is None or self._volume_key(r["volume"]) == self._volume_key(to["volume"])]
+                    if not ranges:
+                        self.report.warn(cov.path, f"{book.id} did not search volume {to['volume']!r}, where the index points "
+                                                   f"for {ptr.get('name_as_written')!r}")
+                        continue
+                page = to.get("page")
+                if page is None or not str(page).strip().isdigit():
+                    continue
+                spans = [self._page_spans(r["pages"]) for r in ranges if r.get("pages") is not None]
+                if spans and all(s is not None for s in spans) and not any(a <= int(page) <= b for s in spans for a, b in s):
+                    self.report.warn(cov.path, f"{book.id} did not search page {page}, where the index points for {ptr.get('name_as_written')!r}")
+
+    def _check_index_citations(self) -> None:
+        """An index is a pointer: an assertion cites the record found in the book, not the index (ADR 0060)."""
+        for a in self.of_type("assertion") + self.of_type("relationship"):
+            for c in a.data.get("citations") or []:
+                if not isinstance(c, dict) or not c.get("coverage"):
+                    continue
+                cov = self._resolve(c["coverage"])
+                if cov is not None and cov.data.get("method") == "index" and c.get("evidence") != "negative":
+                    self.report.warn(a.path, f"cites the index search {cov.id} as evidence – an index points to the book; "
+                                             "cite the record found there (an index search fits only negative evidence)")
 
     # ------------------------------------------------------------- sessions
     def _check_sessions(self) -> None:

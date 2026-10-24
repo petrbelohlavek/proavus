@@ -34,6 +34,15 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   warns about a confirmation without basis; `upgrade-plan` lists them.
   Rule 5, `reading-records.md` §5, the `AGENTS.md` block and `/proavus:start`
   and `/proavus:end` describe the blind second reading.
+- Index pointers (ADR 0060): an index search's coverage lists what the
+  index gives as `pointers` – the name as written, optional event and date
+  as written, where it leads (`to: {source, volume, page, folio, entry,
+  image}`) and `followed`, the coverage of the book search. A pointer is a
+  lead, not a record. The validator allows pointers only from an index with
+  a found or partial result, checks that `followed` searched the book the
+  pointer leads to and warns when it missed its volume or page, and warns
+  about an assertion citing an index search as anything but negative
+  evidence. START-HERE lists pointers not followed yet.
 
 ## 0.6.2 – 2026-10-23
 

@@ -8,7 +8,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from helpers import FamilyRepoCase, ROOT
+from helpers import FamilyRepoCase, ROOT, TODAY
+from proavuslib.validator import RepoValidator
 
 REC = "R-20261020-ab-r01"
 SRC = "SO-20261020-ab-s01"
@@ -340,6 +341,95 @@ class Volumes(FamilyRepoCase):
         report = self.validate()
         self.assertClean(report)
         self.assertEqual([w for w in report.warnings if "volume" in w], [])
+
+
+class Pointers(FamilyRepoCase):
+    """ADR 0060: an index points to a book; the pointer is a lead, not a record."""
+
+    INDEX = "C-20261024-ab-i01"
+    INDEX_SRC = "SO-20261020-ab-s02"
+    BOOK = "C-20261020-ab-c01"     # page-through of SRC, pages 30-60
+
+    def add_index(self, **changes):
+        pointer = {"name_as_written": "Pokusný Josef", "event": "baptism", "date_as_written": 1878,
+                   "to": {"source": SRC, "page": 41}}
+        pointer.update(changes)
+        self.add(f"coverage/{self.INDEX}.md", {
+            "id": self.INDEX, "type": "coverage", "source": self.INDEX_SRC, "method": "index",
+            "ranges": [{"dates": "1870/1890", "query": "letter P"}], "names": ["Pokusný", "Pokusny"],
+            "result": "found", "pointers": [pointer], "by": "ab", "on": "2026-10-24"})
+
+    def test_open_pointer_is_valid_and_listed(self):
+        self.add_index()
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("no records listed", "\n".join(report.warnings))
+        v = RepoValidator(self.repo, ROOT, today=TODAY)
+        v.run()
+        self.assertEqual([c.id for c, _ in v.open_pointers()], [self.INDEX])
+
+    def test_followed_pointer(self):
+        self.add_index(followed=self.BOOK)
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("did not search", "\n".join(report.warnings))
+        v = RepoValidator(self.repo, ROOT, today=TODAY)
+        v.run()
+        self.assertEqual(v.open_pointers(), [])
+
+    def test_book_search_missed_the_page(self):
+        self.add_index(to={"source": SRC, "page": 75}, followed=self.BOOK)
+        self.assertWarning(self.validate(), "C-20261020-ab-c01 did not search page 75, where the index points for 'Pokusný Josef'")
+
+    def test_book_search_missed_the_volume(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I"}, {"volume": "II"}]))
+        self.edit(REC, lambda d: d["locator"].update(volume="I"))
+        self.edit(self.BOOK, lambda d: d["ranges"][0].update(volume="I"))
+        self.add_index(to={"source": SRC, "volume": "II", "page": 41}, followed=self.BOOK)
+        self.assertWarning(self.validate(), "C-20261020-ab-c01 did not search volume 'II'")
+
+    def test_pointer_to_an_unknown_volume(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I"}]))
+        self.add_index(to={"source": SRC, "volume": "IX", "page": 41})
+        self.assertError(self.validate(), "pointer to volume 'IX', which is not one of the volumes")
+
+    def test_followed_by_a_search_of_another_book(self):
+        self.add_index(followed="C-20261020-ab-c03")
+        self.assertError(self.validate(), f"leads to {SRC}, but C-20261020-ab-c03 searched {self.INDEX_SRC}")
+
+    def test_pointer_needs_a_place_in_the_book(self):
+        self.add_index(to={"source": SRC})
+        self.assertError(self.validate(), "to: needs at least one of page, folio, entry, image")
+
+    def test_pointer_to_the_index_itself(self):
+        self.add_index(to={"source": self.INDEX_SRC, "page": 41})
+        self.assertError(self.validate(), "leads to the index itself")
+
+    def test_pointers_only_from_an_index(self):
+        self.add_index()
+        self.edit(self.INDEX, lambda d: d.update(method="page-through", ranges=[{"pages": "1-10"}]))
+        self.assertError(self.validate(), "pointers belong to a search of an index (method index), not method 'page-through'")
+
+    def test_pointers_mean_something_was_found(self):
+        self.add_index()
+        self.edit(self.INDEX, lambda d: d.update(result="negative"))
+        self.assertError(self.validate(), "the index gave pointers, so the result is found or partial, not 'negative'")
+
+    def test_index_is_no_evidence_for_a_fact(self):
+        self.add_index()
+        self.edit("A-20261020-ab-b02", lambda d: d.update(citations=[{"coverage": self.INDEX, "information": "secondary", "evidence": "direct"}]))
+        self.assertWarning(self.validate(), f"cites the index search {self.INDEX} as evidence")
+
+    def test_index_for_negative_evidence_is_fine(self):
+        self.add_index()
+        self.edit("A-20261020-ab-b02", lambda d: d["citations"].append({"coverage": self.INDEX, "evidence": "negative"}))
+        self.assertNotIn("cites the index search", "\n".join(self.validate().warnings))
+
+    def test_page_spans(self):
+        spans = RepoValidator._page_spans
+        self.assertEqual(spans("12-140"), [(12, 140)])
+        self.assertEqual(spans("30-60, 70"), [(30, 60), (70, 70)])
+        self.assertIsNone(spans("images 5-88"))
 
 
 class Coverage(FamilyRepoCase):

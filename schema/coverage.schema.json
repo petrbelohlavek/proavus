@@ -39,6 +39,44 @@
     },
     "inquiry": { "$ref": "common.schema.json#/$defs/ref_inquiry", "description": "method inquiry: the inquiry this search was made through (ADR 0036)" },
     "found": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_record" } },
+    "pointers": {
+      "description": "method index: what the index points to (ADR 0060). A pointer is a lead to the book, not a record and not a statement about a person – follow it and record the book search in its own coverage.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name_as_written", "to"],
+        "additionalProperties": false,
+        "properties": {
+          "name_as_written": { "type": "string", "minLength": 1, "description": "the name as the index gives it" },
+          "event": { "type": "string", "x-vocab": "event_types" },
+          "date_as_written": { "type": ["string", "integer"], "description": "a year or date the index gives, as written – the book decides" },
+          "to": {
+            "description": "where the index points: the book (source) and the place in it",
+            "type": "object",
+            "required": ["source"],
+            "additionalProperties": false,
+            "properties": {
+              "source": { "$ref": "common.schema.json#/$defs/ref_source" },
+              "volume": { "$ref": "common.schema.json#/$defs/volume" },
+              "page": { "type": ["string", "integer"] },
+              "folio": { "type": "string" },
+              "entry": { "type": ["string", "integer"] },
+              "image": { "type": ["string", "integer"] }
+            },
+            "x-hint": "needs at least one of page, folio, entry, image",
+            "anyOf": [
+              { "required": ["page"] },
+              { "required": ["folio"] },
+              { "required": ["entry"] },
+              { "required": ["image"] }
+            ]
+          },
+          "followed": { "$ref": "common.schema.json#/$defs/ref_coverage", "description": "the coverage of the search in the book the pointer leads to" },
+          "note": { "type": "string" }
+        }
+      }
+    },
     "questions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_question" } },
     "by": { "$ref": "common.schema.json#/$defs/member" },
     "searched_by": {

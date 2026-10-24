@@ -27,7 +27,8 @@ general – never names of a real family.
   inside a book. Check two anchors before relying on it.
 - **Separate index books** (e.g. SOA Třeboň, digi.ceskearchivy.cz): the index
   is its own book and refers to "Kniha strana číslo" (book, page, entry) –
-  open the referenced book; the index entry is not the record.
+  open the referenced book; the index entry is not the record. Write it as
+  a pointer of the index coverage (`pointers`, ADR 0060).
 
 ## Searching
 

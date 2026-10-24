@@ -203,6 +203,18 @@ class StartHere(unittest.TestCase):
         self.assertIn("- inquiries not closed: 1", text)
         self.assertIn("Obecní úřad Vzorkov (fictional): Domicile right (domovské právo) of Matěj Pokusný, 1870–1900 (IN-20261020-ab-i01) – sent 2026-10-20", text)
 
+    def test_open_index_pointers(self):
+        (self.repo / "coverage" / "C-20261024-ab-i01.md").write_text(
+            "---\nid: C-20261024-ab-i01\ntype: coverage\nsource: SO-20261020-ab-s02\nmethod: index\n"
+            "ranges:\n  - query: letter P\nnames: [Pokusný]\nresult: found\n"
+            "pointers:\n  - name_as_written: Pokusný Václav\n    to: {source: SO-20261020-ab-s01, volume: \"7\", page: 57}\n"
+            "by: ab\non: 2026-10-24\n---\n", encoding="utf-8")
+        family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertIn("- index pointers not followed into the book yet: 1", text)
+        self.assertIn("(C-20261024-ab-i01): Pokusný Václav → ", text)
+        self.assertIn("(SO-20261020-ab-s01), volume 7, page 57", text)
+
     def test_names_next_to_ids(self):
         family_repo.start_here(self.repo, today=TODAY)
         text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")

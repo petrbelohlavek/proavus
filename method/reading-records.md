@@ -167,7 +167,12 @@ Record the search in coverage (found or not), link the record from the
 session, and write the next step. An index and the book it points to are two
 sources and two searches: one coverage for the index (what it gave), one for
 the pages of the book you read – the record found there goes into the
-book's `found`. Tasks a machine cannot do (logging in to a
+book's `found`. What the index gives is a **pointer**, not a record (ADR
+0060): write it into the index coverage as `pointers` – the name as the
+index gives it and where it leads (`to: {source, volume, page, entry}`),
+never as participants or an assertion – and once the book is searched, set
+`followed` to the book's coverage. A year or date in the index
+(`date_as_written`) is a hint; the book decides. Tasks a machine cannot do (logging in to a
 portal, paying a fee) go to `human_tasks` with the exact address of the
 record, as `{task, status: open, question: <Q-ID>}` (and `conflict` or
 `inquiry` if the task serves one); close them later with `status: done` or
