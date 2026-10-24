@@ -5,10 +5,12 @@ can check. Rules 3–5 of [rules.md](rules.md) in practice.
 
 ## 1. Locate before you read
 
-Write the locator first, while the image is open: source (book), page as
-shown by the portal, folio with side (`23r`, `23v`), entry number, image
-number, URL and access date. Page and folio often drift apart inside one book
-– record both; never compute one from the other without calibration points.
+Write the locator first, while the image is open: source (book), volume
+(`volume`, as written – volumes of one source need not follow each other by
+date; list them in `source.volumes`), page as shown by the portal, folio
+with side (`23r`, `23v`), entry number, image number, URL and access date.
+Page and folio often drift apart inside one book – record both; never
+compute one from the other without calibration points.
 
 - **An index number is often a page (pag.), not a folio.** Check the header
   of the index and a page or two of the book before you go to the entry.

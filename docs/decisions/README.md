@@ -62,5 +62,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0055](0055-evals.md) | Evaly: úlohy pro agenta na fiktivní rodině, hodnocení skriptem | přijato | — |
 | [0056](0056-logo-lettering-outlines.md) | Nápis loga křivkami z otevřeného písma Gelasio | přijato | — |
 | [0057](0057-picture-lettering-outlines.md) | Nápisy v obrázku dvou repozitářů křivkami | přijato | — |
+| [0058](0058-source-volumes.md) | Svazek zdroje v lokátoru a v coverage | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

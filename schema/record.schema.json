@@ -59,10 +59,11 @@
   "unevaluatedProperties": false,
   "$defs": {
     "locator": {
-      "description": "Where exactly the entry is inside the source (ADR 0023). At least one of page, folio, entry or image.",
+      "description": "Where exactly the entry is inside the source (ADR 0023). At least one of page, folio, entry or image; volume only narrows them down (ADR 0058).",
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "volume": { "$ref": "common.schema.json#/$defs/volume", "description": "volume of the source, one of source.volumes when the source lists them" },
         "page": { "type": ["string", "integer"], "description": "page as printed / as shown by the portal (pg)" },
         "folio": { "type": "string", "description": "folio with side, e.g. 23r, 23v" },
         "entry": { "type": ["string", "integer"], "description": "entry number in the register" },

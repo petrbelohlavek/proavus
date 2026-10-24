@@ -289,6 +289,59 @@ class Dates(FamilyRepoCase):
         self.assertError(self.validate(), "father died more than a year before")
 
 
+class Volumes(FamilyRepoCase):
+    """A volume of a source in the locator and in coverage ranges (ADR 0058)."""
+
+    COV = "C-20261020-ab-c01"
+
+    def with_volumes(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I", "period": "1870/1880"},
+                                                   {"volume": "II", "period": "1865/1890", "note": "later entries of older years"}]))
+
+    def test_volume_in_locator_is_valid(self):
+        self.edit(REC, lambda d: d["locator"].update(volume="II"))
+        self.assertClean(self.validate())
+
+    def test_volume_alone_does_not_locate(self):
+        self.edit(REC, lambda d: d.update(locator={"volume": "II"}))
+        self.assertError(self.validate(), "locator: needs at least one of page, folio, entry, image")
+
+    def test_volume_must_be_listed_by_the_source(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="III"))
+        self.assertError(self.validate(), "locator.volume 'III' is not one of the volumes of SO-20261020-ab-s01 (I, II)")
+
+    def test_volume_matches_without_case(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="ii"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("add locator.volume", "\n".join(report.warnings))
+
+    def test_record_without_volume_of_a_source_with_volumes(self):
+        self.with_volumes()
+        self.assertWarning(self.validate(), "SO-20261020-ab-s01 has volumes (I, II) – add locator.volume")
+
+    def test_volume_listed_twice(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "II"}, {"volume": "II"}]))
+        self.assertError(self.validate(), "volume 'ii' is listed twice in volumes")
+
+    def test_coverage_range_volume(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="I"))
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="I"))
+        self.assertClean(self.validate())
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="IV"))
+        self.assertError(self.validate(), "range volume 'IV' is not one of the volumes of SO-20261020-ab-s01")
+
+    def test_volume_without_a_list_is_free(self):
+        self.edit(REC, lambda d: d["locator"].update(volume="Tom. III"))
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="Tom. III"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual([w for w in report.warnings if "volume" in w], [])
+
+
 class Coverage(FamilyRepoCase):
     def test_negative_needs_names(self):
         self.edit("C-20261020-ab-c02", lambda d: d.update(names=[]))

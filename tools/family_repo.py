@@ -442,6 +442,7 @@ class UpgradePlan:
     map_missing: list[str] = field(default_factory=list)
     candidates: list[tuple[str, str]] = field(default_factory=list)
     marital: list[tuple[str, str, str]] = field(default_factory=list)
+    volumes: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -569,6 +570,24 @@ def marital_hints(repo: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+# A volume written into locator.page (before 0.7.0 the locator had no volume, ADR 0058):
+# a roman numeral, or tom / tomus / Bd / Band / sv. / svazek / vol.
+VOLUME_IN_PAGE = re.compile(r"(?i)(^|[\s,;/])(tom(us)?|bd|band|sv|svazek|vol(ume)?)\b\.?|^\s*[IVXLC]+\b")
+
+
+def volume_hints(repo: Path) -> list[tuple[str, str]]:
+    """Records whose locator.page seems to hold a volume: (record ID, page)."""
+    v = RepoValidator(repo, FRAMEWORK)
+    v.run()
+    out = []
+    for rec in sorted(v.of_type("record"), key=lambda r: r.id):
+        loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+        page = loc.get("page")
+        if isinstance(page, str) and loc.get("volume") is None and VOLUME_IN_PAGE.search(page):
+            out.append((rec.id, page))
+    return out
+
+
 def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     check_family_repo(repo, "upgrade")
     installed = installed_version(repo)
@@ -597,6 +616,7 @@ def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     if "root" in plan.map_missing:
         plan.candidates = map_candidates(repo)
     plan.marital = marital_hints(repo)
+    plan.volumes = volume_hints(repo)
     return plan
 
 
@@ -717,6 +737,11 @@ def print_plan(plan: UpgradePlan) -> None:
               "(and marital_status) with the user, see method/reading-records.md §4:")
         for rec, key, value in plan.marital:
             print(f"  {rec} {key}: {value!r}")
+    if plan.volumes:
+        print("Volume inside locator.page – move it into locator.volume with the user "
+              "(and list the volumes in source.volumes), see method/reading-records.md §1:")
+        for rec, page in plan.volumes:
+            print(f"  {rec} page: {page!r}")
 
 
 # ---------------------------------------------------------- check-private

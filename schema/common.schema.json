@@ -59,6 +59,11 @@
       "type": ["string", "integer"],
       "format": "edtf"
     },
+    "volume": {
+      "description": "Volume of a source (tomus, Band, svazek) as written on the book or shown by the portal: II, Tom. III, 2 (ADR 0058).",
+      "type": ["string", "integer"],
+      "minLength": 1
+    },
     "lang": {
       "description": "ISO 639-1 language code (la, de, cs, …).",
       "type": "string",

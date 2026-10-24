@@ -95,7 +95,7 @@ LABELS = {
         "about": "about", "from": "from", "to": "to", "support": "supported by", "confirmed": "confirmed",
         "human_task": "human task", "bapt": "bapt.", "bur": "bur.",
         "alt_mark": "other version of a fact", "alt_equal": "equally strong other version",
-        "alt_conflict": "another version disagrees", "alt_more": "other versions",
+        "alt_conflict": "another version disagrees", "alt_more": "other versions", "alt_same": "equally strong",
         "chosen": "shown on the card", "alternative": "other version",
         "conflict_label": "Conflict", "identity_of": "identity", "session": "session", "inquiry": "inquiry",
         "living_person": "Living person", "hidden_share": "living – hidden in this version for sharing",
@@ -131,7 +131,7 @@ LABELS = {
         "about": "týká se", "from": "od", "to": "do", "support": "opírá se o", "confirmed": "potvrdil/a",
         "human_task": "úkol pro člověka", "bapt": "křt.", "bur": "pohř.",
         "alt_mark": "jiná verze údaje", "alt_equal": "stejně silná jiná verze",
-        "alt_conflict": "jiná verze se liší", "alt_more": "další verze",
+        "alt_conflict": "jiná verze se liší", "alt_more": "další verze", "alt_same": "stejně silná",
         "chosen": "zobrazeno na kartě", "alternative": "jiná verze",
         "conflict_label": "Rozpor", "identity_of": "identita", "session": "sezení", "inquiry": "dotaz",
         "living_person": "Žijící osoba", "hidden_share": "žijící – v této verzi pro sdílení skryto",
@@ -149,7 +149,7 @@ TERMS = {
         "sent": "odesláno", "acknowledged": "potvrzen příjem", "answered": "zodpovězeno",
         "primary": "prvotní", "secondary": "druhotná", "undetermined": "neurčená",
         "direct": "přímý", "indirect": "nepřímý", "negative": "negativní",
-        "page": "str.", "folio": "fol.", "entry": "zápis", "image": "snímek",
+        "volume": "sv.", "page": "str.", "folio": "fol.", "entry": "zápis", "image": "snímek",
     },
 }
 
@@ -273,17 +273,76 @@ class MapBuilder:
                 and a.data.get("confidence") != "disproved"]
 
     def _what(self, a: Entity) -> tuple:
-        return (str(a.data.get("date", "")), self.canon(a.data.get("place")) or str(a.data.get("place_as_written", "")).casefold(),
-                str(a.data.get("value", "")).casefold())
+        return (str(a.data.get("date", "")), str(a.data.get("value", "")).casefold())
+
+    def _same_place(self, a: Entity, b: Entity) -> bool:
+        """Same place: the same place ID, or – when one of them has only place_as_written – the same name.
+        A place ID in one assertion and the same name as written in the other is not another version."""
+        pa, pb = self.canon(a.data.get("place")), self.canon(b.data.get("place"))
+        if pa and pb:
+            return pa == pb
+        return self.place_text(a).strip().casefold() == self.place_text(b).strip().casefold()
+
+    def differs(self, a: Entity, b: Entity) -> bool:
+        return self._what(a) != self._what(b) or not self._same_place(a, b)
 
     def variance(self, pid: str, fact: Entity) -> str | None:
         """'equal' – an equally strong version says something else; 'conflict' – a weaker one does."""
         if pid in self.minors:
             return None
-        differing = [a for a in self.alternatives(pid, fact) if self._what(a) != self._what(fact)]
+        differing = [a for a in self.alternatives(pid, fact) if self.differs(a, fact)]
         if not differing:
             return None
         return "equal" if any(self.strength(a) == self.strength(fact) for a in differing) else "conflict"
+
+    def best_citation(self, a: Entity) -> dict | None:
+        """The citation that gives the assertion its strength (see strength)."""
+        cites = [c for c in a.data.get("citations") or [] if isinstance(c, dict)]
+        return min(cites, key=lambda c: (INFORMATION_RANK.get(c.get("information"), 3), EVIDENCE_RANK.get(c.get("evidence"), 3)), default=None)
+
+    def origin(self, pid: str, a: Entity) -> str:
+        """Where an other version comes from, in words (plain text): record or source,
+        locator and the evaluation of its strongest citation. The source title (it names the parish)
+        only where the person's sources are shown."""
+        parts = []
+        c = self.best_citation(a)
+        if c is not None:
+            show_source = pid not in self.living or self.living_places
+            src = None
+            if c.get("record"):
+                parts.append(str(c["record"]))
+                rec = self.get(c["record"])
+                if rec is not None:
+                    src = self.get(rec.data.get("source"))
+                    loc = rec.data.get("locator") or {}
+                    where = ", ".join(f"{self.term(k)} {loc[k]}" for k in ("volume", "page", "folio", "entry", "image") if loc.get(k) is not None)
+                    if src is not None and show_source:
+                        parts.append(str(src.data.get("title", "")))
+                    if where:
+                        parts.append(where)
+            elif c.get("source") or c.get("oral") or c.get("coverage"):
+                ref = c.get("source") or c.get("oral") or c.get("coverage")
+                parts.append(str(ref))
+                src = self.get(c.get("source")) if c.get("source") else None
+                if src is not None and show_source:
+                    parts.append(str(src.data.get("title", "")))
+                if c.get("detail"):
+                    parts.append(str(c["detail"]))
+            ev = ", ".join(self.term(c[k]) for k in ("information", "evidence") if c.get(k))
+            if ev:
+                parts.append(ev)
+        return " · ".join(p for p in parts if p)
+
+    def other_versions(self, pid: str, fact: Entity) -> list[tuple[Entity, str, str]]:
+        """Other versions: (assertion, summary with confidence, where it comes from)."""
+        out, others = [], self.alternatives(pid, fact)
+        for a in others:
+            conf = self.L.get(a.data.get("confidence"), a.data.get("confidence", ""))
+            # with several other versions, say which of them is the equally strong one
+            same = len(others) > 1 and self.differs(a, fact) and self.strength(a) == self.strength(fact)
+            tag = f" – {self.L['alt_same']}" if same else ""
+            out.append((a, f"{self.fact_summary(pid, a)} ({conf}){tag}", self.origin(pid, a)))
+        return out
 
     def fact_summary(self, pid: str, a: Entity) -> str:
         """Date and place of a fact in words, as allowed for this person (plain text)."""
@@ -595,7 +654,8 @@ class MapBuilder:
             mark = ""
             kind = self.variance(pid, fact)
             if kind:
-                others = "; ".join(f"{self.fact_summary(pid, a)} ({self.L.get(a.data.get('confidence'), a.data.get('confidence', ''))})" for a in self.alternatives(pid, fact))
+                others = "; ".join(" – ".join(x for x in (text, " · ".join(y for y in (a.id, where) if y)) if x)
+                                   for a, text, where in self.other_versions(pid, fact))
                 mark = f' <span class="alt" title="{esc(self.L["alt_" + kind])}: {esc(others)}">≠</span>'
             out.append(f"<span>{esc(sign)} {esc(human_date(date, self.lang))}{mark}</span>")
             place = self.place_shown(pid, fact)
@@ -626,7 +686,7 @@ class MapBuilder:
                 if src is not None and show_source:
                     parts.append(esc(src.data.get("title", "")))
                 loc = rec.data.get("locator") or {}
-                where = ", ".join(f"{self.term(k)} {loc[k]}" for k in ("page", "folio", "entry", "image") if loc.get(k) is not None)
+                where = ", ".join(f"{self.term(k)} {loc[k]}" for k in ("volume", "page", "folio", "entry", "image") if loc.get(k) is not None)
                 if where:
                     parts.append(esc(where))
                 url = loc.get("url")
@@ -695,7 +755,8 @@ class MapBuilder:
                 kind = self.variance(pid, fact)
                 label = L["alt_" + kind] if kind else L["alt_more"]
                 value += (f'<div class="muted">{"≠ " if kind else ""}{esc(label)}: '
-                          + "; ".join(f"{esc(self.fact_summary(pid, a))} ({esc(L.get(a.data.get('confidence'), a.data.get('confidence', '')))})" for a in others)
+                          + "; ".join(f"{esc(text)} – {self.id_link(a)}{' · ' + esc(where) if where else ''}"
+                                      for a, text, where in self.other_versions(pid, fact))
                           + "</div>")
             row(L[key], value)
         occ = self.occupations(pid)

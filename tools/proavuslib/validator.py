@@ -105,6 +105,7 @@ class RepoValidator:
         self._check_duplicate_persons()
         self._check_duplicate_facts()
         self._check_coverage()
+        self._check_volumes()
         self._check_sessions()
         self._check_inquiries()
         self._check_map()
@@ -538,6 +539,42 @@ class RepoValidator:
             self.report.warn("coverage/", f"{len(index_only)} negative result{'s' if len(index_only) > 1 else ''} from an index only "
                              f"({', '.join(c.id for c in index_only)}) – an index is not proof of absence; page through the book if it "
                              "matters, or record the decision in the file: index_negative_accepted: {by, on, note}")
+
+    # -------------------------------------------------------------- volumes
+    @staticmethod
+    def _volume_key(value) -> str:
+        return str(value).strip().casefold()
+
+    def _check_volumes(self) -> None:
+        """Volumes of records and coverage must be volumes their source lists (ADR 0058)."""
+        listed: dict[str, list[str]] = {}
+        for src in self.of_type("source"):
+            vols = [v.get("volume") for v in src.data.get("volumes") or [] if isinstance(v, dict) and v.get("volume") is not None]
+            keys = [self._volume_key(v) for v in vols]
+            for k in sorted({k for k in keys if keys.count(k) > 1}):
+                self.report.error(src.path, f"volume {k!r} is listed twice in volumes")
+            if vols:
+                listed[src.id] = vols
+        for rec in self.of_type("record"):
+            vols = listed.get(rec.data.get("source"))
+            if not vols:
+                continue
+            loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+            if loc.get("volume") is None:
+                self.report.warn(rec.path, f"{rec.data.get('source')} has volumes ({', '.join(map(str, vols))}) – add locator.volume")
+            elif self._volume_key(loc["volume"]) not in {self._volume_key(v) for v in vols}:
+                self.report.error(rec.path, f"locator.volume {loc['volume']!r} is not one of the volumes of {rec.data.get('source')} "
+                                            f"({', '.join(map(str, vols))})")
+        for cov in self.of_type("coverage"):
+            vols = listed.get(cov.data.get("source"))
+            if not vols:
+                continue
+            for r in cov.data.get("ranges") or []:
+                if not isinstance(r, dict) or r.get("volume") is None:
+                    continue
+                if self._volume_key(r["volume"]) not in {self._volume_key(v) for v in vols}:
+                    self.report.error(cov.path, f"range volume {r['volume']!r} is not one of the volumes of {cov.data.get('source')} "
+                                                f"({', '.join(map(str, vols))})")
 
     # ------------------------------------------------------------- sessions
     def _check_sessions(self) -> None:

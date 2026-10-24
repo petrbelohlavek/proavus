@@ -17,6 +17,7 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "volume": { "$ref": "common.schema.json#/$defs/volume", "description": "volume searched, one of source.volumes when the source lists them (ADR 0058)" },
           "dates": { "$ref": "common.schema.json#/$defs/edtf" },
           "pages": { "type": "string", "description": "e.g. 12-140, or images 5-88" },
           "query": { "type": "string", "minLength": 1, "description": "the search as typed into a database, full-text search or index (ADR 0035)" },

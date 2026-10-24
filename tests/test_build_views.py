@@ -368,7 +368,7 @@ class BestFact(MapCase):
         self.build()
         card = re.search(rf'<button type="button" class="card[^"]*" data-id="{MATEJ}".*?</button>', self.tree()).group(0)
         self.assertIn("* about 1850", card)       # A-…-b02 and A-…-b05 are equally strong, the first one wins
-        self.assertIn('class="alt" title="equally strong other version: about 1853 (possible)"', card)
+        self.assertIn('class="alt" title="equally strong other version: about 1853 (possible) – A-20261020-ab-b05', card)
         detail = self.card(MATEJ)
         self.assertIn("≠ equally strong other version: about 1853 (possible)", detail)
         self.assertIn("shown on the card", detail)
@@ -378,7 +378,44 @@ class BestFact(MapCase):
         self.edit("A-20261020-ab-b05", lambda d: d["citations"][0].update(information="primary", evidence="direct"))
         self.build()
         self.assertIn("* about 1853", self.tree())
-        self.assertIn('title="another version disagrees: about 1850 (possible)"', self.tree())
+        self.assertIn('title="another version disagrees: about 1850 (possible) – A-20261020-ab-b02', self.tree())
+
+    def test_other_version_names_where_it_comes_from(self):
+        self.build()
+        card = re.search(rf'<button type="button" class="card[^"]*" data-id="{MATEJ}".*?</button>', self.tree()).group(0)
+        self.assertIn("A-20261020-ab-b05 · SO-20261020-ab-s01 · Římskokatolická farnost Vzorkov, matrika N 1870–1890 · "
+                      "age at the burial, estimate · secondary, indirect", card)
+        detail = self.card(MATEJ)
+        self.assertRegex(detail, r'about 1853 \(possible\) – <a class="id" href="[^"]*">A-20261020-ab-b05</a> · SO-20261020-ab-s01')
+
+    def test_other_version_from_a_record_shows_the_locator(self):
+        self.edit("R-20261020-ab-r01", lambda d: d["locator"].update(volume="II"))
+        self.edit("A-20261020-ab-b05", lambda d: d.update(citations=[{"record": "R-20261020-ab-r01", "participant": "p1",
+                                                                      "information": "secondary", "evidence": "indirect"}]))
+        self.build()
+        self.assertIn("A-20261020-ab-b05 · R-20261020-ab-r01 · Římskokatolická farnost Vzorkov, matrika N 1870–1890 · "
+                      "volume II, page 41, folio 21r, entry 12", self.tree())
+
+    def test_equally_strong_one_named_among_several(self):
+        self.add("assertions/A-20261020-ab-b06.md", {
+            "id": "A-20261020-ab-b06", "type": "assertion", "kind": "fact", "subject": MATEJ, "fact_type": "birth",
+            "date": "1855~", "citations": [{"source": SRC, "detail": "family note", "information": "undetermined", "evidence": "indirect"}],
+            "confidence": "possible"})
+        self.build()
+        card = re.search(rf'<button type="button" class="card[^"]*" data-id="{MATEJ}".*?</button>', self.tree()).group(0)
+        self.assertIn("about 1853 (possible) – equally strong – A-20261020-ab-b05", card)
+        self.assertIn("about 1855 (possible) – A-20261020-ab-b06", card)
+
+    def test_place_id_and_same_name_as_written_are_one_version(self):
+        for a in ("A-20261020-ab-b02", "A-20261020-ab-b05"):
+            self.edit(a, lambda d: d.update(date="1850~"))
+        self.edit("A-20261020-ab-b02", lambda d: d.update(place="PL-20261020-ab-v01"))
+        self.edit("A-20261020-ab-b05", lambda d: d.update(place_as_written="vzorkov"))
+        self.build()
+        self.assertNotIn('class="alt"', self.tree())
+        self.edit("A-20261020-ab-b05", lambda d: d.update(place_as_written="Lhota"))
+        self.build()
+        self.assertIn('class="alt"', self.tree())
 
     def test_same_version_twice_is_no_disagreement(self):
         self.edit("A-20261020-ab-b05", lambda d: d.update(date="1850~"))

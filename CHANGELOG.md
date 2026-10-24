@@ -8,6 +8,23 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## Unreleased
+
+- Volume of a source (ADR 0058): `record.locator.volume`,
+  `coverage.ranges[].volume` and `source.volumes` (volumes in the archive's
+  order, with period, call number, URL and note – periods may overlap). The
+  validator checks that a record's or a range's volume is one the source
+  lists, and warns about a record without a volume in a source that has
+  them. A volume alone does not locate an entry. `upgrade-plan` lists
+  records whose `page` seems to hold a volume (roman numeral, tom, Bd, sv.);
+  move it with the user. The map shows the volume in citations.
+- Map: an other version of a birth or death names where it comes from –
+  the assertion, its record or source, the locator and the evaluation of its
+  strongest citation (the source title only where the person's sources are
+  shown); with several other versions, the equally strong one is marked.
+  A place ID in one assertion and the same name as written in the other is
+  no longer shown as another version.
+
 ## 0.6.2 – 2026-10-23
 
 - Docs: the README picture of the two kinds of repositories draws its
