@@ -24,7 +24,10 @@ general – never names of a real family.
   (pag.)**, sometimes the folio – check the index header and the page
   numbering of the book.
 - **Page → image**: the portals number images, not pages; the offset moves
-  inside a book. Check two anchors before relying on it.
+  inside a book, and some books have two pages on one image, others one.
+  Write two anchors into the source's `image_map` and use
+  `locate.py` (ADR 0061) – a formula such as page = 2 × image − 2 holds
+  only for the book it came from.
 - **Separate index books** (e.g. SOA Třeboň, digi.ceskearchivy.cz): the index
   is its own book and refers to "Kniha strana číslo" (book, page, entry) –
   open the referenced book; the index entry is not the record. Write it as

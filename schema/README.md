@@ -105,7 +105,9 @@ migration (`tools/migrate.py`, ADR 0030).
   of a reading (ADR 0059);
 - `coverage.pointers` of an index search: the name as the index gives it
   and where it leads (`to`), `followed` by the coverage of the book search;
-  a pointer is a lead, not a record (ADR 0060).
+  a pointer is a lead, not a record (ADR 0060);
+- `source.image_map`: page (or folio) → image of the viewer from anchors
+  `{page | folio, image, by, on}`, one map per volume (ADR 0061).
 
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

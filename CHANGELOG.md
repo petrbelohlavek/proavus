@@ -43,6 +43,15 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   pointer leads to and warns when it missed its volume or page, and warns
   about an assertion citing an index search as anything but negative
   evidence. START-HERE lists pointers not followed yet.
+- Page → image from anchors (ADR 0061): `source.image_map`, one map per
+  volume, `unit` page or folio, at least two anchors `{page | folio, image,
+  by, on}` read on the images. New `tools/locate.py <SO-ID> --page N
+  [--volume V]` computes the image between two anchors when the step is
+  regular (one or more images per page, or several pages per image), says
+  when it is only an estimate or when the anchors disagree (a break: add an
+  anchor), and prints the `archive_fetch.py link` command; it is copied into
+  `.proavus/`. The validator rejects anchors that cannot all be true and
+  warns when a record's image does not fit the map.
 
 ## 0.6.2 – 2026-10-23
 

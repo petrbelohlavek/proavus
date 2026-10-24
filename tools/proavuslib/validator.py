@@ -12,7 +12,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import edtf, ids
+from . import edtf, ids, imagemap
 from .frontmatter import load_yaml, split
 from .schemas import SchemaSet
 
@@ -107,6 +107,7 @@ class RepoValidator:
         self._check_coverage()
         self._check_volumes()
         self._check_pointers()
+        self._check_image_maps()
         self._check_index_citations()
         self._check_sessions()
         self._check_inquiries()
@@ -603,6 +604,42 @@ class RepoValidator:
                 if self._volume_key(r["volume"]) not in {self._volume_key(v) for v in vols}:
                     self.report.error(cov.path, f"range volume {r['volume']!r} is not one of the volumes of {cov.data.get('source')} "
                                                 f"({', '.join(map(str, vols))})")
+
+    # ----------------------------------------------------------- image maps
+    def _check_image_maps(self) -> None:
+        """Anchors of page → image must agree; a record's image must fit the map (ADR 0061)."""
+        for src in sorted(self.of_type("source"), key=lambda s: s.id):
+            maps = [m for m in src.data.get("image_map") or [] if isinstance(m, dict)]
+            vols = {self._volume_key(v.get("volume")) for v in src.data.get("volumes") or [] if isinstance(v, dict) and v.get("volume") is not None}
+            seen = set()
+            for m in maps:
+                key = None if m.get("volume") is None else self._volume_key(m["volume"])
+                where = "image_map" + (f" of volume {m['volume']!r}" if key is not None else "")
+                if key in seen:
+                    self.report.error(src.path, f"two image maps for {'volume ' + repr(m['volume']) if key is not None else 'the whole source'}")
+                seen.add(key)
+                if key is not None and vols and key not in vols:
+                    self.report.error(src.path, f"{where}: volume {m['volume']!r} is not one of the volumes of the source")
+                for msg in imagemap.problems(m):
+                    self.report.error(src.path, f"{where}: {msg}")
+        for rec in sorted(self.of_type("record"), key=lambda r: r.id):
+            src = self._resolve(rec.data.get("source") or "")
+            loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+            image = imagemap.as_int(loc.get("image"))
+            if src is None or src.type != "source" or image is None:
+                continue
+            m = imagemap.map_for(src.data, loc.get("volume"))
+            if m is None or imagemap.problems(m):
+                continue
+            pos = imagemap.position(m, loc)
+            if pos is None:
+                continue
+            found = imagemap.locate(m, pos)
+            if found.sure and found.image != image:
+                what = f"folio {loc.get('folio')}" if imagemap.unit(m) == "folio" else f"page {loc.get('page')}"
+                self.report.warn(rec.path, f"locator image {image}, but the image map of {src.id} gives image {found.image} for {what} "
+                                           f"({imagemap.describe(m, found)}) – a break in the book? Read the page on the image "
+                                           "and add an anchor near it")
 
     # ------------------------------------------------------------- pointers
     @staticmethod

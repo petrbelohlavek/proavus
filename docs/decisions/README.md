@@ -65,5 +65,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0058](0058-source-volumes.md) | Svazek zdroje v lokátoru a v coverage | přijato | — |
 | [0059](0059-second-reading.md) | Co je druhé čtení a jak se zapíše | přijato | — |
 | [0060](0060-index-pointers.md) | Index jako ukazatel: `coverage.pointers` | přijato | — |
+| [0061](0061-page-image-anchors.md) | Strana → snímek z kotev: `source.image_map` | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

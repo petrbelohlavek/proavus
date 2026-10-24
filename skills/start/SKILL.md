@@ -104,6 +104,10 @@ Follow the method:
   (name as written, `to: {source, volume, page, entry}`) – never a record or
   an assertion; after the book search set its `followed: <C-ID of the book
   search>`. START-HERE lists the pointers not followed yet.
+- Page → image: `uv run .proavus/tools/locate.py <SO-ID> --page N [--volume V]`
+  from the anchors in the source's `image_map`. No map yet, an estimate or
+  a break → read the page number on the image and add an anchor
+  (`{page, image, by, on}`) – never a formula from another book.
 - Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
   (or from the plugin) says what you may do there – `automated`, `link`
   (links only, a person reads) or `manual` (a person searches) – and lists

@@ -16,8 +16,15 @@ compute one from the other without calibration points.
   of the index and a page or two of the book before you go to the entry.
 - **Page → image needs two anchors.** The offset between the printed page
   and the image number in the viewer changes (inserted sheets, missing or
-  double scans). Verify it at two points – near the entry and further away –
-  before trusting it; write the anchors into the session.
+  double scans), and so does the number of pages on one image; a formula
+  from another book does not hold. Read the page number on two images – near
+  the entry and further away – and write them as anchors into the source's
+  `image_map` (per volume; `unit: folio` for a book numbered in folios), with
+  who read them and when (ADR 0061). `uv run .proavus/tools/locate.py
+  <SO-ID> --page N [--volume V]` then gives the image: exact, between two
+  anchors, or only an estimate outside them. When the image shows another
+  page, there is a break: add an anchor there. The validator compares every
+  record with a page and an image against the map.
 
 Save a small crop of the entry (JPEG, about 300 kB) as evidence, with about
 10 % margin around the entry so that the column headings or the neighbour

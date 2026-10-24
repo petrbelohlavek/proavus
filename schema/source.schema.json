@@ -35,6 +35,40 @@
         }
       }
     },
+    "image_map": {
+      "description": "Page (or folio) → image of the portal viewer, from anchors read on the images (ADR 0061). One map per volume; the offset may change inside a book, so each anchor is a point that was looked at, never a computed one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["anchors"],
+        "additionalProperties": false,
+        "properties": {
+          "volume": { "$ref": "common.schema.json#/$defs/volume", "description": "the volume this map is for; without it the map is for the whole source" },
+          "unit": { "enum": ["page", "folio"], "description": "what the book numbers: pages (default) or folios with side (23r, 23v)" },
+          "anchors": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["image", "by", "on"],
+              "additionalProperties": false,
+              "properties": {
+                "page": { "type": "integer", "minimum": 0, "description": "page number printed on the image" },
+                "folio": { "type": "string", "pattern": "^[0-9]+[rv]$", "description": "folio with side printed on the image, e.g. 23r" },
+                "image": { "type": "integer", "minimum": 1, "description": "image number in the portal viewer" },
+                "by": { "$ref": "common.schema.json#/$defs/member" },
+                "on": { "$ref": "common.schema.json#/$defs/date" },
+                "note": { "type": "string", "description": "e.g. inserted sheet after page 240" }
+              },
+              "x-hint": "an anchor needs page or folio",
+              "oneOf": [{ "required": ["page"] }, { "required": ["folio"] }]
+            }
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
     "language": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/lang" } },
     "url": { "$ref": "common.schema.json#/$defs/url" },
     "accessed": { "$ref": "common.schema.json#/$defs/date" },
