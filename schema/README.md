@@ -59,7 +59,9 @@ Plus `repo.schema.json` for `repo.yaml` and shared definitions in
 - **Readings** (ADR 0033): `read_by` lists the members (humans) who read a
   record from the image, `read_by_agent` an AI reading; only a member in
   `read_by` may confirm it, and only a confirmed reading passes the identity
-  gate.
+  gate. The confirmation says how the second reading was done (ADR 0059):
+  `basis` (`member-after-agent`, `member-later` with `read_on` on an earlier
+  day, `second-member`) and the decisive items in `checked`.
 
 ## New in 0.3
 
@@ -94,6 +96,22 @@ migration (`tools/migrate.py`, ADR 0030).
   and `domicile_place` – the same two fields also in `cz` – and the event
   `church-exit` (ADR 0050, 0051). Two extensions may share a field only
   with the same definition.
+
+## New in 0.7
+
+- volume of a source: `record.locator.volume`, `coverage.ranges[].volume`,
+  `source.volumes` (ADR 0058);
+- second reading: `reading.read_on` and `confirmed.basis`, `checked`, `from`
+  of a reading (ADR 0059);
+- `coverage.pointers` of an index search: the name as the index gives it
+  and where it leads (`to`), `followed` by the coverage of the book search;
+  a pointer is a lead, not a record (ADR 0060);
+- `source.image_map`: page (or folio) → image of the viewer from anchors
+  `{page | folio, image, by, on}`, one map per volume (ADR 0061);
+- `source.portal` (id from the portal catalogue) and `source.access:
+  {mode, held_by, note}`; `coverage.event`, the kind of entries searched,
+  for the legal time limits of the region (`regions/cz/access.yaml`,
+  ADR 0064).
 
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

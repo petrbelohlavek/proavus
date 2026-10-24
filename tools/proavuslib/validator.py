@@ -12,7 +12,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import edtf, ids
+from . import access, edtf, ids, imagemap
 from .frontmatter import load_yaml, split
 from .schemas import SchemaSet
 
@@ -105,6 +105,11 @@ class RepoValidator:
         self._check_duplicate_persons()
         self._check_duplicate_facts()
         self._check_coverage()
+        self._check_volumes()
+        self._check_pointers()
+        self._check_image_maps()
+        self._check_access()
+        self._check_index_citations()
         self._check_sessions()
         self._check_inquiries()
         self._check_map()
@@ -226,6 +231,26 @@ class RepoValidator:
             if reading.get("status") == "confirmed" and confirmed.get("by") not in (reading.get("read_by") or []):
                 self.report.error(rec.path, f"reading confirmed by {confirmed.get('by')!r}, who is not among the members who read it (read_by) – "
                                             "only a person who read the entry may confirm it (ADR 0033)")
+            if confirmed:
+                self._check_second_reading(rec, reading, confirmed)
+
+    def _check_second_reading(self, rec: Entity, reading: dict, confirmed: dict) -> None:
+        """How the second reading was done must fit who read the entry and when (ADR 0059)."""
+        basis, by, read_by = confirmed.get("basis"), confirmed.get("by"), reading.get("read_by") or []
+        read_on, on = str(reading.get("read_on") or ""), str(confirmed.get("on") or "")
+        if read_on and on and read_on > on:
+            self.report.error(rec.path, f"reading confirmed on {on}, before the first reading on {read_on} (read_on)")
+        if basis is None:
+            self.report.warn(rec.path, "confirmed reading without basis – write how the second reading was done: "
+                                       "basis (member-after-agent, member-later or second-member) and checked (ADR 0059)")
+        elif basis == "member-after-agent" and not reading.get("read_by_agent"):
+            self.report.error(rec.path, "basis member-after-agent needs read_by_agent – the agent's first reading")
+        elif basis == "member-later" and not (read_on and on and read_on < on):
+            self.report.error(rec.path, "basis member-later needs read_on, the day of the first reading, before confirmed.on – "
+                                        "a second reading by the same member is on a later day")
+        elif basis == "second-member" and (len(set(read_by)) < 2 or (read_by and by == read_by[0])):
+            self.report.error(rec.path, "basis second-member needs two members in read_by, the first reader first, "
+                                        "and confirmed.by another member than the first reader")
 
     @staticmethod
     def crops(rec: Entity) -> list[str]:
@@ -502,8 +527,27 @@ class RepoValidator:
                     self.report.warn(a.path, f"may be the same person as {b.id} (same name, birth {sa[0]}–{sa[1]} and {sb[0]}–{sb[1]}) – "
                                              "merge them with aliases after the identity gate, or add distinct_from if they are namesakes")
 
-    def _check_duplicate_facts(self) -> None:
-        """Two assertions of the same type, date and value about one person: join their citations (ADR 0040)."""
+    def place_key(self, a: Entity) -> tuple[str, str]:
+        """(place ID, place as written) of an assertion, for comparing places."""
+        return (self.aliases.get(a.data.get("place"), a.data.get("place")) or "",
+                str(a.data.get("place_as_written") or "").strip().casefold())
+
+    def same_place(self, x: tuple[str, str], y: tuple[str, str]) -> bool:
+        """Same place, or one of them names none. Two place IDs must be equal; a place ID and a name as
+        written agree when the name is one of the place's names or the other's name as written."""
+        if not any(x) or not any(y):
+            return True
+        if x[0] and y[0]:
+            return x[0] == y[0]
+        if not x[0] and not y[0]:
+            return x[1] == y[1]
+        (pid, written), text = (x, y[1]) if x[0] else (y, x[1])
+        place = self._resolve(pid)
+        names = {str(n.get("value", "")).strip().casefold() for n in (place.data.get("names") or []) if isinstance(n, dict)} if place else set()
+        return text in names | {written}
+
+    def duplicate_fact_groups(self) -> list[list[Entity]]:
+        """Fact assertions with the same subject, type, date, value and place (ADR 0040, 0063)."""
         groups: dict[tuple, list[Entity]] = {}
         for a in sorted(self.of_type("assertion"), key=lambda a: a.id):
             d = a.data
@@ -511,10 +555,38 @@ class RepoValidator:
                 continue
             subject = self.aliases.get(d.get("subject"), d.get("subject"))
             groups.setdefault((subject, d.get("fact_type"), str(d.get("date")), str(d.get("value", ""))), []).append(a)
-        for (subject, fact_type, date, _), same in groups.items():
-            if len(same) > 1:
-                self.report.warn(same[0].path, f"{len(same)} {fact_type} assertions about {subject} with the same date {date} "
-                                               f"({', '.join(a.id for a in same)}) – join their citations into one assertion")
+        out = []
+        for same in groups.values():
+            while same:
+                first, rest = same[0], same[1:]
+                group = [first] + [b for b in rest if self.same_place(self.place_key(first), self.place_key(b))]
+                same = [b for b in same if b not in group]
+                out.append(group)
+        return out
+
+    def _check_duplicate_facts(self) -> None:
+        """Two assertions of the same type, date, value and place about one person: merge them (ADR 0040, 0063).
+        The same date with another place is not a duplicate but two versions – a conflict."""
+        noted = {frozenset(x.data.get("about") or []) for x in self.of_type("conflict")}
+        groups = self.duplicate_fact_groups()
+        for g in groups:
+            if len(g) > 1:
+                d = g[0].data
+                subject = self.aliases.get(d.get("subject"), d.get("subject"))
+                ids = " ".join(a.id for a in g)
+                self.report.warn(g[0].path, f"{len(g)} {d.get('fact_type')} assertions about {subject} with the same date {d.get('date')} "
+                                            f"({', '.join(a.id for a in g)}) – join their citations into one assertion: "
+                                            f"uv run .proavus/tools/merge_assertions.py plan . {ids}")
+        singles = [g[0] for g in groups if len(g) == 1]
+        for i, a in enumerate(singles):
+            for b in singles[i + 1:]:
+                da, db = a.data, b.data
+                same = (self.aliases.get(da.get("subject"), da.get("subject")) == self.aliases.get(db.get("subject"), db.get("subject"))
+                        and da.get("fact_type") == db.get("fact_type") and str(da.get("date")) == str(db.get("date"))
+                        and str(da.get("value", "")) == str(db.get("value", "")))
+                if same and not any({a.id, b.id} <= ids for ids in noted):
+                    self.report.warn(a.path, f"{a.id} and {b.id}: the same {da.get('fact_type')} on {da.get('date')} in two places – "
+                                             "not a duplicate but two versions: write a conflict (or correct the place)")
 
     # ------------------------------------------------------------- coverage
     def _check_coverage(self) -> None:
@@ -529,7 +601,7 @@ class RepoValidator:
                 index_only.append(cov)
             elif accepted and not (result == "negative" and method == "index"):
                 self.report.warn(cov.path, "index_negative_accepted only fits a negative result from an index (method index, result negative)")
-            if result in ("found", "partial") and not cov.data.get("found"):
+            if result in ("found", "partial") and not cov.data.get("found") and not cov.data.get("pointers"):
                 self.report.warn(cov.path, f"result {result!r} but no records listed in 'found'")
             if cov.data.get("inquiry") and method != "inquiry":
                 self.report.warn(cov.path, "links an inquiry but method is not 'inquiry'")
@@ -538,6 +610,189 @@ class RepoValidator:
             self.report.warn("coverage/", f"{len(index_only)} negative result{'s' if len(index_only) > 1 else ''} from an index only "
                              f"({', '.join(c.id for c in index_only)}) – an index is not proof of absence; page through the book if it "
                              "matters, or record the decision in the file: index_negative_accepted: {by, on, note}")
+
+    # -------------------------------------------------------------- volumes
+    @staticmethod
+    def _volume_key(value) -> str:
+        return str(value).strip().casefold()
+
+    def _check_volumes(self) -> None:
+        """Volumes of records and coverage must be volumes their source lists (ADR 0058)."""
+        listed: dict[str, list[str]] = {}
+        for src in self.of_type("source"):
+            vols = [v.get("volume") for v in src.data.get("volumes") or [] if isinstance(v, dict) and v.get("volume") is not None]
+            keys = [self._volume_key(v) for v in vols]
+            for k in sorted({k for k in keys if keys.count(k) > 1}):
+                self.report.error(src.path, f"volume {k!r} is listed twice in volumes")
+            if vols:
+                listed[src.id] = vols
+        for rec in self.of_type("record"):
+            vols = listed.get(rec.data.get("source"))
+            if not vols:
+                continue
+            loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+            if loc.get("volume") is None:
+                self.report.warn(rec.path, f"{rec.data.get('source')} has volumes ({', '.join(map(str, vols))}) – add locator.volume")
+            elif self._volume_key(loc["volume"]) not in {self._volume_key(v) for v in vols}:
+                self.report.error(rec.path, f"locator.volume {loc['volume']!r} is not one of the volumes of {rec.data.get('source')} "
+                                            f"({', '.join(map(str, vols))})")
+        for cov in self.of_type("coverage"):
+            for ptr in cov.data.get("pointers") or []:
+                to = ptr.get("to") if isinstance(ptr, dict) and isinstance(ptr.get("to"), dict) else {}
+                target = listed.get(to.get("source"))
+                if target and to.get("volume") is not None and self._volume_key(to["volume"]) not in {self._volume_key(v) for v in target}:
+                    self.report.error(cov.path, f"pointer to volume {to['volume']!r}, which is not one of the volumes of {to.get('source')} "
+                                                f"({', '.join(map(str, target))})")
+            vols = listed.get(cov.data.get("source"))
+            if not vols:
+                continue
+            for r in cov.data.get("ranges") or []:
+                if not isinstance(r, dict) or r.get("volume") is None:
+                    continue
+                if self._volume_key(r["volume"]) not in {self._volume_key(v) for v in vols}:
+                    self.report.error(cov.path, f"range volume {r['volume']!r} is not one of the volumes of {cov.data.get('source')} "
+                                                f"({', '.join(map(str, vols))})")
+
+    # --------------------------------------------------------------- access
+    def access_rules(self) -> dict[str, dict]:
+        regions = self.config.get("regions") if isinstance(getattr(self, "config", None), dict) else []
+        return access.rules(self.framework_root, regions or [])
+
+    def access_limit(self, cov: Entity) -> tuple[access.Limit, int] | None:
+        """(time limit, year from which all entries of the searched range are open) of a coverage, if the region has one."""
+        event = cov.data.get("event")
+        years = [access.last_year(r.get("dates")) for r in cov.data.get("ranges") or [] if isinstance(r, dict) and r.get("dates")]
+        years = [y for y in years if y is not None]
+        if not event or not years:
+            return None
+        lim = access.limit(self.access_rules(), event)
+        return (lim, lim.opens(max(years))) if lim else None
+
+    def _check_access(self) -> None:
+        """Sources name a known portal and do not claim more than it allows; negatives respect time limits (ADR 0064)."""
+        catalog = access.portals(self.framework_root)
+        for src in sorted(self.of_type("source"), key=lambda s: s.id):
+            pid = src.data.get("portal")
+            if pid is None:
+                continue
+            portal = catalog.get(pid)
+            if portal is None:
+                self.report.warn(src.path, f"portal {pid!r} is not in the portal catalogue (regions/*/portals.yaml) – "
+                                           f"known: {', '.join(sorted(catalog))}")
+                continue
+            mode = (src.data.get("access") or {}).get("mode") if isinstance(src.data.get("access"), dict) else None
+            if mode and access.REACH.get(mode, 0) > access.REACH.get(portal.get("access"), 0):
+                self.report.error(src.path, f"access mode {mode!r}, but the portal {pid} allows only {portal.get('access')!r} "
+                                            f"({portal.get('why', '')}) – a source never claims more than its portal")
+        year = self.today.year
+        for cov in sorted(self.of_type("coverage"), key=lambda c: c.id):
+            found = self.access_limit(cov)
+            if found is None or cov.data.get("result") != "negative":
+                continue
+            lim, opens = found
+            if opens > year:
+                self.report.warn(cov.path, f"negative over {lim.kind} entries up to {opens - lim.years}: entries younger than "
+                                           f"{lim.years} years are open to anyone only from {opens} ({lim.law}) – were they shown? "
+                                           "If not, the result is inaccessible or partial, not negative")
+
+    # ----------------------------------------------------------- image maps
+    def _check_image_maps(self) -> None:
+        """Anchors of page → image must agree; a record's image must fit the map (ADR 0061)."""
+        for src in sorted(self.of_type("source"), key=lambda s: s.id):
+            maps = [m for m in src.data.get("image_map") or [] if isinstance(m, dict)]
+            vols = {self._volume_key(v.get("volume")) for v in src.data.get("volumes") or [] if isinstance(v, dict) and v.get("volume") is not None}
+            seen = set()
+            for m in maps:
+                key = None if m.get("volume") is None else self._volume_key(m["volume"])
+                where = "image_map" + (f" of volume {m['volume']!r}" if key is not None else "")
+                if key in seen:
+                    self.report.error(src.path, f"two image maps for {'volume ' + repr(m['volume']) if key is not None else 'the whole source'}")
+                seen.add(key)
+                if key is not None and vols and key not in vols:
+                    self.report.error(src.path, f"{where}: volume {m['volume']!r} is not one of the volumes of the source")
+                for msg in imagemap.problems(m):
+                    self.report.error(src.path, f"{where}: {msg}")
+        for rec in sorted(self.of_type("record"), key=lambda r: r.id):
+            src = self._resolve(rec.data.get("source") or "")
+            loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+            image = imagemap.as_int(loc.get("image"))
+            if src is None or src.type != "source" or image is None:
+                continue
+            m = imagemap.map_for(src.data, loc.get("volume"))
+            if m is None or imagemap.problems(m):
+                continue
+            pos = imagemap.position(m, loc)
+            if pos is None:
+                continue
+            found = imagemap.locate(m, pos)
+            if found.sure and found.image != image:
+                what = f"folio {loc.get('folio')}" if imagemap.unit(m) == "folio" else f"page {loc.get('page')}"
+                self.report.warn(rec.path, f"locator image {image}, but the image map of {src.id} gives image {found.image} for {what} "
+                                           f"({imagemap.describe(m, found)}) – a break in the book? Read the page on the image "
+                                           "and add an anchor near it")
+
+    # ------------------------------------------------------------- pointers
+    @staticmethod
+    def _page_spans(text) -> list[tuple[int, int]] | None:
+        """Page ranges of a coverage range ("12-140", "30-60, 70", "57"); None if not plain page numbers."""
+        spans = []
+        for part in str(text).split(","):
+            m = re.fullmatch(r"\s*(\d+)\s*(?:[-–]\s*(\d+))?\s*", part)
+            if not m:
+                return None
+            spans.append((int(m.group(1)), int(m.group(2) or m.group(1))))
+        return spans
+
+    def open_pointers(self) -> list[tuple[Entity, dict]]:
+        """Pointers from an index that no book search has followed yet (ADR 0060)."""
+        return [(cov, ptr) for cov in sorted(self.of_type("coverage"), key=lambda c: c.id)
+                for ptr in cov.data.get("pointers") or [] if isinstance(ptr, dict) and not ptr.get("followed")]
+
+    def _check_pointers(self) -> None:
+        """An index points to a book; the book search follows the pointer (ADR 0060)."""
+        for cov in sorted(self.of_type("coverage"), key=lambda c: c.id):
+            pointers = [p for p in cov.data.get("pointers") or [] if isinstance(p, dict)]
+            if not pointers:
+                continue
+            if cov.data.get("method") != "index":
+                self.report.error(cov.path, f"pointers belong to a search of an index (method index), not method {cov.data.get('method')!r}")
+            if cov.data.get("result") not in ("found", "partial"):
+                self.report.error(cov.path, f"the index gave pointers, so the result is found or partial, not {cov.data.get('result')!r}")
+            for ptr in pointers:
+                to = ptr.get("to") if isinstance(ptr.get("to"), dict) else {}
+                if to.get("source") == cov.data.get("source"):
+                    self.report.error(cov.path, f"pointer of {ptr.get('name_as_written')!r} leads to the index itself – name the book it points to")
+                book = self._resolve(ptr.get("followed") or "")
+                if book is None or book.type != "coverage":
+                    continue
+                if book.data.get("source") != to.get("source"):
+                    self.report.error(cov.path, f"pointer of {ptr.get('name_as_written')!r} leads to {to.get('source')}, "
+                                                f"but {book.id} searched {book.data.get('source')}")
+                    continue
+                ranges = [r for r in book.data.get("ranges") or [] if isinstance(r, dict)]
+                if to.get("volume") is not None and any(r.get("volume") is not None for r in ranges):
+                    ranges = [r for r in ranges if r.get("volume") is None or self._volume_key(r["volume"]) == self._volume_key(to["volume"])]
+                    if not ranges:
+                        self.report.warn(cov.path, f"{book.id} did not search volume {to['volume']!r}, where the index points "
+                                                   f"for {ptr.get('name_as_written')!r}")
+                        continue
+                page = to.get("page")
+                if page is None or not str(page).strip().isdigit():
+                    continue
+                spans = [self._page_spans(r["pages"]) for r in ranges if r.get("pages") is not None]
+                if spans and all(s is not None for s in spans) and not any(a <= int(page) <= b for s in spans for a, b in s):
+                    self.report.warn(cov.path, f"{book.id} did not search page {page}, where the index points for {ptr.get('name_as_written')!r}")
+
+    def _check_index_citations(self) -> None:
+        """An index is a pointer: an assertion cites the record found in the book, not the index (ADR 0060)."""
+        for a in self.of_type("assertion") + self.of_type("relationship"):
+            for c in a.data.get("citations") or []:
+                if not isinstance(c, dict) or not c.get("coverage"):
+                    continue
+                cov = self._resolve(c["coverage"])
+                if cov is not None and cov.data.get("method") == "index" and c.get("evidence") != "negative":
+                    self.report.warn(a.path, f"cites the index search {cov.id} as evidence – an index points to the book; "
+                                             "cite the record found there (an index search fits only negative evidence)")
 
     # ------------------------------------------------------------- sessions
     def _check_sessions(self) -> None:

@@ -24,8 +24,11 @@ Závazná pro každého badatele i agenta. Co dokáže zkontrolovat stroj, kontr
 
 5. **Identita potřebuje druhé čtení.** Jednou provedené čtení smí podpořit
    hypotézu, nikdy „prokázáno“, propojení identity ani spojení dvou osob.
-   Rozhodující čtení potvrď z výřezu a zapiš, kdo a kdy ho potvrdil. Je to
-   rozhodnutí člověka v sezení.
+   Druhé čtení znamená, že člověk znovu přečte rozhodující údaje z výřezu,
+   po prvním čtení a nezávisle na něm: po agentovi a bez znalosti jeho
+   čtení, jiný den, nebo jiný člen. Souhlas s přepisem, který člověk viděl,
+   druhé čtení není. Zapiš, kdo, kdy a jak ho potvrdil. Samo propojení
+   identity je rozhodnutí člověka v sezení.
 
 6. **Rejstřík není důkaz nepřítomnosti.** Každé hledání zapiš do registru
    prohledaného: zdroj, rozsahy, všechny varianty jména, způsob (rejstřík /

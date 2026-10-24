@@ -16,7 +16,10 @@ be a fork of `proavus`.
 - Identity gate: only the researcher in the session confirms a decisive
   reading (`read-once` → `confirmed`) and changes to the tree (identity links,
   merges, new parents, "proved"). Never set `confirmed` without their explicit
-  yes in this session.
+  yes in this session. A reading is confirmed only by the person's own second
+  reading of the decisive items from the crop – ask them to read the items
+  before you show your reading – with `basis` and `checked`
+  (`.proavus/method/reading-records.md` §5).
 - Living persons: only name, sex, birth and relationships; living minors
   without birth date.
 - Images from archive portals: `.proavus/tools/archive_fetch.py` only after

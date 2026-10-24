@@ -8,6 +8,79 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## 0.7.0 – 2026-10-24
+
+- Volume of a source (ADR 0058): `record.locator.volume`,
+  `coverage.ranges[].volume` and `source.volumes` (volumes in the archive's
+  order, with period, call number, URL and note – periods may overlap). The
+  validator checks that a record's or a range's volume is one the source
+  lists, and warns about a record without a volume in a source that has
+  them. A volume alone does not locate an entry. `upgrade-plan` lists
+  records whose `page` seems to hold a volume (roman numeral, tom, Bd, sv.);
+  move it with the user. The map shows the volume in citations.
+- Map: an other version of a birth or death names where it comes from –
+  the assertion, its record or source, the locator and the evaluation of its
+  strongest citation (the source title only where the person's sources are
+  shown); with several other versions, the equally strong one is marked.
+  A place ID in one assertion and the same name as written in the other is
+  no longer shown as another version.
+- Second reading defined (ADR 0059): a person reads the decisive items
+  again from the crop, after and apart from the first reading – after the
+  agent and blind to its reading (`member-after-agent`), the same member on
+  a later day (`member-later`, with the new `reading.read_on`), or another
+  member (`second-member`). The reading's `confirmed` takes `basis`,
+  `checked` (the items read) and `from` (crop or image). The validator
+  checks that the basis fits `read_by`, `read_by_agent` and `read_on` and
+  warns about a confirmation without basis; `upgrade-plan` lists them.
+  Rule 5, `reading-records.md` §5, the `AGENTS.md` block and `/proavus:start`
+  and `/proavus:end` describe the blind second reading.
+- Index pointers (ADR 0060): an index search's coverage lists what the
+  index gives as `pointers` – the name as written, optional event and date
+  as written, where it leads (`to: {source, volume, page, folio, entry,
+  image}`) and `followed`, the coverage of the book search. A pointer is a
+  lead, not a record. The validator allows pointers only from an index with
+  a found or partial result, checks that `followed` searched the book the
+  pointer leads to and warns when it missed its volume or page, and warns
+  about an assertion citing an index search as anything but negative
+  evidence. START-HERE lists pointers not followed yet.
+- Page → image from anchors (ADR 0061): `source.image_map`, one map per
+  volume, `unit` page or folio, at least two anchors `{page | folio, image,
+  by, on}` read on the images. New `tools/locate.py <SO-ID> --page N
+  [--volume V]` computes the image between two anchors when the step is
+  regular (one or more images per page, or several pages per image), says
+  when it is only an estimate or when the anchors disagree (a break: add an
+  anchor), and prints the `archive_fetch.py link` command; it is copied into
+  `.proavus/`. The validator rejects anchors that cannot all be true and
+  warns when a record's image does not fit the map.
+- `/proavus:registers` (ADR 0062): a skill for searching registers –
+  name forms and the right book first, the index as pointers, book and
+  volume, page → image with `locate.py` and anchors, column headers,
+  neighbouring entries and margin notes, the record with a blind second
+  reading, coverage of the book with `followed`, and negative results.
+  Claude also uses it on its own when a question leads to a register;
+  `/proavus:start` points to it.
+- Merging duplicate assertions (ADR 0063): new `tools/merge_assertions.py`
+  – `plan` shows which assertion stays, the joined citations and every file
+  whose links change, and stops where the researcher must decide (another
+  confidence, another evaluation of the same citation, a confirmation on
+  the assertion that would go, another place); `apply` writes it after
+  their yes, rewrites the links, deletes the merged files and validates.
+  Copied into `.proavus/`. The validator's duplicate check now also
+  compares the place: the same date in two places is reported as two
+  versions to write into a conflict, not as a duplicate, and the advice to
+  join citations names the command.
+- Access and legal time limits (ADR 0064): `source.portal` (an id from the
+  portal catalogue) and `source.access: {mode, held_by, note}` (automated,
+  link, manual, on-site, request, none); the validator warns about an
+  unknown portal and rejects a source that claims more than its portal
+  allows. `regions/cz/access.yaml`: anyone may see a birth entry after 100,
+  a marriage after 75 and a death after 30 years from the entry (zákon
+  č. 301/2000 Sb.). `coverage.event` with the dates of the ranges gives the
+  year all searched entries are open; a negative over a range not open yet
+  is a warning, and START-HERE lists inaccessible searches with that year
+  or says the limit has passed. New `tools/access.py limit|source`; both
+  copied into `.proavus/`.
+
 ## 0.6.2 – 2026-10-23
 
 - Docs: the README picture of the two kinds of repositories draws its

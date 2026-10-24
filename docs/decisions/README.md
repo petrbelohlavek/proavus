@@ -62,5 +62,12 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0055](0055-evals.md) | Evaly: úlohy pro agenta na fiktivní rodině, hodnocení skriptem | přijato | — |
 | [0056](0056-logo-lettering-outlines.md) | Nápis loga křivkami z otevřeného písma Gelasio | přijato | — |
 | [0057](0057-picture-lettering-outlines.md) | Nápisy v obrázku dvou repozitářů křivkami | přijato | — |
+| [0058](0058-source-volumes.md) | Svazek zdroje v lokátoru a v coverage | přijato | — |
+| [0059](0059-second-reading.md) | Co je druhé čtení a jak se zapíše | přijato | — |
+| [0060](0060-index-pointers.md) | Index jako ukazatel: `coverage.pointers` | přijato | — |
+| [0061](0061-page-image-anchors.md) | Strana → snímek z kotev: `source.image_map` | přijato | — |
+| [0062](0062-registers-skill.md) | Skill pro hledání v matrikách (`/proavus:registers`) | přijato | — |
+| [0063](0063-merging-assertions.md) | Sloučení zdvojených tvrzení: `merge_assertions.py` | přijato | — |
+| [0064](0064-access-and-time-limits.md) | Režim přístupu u zdroje a zákonné lhůty matrik | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

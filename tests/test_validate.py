@@ -8,7 +8,8 @@ import sys
 import unittest
 from pathlib import Path
 
-from helpers import FamilyRepoCase, ROOT
+from helpers import FamilyRepoCase, ROOT, TODAY
+from proavuslib.validator import RepoValidator
 
 REC = "R-20261020-ab-r01"
 SRC = "SO-20261020-ab-s01"
@@ -289,6 +290,148 @@ class Dates(FamilyRepoCase):
         self.assertError(self.validate(), "father died more than a year before")
 
 
+class Volumes(FamilyRepoCase):
+    """A volume of a source in the locator and in coverage ranges (ADR 0058)."""
+
+    COV = "C-20261020-ab-c01"
+
+    def with_volumes(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I", "period": "1870/1880"},
+                                                   {"volume": "II", "period": "1865/1890", "note": "later entries of older years"}]))
+
+    def test_volume_in_locator_is_valid(self):
+        self.edit(REC, lambda d: d["locator"].update(volume="II"))
+        self.assertClean(self.validate())
+
+    def test_volume_alone_does_not_locate(self):
+        self.edit(REC, lambda d: d.update(locator={"volume": "II"}))
+        self.assertError(self.validate(), "locator: needs at least one of page, folio, entry, image")
+
+    def test_volume_must_be_listed_by_the_source(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="III"))
+        self.assertError(self.validate(), "locator.volume 'III' is not one of the volumes of SO-20261020-ab-s01 (I, II)")
+
+    def test_volume_matches_without_case(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="ii"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("add locator.volume", "\n".join(report.warnings))
+
+    def test_record_without_volume_of_a_source_with_volumes(self):
+        self.with_volumes()
+        self.assertWarning(self.validate(), "SO-20261020-ab-s01 has volumes (I, II) – add locator.volume")
+
+    def test_volume_listed_twice(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "II"}, {"volume": "II"}]))
+        self.assertError(self.validate(), "volume 'ii' is listed twice in volumes")
+
+    def test_coverage_range_volume(self):
+        self.with_volumes()
+        self.edit(REC, lambda d: d["locator"].update(volume="I"))
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="I"))
+        self.assertClean(self.validate())
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="IV"))
+        self.assertError(self.validate(), "range volume 'IV' is not one of the volumes of SO-20261020-ab-s01")
+
+    def test_volume_without_a_list_is_free(self):
+        self.edit(REC, lambda d: d["locator"].update(volume="Tom. III"))
+        self.edit(self.COV, lambda d: d["ranges"][0].update(volume="Tom. III"))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual([w for w in report.warnings if "volume" in w], [])
+
+
+class Pointers(FamilyRepoCase):
+    """ADR 0060: an index points to a book; the pointer is a lead, not a record."""
+
+    INDEX = "C-20261024-ab-i01"
+    INDEX_SRC = "SO-20261020-ab-s02"
+    BOOK = "C-20261020-ab-c01"     # page-through of SRC, pages 30-60
+
+    def add_index(self, **changes):
+        pointer = {"name_as_written": "Pokusný Josef", "event": "baptism", "date_as_written": 1878,
+                   "to": {"source": SRC, "page": 41}}
+        pointer.update(changes)
+        self.add(f"coverage/{self.INDEX}.md", {
+            "id": self.INDEX, "type": "coverage", "source": self.INDEX_SRC, "method": "index",
+            "ranges": [{"dates": "1870/1890", "query": "letter P"}], "names": ["Pokusný", "Pokusny"],
+            "result": "found", "pointers": [pointer], "by": "ab", "on": "2026-10-24"})
+
+    def test_open_pointer_is_valid_and_listed(self):
+        self.add_index()
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("no records listed", "\n".join(report.warnings))
+        v = RepoValidator(self.repo, ROOT, today=TODAY)
+        v.run()
+        self.assertEqual([c.id for c, _ in v.open_pointers()], [self.INDEX])
+
+    def test_followed_pointer(self):
+        self.add_index(followed=self.BOOK)
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("did not search", "\n".join(report.warnings))
+        v = RepoValidator(self.repo, ROOT, today=TODAY)
+        v.run()
+        self.assertEqual(v.open_pointers(), [])
+
+    def test_book_search_missed_the_page(self):
+        self.add_index(to={"source": SRC, "page": 75}, followed=self.BOOK)
+        self.assertWarning(self.validate(), "C-20261020-ab-c01 did not search page 75, where the index points for 'Pokusný Josef'")
+
+    def test_book_search_missed_the_volume(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I"}, {"volume": "II"}]))
+        self.edit(REC, lambda d: d["locator"].update(volume="I"))
+        self.edit(self.BOOK, lambda d: d["ranges"][0].update(volume="I"))
+        self.add_index(to={"source": SRC, "volume": "II", "page": 41}, followed=self.BOOK)
+        self.assertWarning(self.validate(), "C-20261020-ab-c01 did not search volume 'II'")
+
+    def test_pointer_to_an_unknown_volume(self):
+        self.edit(SRC, lambda d: d.update(volumes=[{"volume": "I"}]))
+        self.add_index(to={"source": SRC, "volume": "IX", "page": 41})
+        self.assertError(self.validate(), "pointer to volume 'IX', which is not one of the volumes")
+
+    def test_followed_by_a_search_of_another_book(self):
+        self.add_index(followed="C-20261020-ab-c03")
+        self.assertError(self.validate(), f"leads to {SRC}, but C-20261020-ab-c03 searched {self.INDEX_SRC}")
+
+    def test_pointer_needs_a_place_in_the_book(self):
+        self.add_index(to={"source": SRC})
+        self.assertError(self.validate(), "to: needs at least one of page, folio, entry, image")
+
+    def test_pointer_to_the_index_itself(self):
+        self.add_index(to={"source": self.INDEX_SRC, "page": 41})
+        self.assertError(self.validate(), "leads to the index itself")
+
+    def test_pointers_only_from_an_index(self):
+        self.add_index()
+        self.edit(self.INDEX, lambda d: d.update(method="page-through", ranges=[{"pages": "1-10"}]))
+        self.assertError(self.validate(), "pointers belong to a search of an index (method index), not method 'page-through'")
+
+    def test_pointers_mean_something_was_found(self):
+        self.add_index()
+        self.edit(self.INDEX, lambda d: d.update(result="negative"))
+        self.assertError(self.validate(), "the index gave pointers, so the result is found or partial, not 'negative'")
+
+    def test_index_is_no_evidence_for_a_fact(self):
+        self.add_index()
+        self.edit("A-20261020-ab-b02", lambda d: d.update(citations=[{"coverage": self.INDEX, "information": "secondary", "evidence": "direct"}]))
+        self.assertWarning(self.validate(), f"cites the index search {self.INDEX} as evidence")
+
+    def test_index_for_negative_evidence_is_fine(self):
+        self.add_index()
+        self.edit("A-20261020-ab-b02", lambda d: d["citations"].append({"coverage": self.INDEX, "evidence": "negative"}))
+        self.assertNotIn("cites the index search", "\n".join(self.validate().warnings))
+
+    def test_page_spans(self):
+        spans = RepoValidator._page_spans
+        self.assertEqual(spans("12-140"), [(12, 140)])
+        self.assertEqual(spans("30-60, 70"), [(30, 60), (70, 70)])
+        self.assertIsNone(spans("images 5-88"))
+
+
 class Coverage(FamilyRepoCase):
     def test_negative_needs_names(self):
         self.edit("C-20261020-ab-c02", lambda d: d.update(names=[]))
@@ -410,6 +553,80 @@ class Readings(FamilyRepoCase):
     def test_reading_needs_a_reader(self):
         self.edit(REC, lambda d: d.update(reading={"status": "read-once"}))
         self.assertError(self.validate(), "read_by")
+
+
+class SecondReading(FamilyRepoCase):
+    """ADR 0059: how the second reading was done – after the agent, later, or by another member."""
+
+    def confirm(self, **changes):
+        def change(d):
+            d["reading"].update({k: v for k, v in changes.items() if k != "confirmed"})
+            d["reading"]["confirmed"].update(changes.get("confirmed", {}))
+        self.edit(REC, change)
+
+    def add_member(self):
+        text = self.path("repo.yaml").read_text(encoding="utf-8")
+        self.path("repo.yaml").write_text(text.replace("    role: researcher\n", "    role: researcher\n  - abbr: cd\n    name: Cyril Druhý\n"), encoding="utf-8")
+
+    def test_fixture_after_the_agent_is_clean(self):
+        report = self.validate()
+        self.assertClean(report)
+        self.assertNotIn("without basis", "\n".join(report.warnings))
+
+    def test_without_basis_is_a_warning(self):
+        def change(d):
+            for k in ("basis", "from", "checked"):
+                d["reading"]["confirmed"].pop(k)
+        self.edit(REC, change)
+        report = self.validate()
+        self.assertClean(report)
+        self.assertWarning(report, "confirmed reading without basis")
+
+    def test_basis_needs_checked_items(self):
+        self.edit(REC, lambda d: d["reading"]["confirmed"].pop("checked"))
+        self.assertError(self.validate(), "checked")
+
+    def test_after_the_agent_needs_the_agent(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.assertError(self.validate(), "basis member-after-agent needs read_by_agent")
+
+    def test_same_member_later(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.confirm(read_on="2026-10-18", confirmed={"basis": "member-later"})
+        self.assertClean(self.validate())
+
+    def test_same_member_the_same_day_is_not_a_second_reading(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_by_agent"))
+        self.confirm(confirmed={"basis": "member-later"})
+        report = self.validate()
+        self.assertError(report, "basis member-later needs read_on, the day of the first reading, before confirmed.on")
+
+    def test_same_member_later_needs_the_first_day(self):
+        self.edit(REC, lambda d: d["reading"].pop("read_on"))
+        self.confirm(confirmed={"basis": "member-later"})
+        self.assertError(self.validate(), "basis member-later needs read_on")
+
+    def test_second_member(self):
+        self.add_member()
+        self.confirm(read_by=["cd", "ab"], confirmed={"basis": "second-member"})
+        self.assertClean(self.validate())
+
+    def test_second_member_is_not_the_first_reader(self):
+        self.add_member()
+        self.confirm(read_by=["ab", "cd"], confirmed={"basis": "second-member"})
+        self.assertError(self.validate(), "basis second-member needs two members in read_by")
+
+    def test_second_member_needs_two_readers(self):
+        self.confirm(confirmed={"basis": "second-member"})
+        self.assertError(self.validate(), "basis second-member needs two members in read_by")
+
+    def test_confirmed_before_the_first_reading(self):
+        self.confirm(read_on="2026-10-21")
+        self.assertError(self.validate(), "reading confirmed on 2026-10-20, before the first reading on 2026-10-21")
+
+    def test_unknown_basis(self):
+        self.confirm(confirmed={"basis": "agent-twice"})
+        self.assertError(self.validate(), "basis")
 
 
 class Speakers(FamilyRepoCase):

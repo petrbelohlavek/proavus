@@ -57,6 +57,8 @@ class Init(unittest.TestCase):
         copy = self.repo / ".proavus"
         self.assertEqual((copy / "VERSION").read_text().strip(), family_repo.framework_version())
         self.assertFalse((copy / "tools" / "guard_names.py").exists())
+        self.assertTrue((copy / "tools" / "locate.py").is_file())          # page → image (ADR 0061)
+        self.assertTrue((copy / "regions" / "cz" / "access.yaml").is_file())  # time limits (ADR 0064)
         self.assertTrue((copy / "regions" / "cz" / "schema-ext.yaml").is_file())
         self.assertTrue((copy / "regions" / "at" / "portals.yaml").is_file())   # archive_fetch.py portals from the copy
         out = subprocess.run([sys.executable, str(copy / "tools" / "archive_fetch.py"), "portals", "--region", "at"], capture_output=True, text=True)
@@ -202,6 +204,18 @@ class StartHere(unittest.TestCase):
         self.assertNotIn("Pay the copying fee", text)          # done
         self.assertIn("- inquiries not closed: 1", text)
         self.assertIn("Obecní úřad Vzorkov (fictional): Domicile right (domovské právo) of Matěj Pokusný, 1870–1900 (IN-20261020-ab-i01) – sent 2026-10-20", text)
+
+    def test_open_index_pointers(self):
+        (self.repo / "coverage" / "C-20261024-ab-i01.md").write_text(
+            "---\nid: C-20261024-ab-i01\ntype: coverage\nsource: SO-20261020-ab-s02\nmethod: index\n"
+            "ranges:\n  - query: letter P\nnames: [Pokusný]\nresult: found\n"
+            "pointers:\n  - name_as_written: Pokusný Václav\n    to: {source: SO-20261020-ab-s01, volume: \"7\", page: 57}\n"
+            "by: ab\non: 2026-10-24\n---\n", encoding="utf-8")
+        family_repo.start_here(self.repo, today=TODAY)
+        text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertIn("- index pointers not followed into the book yet: 1", text)
+        self.assertIn("(C-20261024-ab-i01): Pokusný Václav → ", text)
+        self.assertIn("(SO-20261020-ab-s01), volume 7, page 57", text)
 
     def test_names_next_to_ids(self):
         family_repo.start_here(self.repo, today=TODAY)

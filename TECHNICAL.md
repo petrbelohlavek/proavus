@@ -20,9 +20,9 @@ public framework, and one **private** family repository per family
 (`proavus-<family>`) with a pinned copy of the tools in `.proavus/`
 (ADR 0014). Never put family data in a fork of Proavus: forks are public.
 
-> **Work in progress (0.6.2).** The schema, the validator, the binding rules
+> **Work in progress (0.7.0).** The schema, the validator, the binding rules
 > and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
-> `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
+> `/proavus:registers`, `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
 
 ## Install the plugin from a local folder
 
@@ -61,9 +61,10 @@ developing Proavus).
    desktop app or start a new session:
    - **terminal:** run `claude` in any folder and type `/proavus:` – the
      suggestions offer `/proavus:init`, `/proavus:setup`,
-     `/proavus:start`, `/proavus:end` and `/proavus:upgrade`;
+     `/proavus:start`, `/proavus:registers`, `/proavus:end` and
+     `/proavus:upgrade`;
    - **desktop app:** open a new session in the Code tab and type `/proavus:`
-     in the message box – the same five commands appear.
+     in the message box – the same six commands appear.
 
    A quick check that changes nothing: in an empty folder run
    `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
@@ -147,6 +148,7 @@ the **folder the session runs in** – it is shown under the message box.
 | `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, switches on the check before every commit, puts it on GitHub and checks it is private |
 | `/proavus:setup` | once per computer and member | a new session in any folder (not the framework) | installs git, gh, uv and the plugin, logs in to GitHub, clones the private family repository, adds the member to `repo.yaml` (commit or pull request), recommends two-factor login |
 | `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
+| `/proavus:registers` | during a session, for a search in a register or its index (Claude also uses it on its own) | the same session | index → book → volume → page → image: pointers from the index, page → image from anchors, header and margin notes, the record with a blind second reading, coverage with ranges and name forms, negative results |
 | `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
 | `/proavus:upgrade` | when `/proavus:start` says the Proavus copy is older than the plugin | a session in the family repository, with nothing unsaved | shows what changes, asks about new settings (e.g. the map's starting person), updates `.proavus/`, the Proavus blocks, the check workflow and `schema_version`, migrates data if needed, validates and saves |
 
@@ -183,6 +185,9 @@ source:
 | Family map | `uv run tools/build_views.py <family-repo>` → `views/mapa.html` |
 | Bringing older research in | [docs/import.md](docs/import.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, example in [examples/import/](examples/import/) |
 | Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
+| Merging duplicate assertions | `uv run tools/merge_assertions.py plan <family-repo> [A-ID …]`, then `apply` with the IDs (ADR 0063) |
+| Access and time limits | `uv run tools/access.py source <family-repo> <SO-ID>`, `uv run tools/access.py limit <family-repo> --event death --year 1995` (ADR 0064) |
+| Page → image | `uv run tools/locate.py <SO-ID> --page N --repo <family-repo>` – from the anchors in `source.image_map` (ADR 0061) |
 | Regional packages | [regions/cz/](regions/cz/pitfalls.md) (Czech lands), [regions/at/](regions/at/pitfalls.md) (Austria, Vienna): schema extension, pitfalls, portal catalogue – `uv run tools/archive_fetch.py portals` (ADR 0050) |
 | Evals – does an agent follow the method? | [evals/](evals/README.md) – `uv run tools/eval.py list` (ADR 0055); results of the runs are in [evals/README.md](evals/README.md#results) |
 | Architecture and decisions | [docs/architecture.md](docs/architecture.md) (Czech for now), [docs/decisions/](docs/decisions/) |

@@ -5,17 +5,26 @@ can check. Rules 3–5 of [rules.md](rules.md) in practice.
 
 ## 1. Locate before you read
 
-Write the locator first, while the image is open: source (book), page as
-shown by the portal, folio with side (`23r`, `23v`), entry number, image
-number, URL and access date. Page and folio often drift apart inside one book
-– record both; never compute one from the other without calibration points.
+Write the locator first, while the image is open: source (book), volume
+(`volume`, as written – volumes of one source need not follow each other by
+date; list them in `source.volumes`), page as shown by the portal, folio
+with side (`23r`, `23v`), entry number, image number, URL and access date.
+Page and folio often drift apart inside one book – record both; never
+compute one from the other without calibration points.
 
 - **An index number is often a page (pag.), not a folio.** Check the header
   of the index and a page or two of the book before you go to the entry.
 - **Page → image needs two anchors.** The offset between the printed page
   and the image number in the viewer changes (inserted sheets, missing or
-  double scans). Verify it at two points – near the entry and further away –
-  before trusting it; write the anchors into the session.
+  double scans), and so does the number of pages on one image; a formula
+  from another book does not hold. Read the page number on two images – near
+  the entry and further away – and write them as anchors into the source's
+  `image_map` (per volume; `unit: folio` for a book numbered in folios), with
+  who read them and when (ADR 0061). `uv run .proavus/tools/locate.py
+  <SO-ID> --page N [--volume V]` then gives the image: exact, between two
+  anchors, or only an estimate outside them. When the image shows another
+  page, there is a break: add an anchor there. The validator compares every
+  record with a page and an image against the map.
 
 Save a small crop of the entry (JPEG, about 300 kB) as evidence, with about
 10 % margin around the entry so that the column headings or the neighbour
@@ -91,15 +100,44 @@ is spent, stop and decide with the user – do not drift.
 
 ## 5. Reading state
 
-A new record is `read-once`. Record who read it: members (people) in
-`read_by`, a reading by an AI agent as `read_by_agent` (the model) – never
-write a member into `read_by` for a reading they did not do themselves. A
-reading that decides identity (a name, a house number, a date that separates
-two candidates) must be read a second time, carefully, from the crop – by a
-person: the same researcher in a later moment or another member. Then add
-them to `read_by` and set `status: confirmed` with `confirmed: {by, on}`;
-only a member who read the entry may confirm it. If two readings disagree,
-set `disputed` and open a conflict.
+A new record is `read-once`. Record who read it and when: members (people)
+in `read_by` (the first reader first), a reading by an AI agent as
+`read_by_agent` (the model), the day in `read_on` – never write a member
+into `read_by` for a reading they did not do themselves.
+
+A reading that decides identity (a name, a house number, a date that
+separates two candidates) must be read a second time from the crop by a
+person (ADR 0059). The second reading reads the **decisive items** again,
+after the first reading and apart from it. There are three ways:
+
+- **after the agent** (`member-after-agent`) – the usual way when one person
+  researches with the agent: the agent read first; it names the items and
+  asks the person to read them from the crop **without showing its own
+  reading**; only then the two readings are compared;
+- **the same member later** (`member-later`): the member read it first
+  themselves and reads the items again on a later day (`read_on` before
+  `confirmed.on`);
+- **another member** (`second-member`): `read_by` lists the first reader
+  first, `confirmed.by` is the other one.
+
+Agreeing with a transcript you have just seen is not a second reading. When
+the readings match, add the person to `read_by` and set `status: confirmed`
+with
+
+```yaml
+confirmed:
+  by: ab
+  on: 2026-10-24
+  basis: member-after-agent
+  from: crop
+  checked: [house number of p1, date of baptism, name of the father]
+```
+
+Only a member who read the entry may confirm it. If the readings disagree,
+set `disputed` and open a conflict. The identity link that rests on the
+reading (`assertion.confirmed`) is a different thing: a decision of the
+researcher in the session, which the same person who read the entry may
+make.
 
 Typical traps:
 
@@ -136,7 +174,12 @@ Record the search in coverage (found or not), link the record from the
 session, and write the next step. An index and the book it points to are two
 sources and two searches: one coverage for the index (what it gave), one for
 the pages of the book you read – the record found there goes into the
-book's `found`. Tasks a machine cannot do (logging in to a
+book's `found`. What the index gives is a **pointer**, not a record (ADR
+0060): write it into the index coverage as `pointers` – the name as the
+index gives it and where it leads (`to: {source, volume, page, entry}`),
+never as participants or an assertion – and once the book is searched, set
+`followed` to the book's coverage. A year or date in the index
+(`date_as_written`) is a hint; the book decides. Tasks a machine cannot do (logging in to a
 portal, paying a fee) go to `human_tasks` with the exact address of the
 record, as `{task, status: open, question: <Q-ID>}` (and `conflict` or
 `inquiry` if the task serves one); close them later with `status: done` or

@@ -36,11 +36,24 @@ List, in plain words, what in this session needs the researcher's decision:
 - records that decide an identity but are still `read-once`;
 - new identity links, merges of persons, new parents, anything `proved`.
 
-For each one ask explicitly. Only on a clear yes after the user's own look
-at the crop add them to `reading.read_by`, set `confirmed: {by: <abbr>, on:
-<today>}` (and `reading.status: confirmed`). Your own reading never
-confirms anything. Otherwise keep it `read-once` / lower the confidence – that is a
-perfectly good result.
+For each one ask explicitly. A reading is confirmed only by the person's own
+second reading (`${CLAUDE_PLUGIN_ROOT}/method/reading-records.md` §5):
+
+1. name the decisive items (e.g. the house number of p1, the date, the
+   father's name) and ask the person to read them from the crop – **do not
+   show your reading before they answer**;
+2. compare. All match → with their yes add them to `reading.read_by`, set
+   `reading.status: confirmed` and `confirmed: {by: <abbr>, on: <today>,
+   basis: member-after-agent, from: crop, checked: [<the items>]}`. They
+   read it first themselves on an earlier day (`read_on`) → `basis:
+   member-later`; another member read it first → `second-member`;
+3. a difference → `disputed` and a conflict, never your reading over theirs.
+
+Your own reading never confirms anything, and a person nodding at your
+transcript is not a second reading. Otherwise keep it `read-once` / lower
+the confidence – that is a perfectly good result. An identity link, a merge
+or "proved" is the researcher's decision; it needs the confirmed readings,
+not another reader.
 
 ## 4. Chronicle
 

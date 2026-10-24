@@ -24,10 +24,14 @@ general – never names of a real family.
   (pag.)**, sometimes the folio – check the index header and the page
   numbering of the book.
 - **Page → image**: the portals number images, not pages; the offset moves
-  inside a book. Check two anchors before relying on it.
+  inside a book, and some books have two pages on one image, others one.
+  Write two anchors into the source's `image_map` and use
+  `locate.py` (ADR 0061) – a formula such as page = 2 × image − 2 holds
+  only for the book it came from.
 - **Separate index books** (e.g. SOA Třeboň, digi.ceskearchivy.cz): the index
   is its own book and refers to "Kniha strana číslo" (book, page, entry) –
-  open the referenced book; the index entry is not the record.
+  open the referenced book; the index entry is not the record. Write it as
+  a pointer of the index coverage (`pointers`, ADR 0060).
 
 ## Searching
 
@@ -47,6 +51,19 @@ general – never names of a real family.
   which municipality and court dealt with the person.
 - **Side branches** (godparents, witnesses): agree on a budget and a stop
   rule first (method/reading-records.md, §4).
+
+## Access and time limits
+
+- **Time limits** (zákon č. 301/2000 Sb., `regions/cz/access.yaml`, ADR
+  0064): anyone may see a birth entry 100 years, a marriage entry 75 years
+  and a death entry 30 years after the entry was made; younger ones only the
+  persons the law names. A book is handed from the registry office to the
+  archive later (death registers 75 years after the last entry), so a death
+  entry may be open while its book is still at the office – ask there.
+  `access.py limit` computes the year; the office or archive decides.
+- Write the access of a source as `portal: <id>` (the catalogue below) or
+  `access: {mode, held_by, note}` when the book is elsewhere (on-site at a
+  registry office, by request).
 
 ## Archive portals
 

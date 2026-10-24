@@ -98,9 +98,21 @@ Follow the method:
   with who searched: `searched_by: member` when the member searched
   themselves, `searched_by: agent` (and `agent_model: <your model>`) when
   you searched on their instruction; `by` is always the member.
+- A search in a register or its index: follow the `registers` skill
+  (`/proavus:registers`) – index → book → volume → page → image.
 - An index and the book it points to are two searches: one coverage file
   for the index, one for the pages of the book; the record goes into the
-  book's `found`.
+  book's `found`. Each index hit is a `pointers` item of the index coverage
+  (name as written, `to: {source, volume, page, entry}`) – never a record or
+  an assertion; after the book search set its `followed: <C-ID of the book
+  search>`. START-HERE lists the pointers not followed yet.
+- Page → image: `uv run .proavus/tools/locate.py <SO-ID> --page N [--volume V]`
+  from the anchors in the source's `image_map`. No map yet, an estimate or
+  a break → read the page number on the image and add an anchor
+  (`{page, image, by, on}`) – never a formula from another book.
+- How a source can be read and from when: `uv run .proavus/tools/access.py
+  source . <SO-ID>` (its `access` or its `portal`), and the legal time limit
+  of an entry `access.py limit . --event <event> --year <year>` (ADR 0064).
 - Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
   (or from the plugin) says what you may do there – `automated`, `link`
   (links only, a person reads) or `manual` (a person searches) – and lists
@@ -116,6 +128,13 @@ Follow the method:
   proved relationship) without the user's explicit yes in this session after
   looking at the crop.
 - Three empty searches in a row → suggest a different kind of source.
+- The check says "join their citations into one assertion": show the plan
+  (`uv run .proavus/tools/merge_assertions.py plan . <A-ID> <A-ID>`) in
+  plain words – which assertion stays, the citations, the files whose links
+  change – and run `apply` with the same IDs only after the user's yes. A
+  STOP in the plan (another confidence, another evaluation of a citation, a
+  confirmation on the one that would go) is the user's decision first;
+  "the same … in two places" is not a duplicate but a conflict.
 - Tasks only a human can do (log-ins, fees) – note them with the exact
   address for the session record. A letter or request to an office, archive
   or parish becomes an `inquiry` (`uv run .proavus/tools/new_id.py inquiry
@@ -134,8 +153,10 @@ Follow the method:
   user opens it and saves the image; do not fetch those portals in any other
   way (browser automation included).
 - Your own first reading of a record: `reading: {status: read-once,
-  read_by_agent: <your model>}`. Add the member to `read_by` only after they
-  read the crop themselves.
+  read_by_agent: <your model>, read_on: <today>}`. Add the member to
+  `read_by` only after they read the crop themselves; for a second reading
+  ask them to read the decisive items before you show yours (blind), then
+  record `basis` and `checked` (`${CLAUDE_PLUGIN_ROOT}/method/reading-records.md` §5).
 - Family map on request (tree, "show me the ancestors"):
   `uv run .proavus/tools/build_views.py .` writes `views/mapa.html` (never
   committed) – tell the user to open it in a browser. It starts from

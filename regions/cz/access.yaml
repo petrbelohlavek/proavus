@@ -1,0 +1,36 @@
+# Legal time limits for registers of the regional package cz (ADR 0064).
+# Read by tools/proavuslib/access.py (validator, START-HERE, access.py).
+#
+# entry_access – anyone may see an entry (nahlížení, vyhledávání, výpis)
+# once this many years have passed since the entry was made. Until then
+# the registry office or archive shows it only to the persons the law
+# names (the person, family, with a legal interest).
+# book_transfer – after this many years since the LAST entry of the book,
+# the registry office hands the book (its second copy) to the archive. A
+# death register may therefore still be at the office while its entries
+# older than 30 years are open to anyone.
+#
+# The years are taken from the Portal of public administration (services
+# "Nahlížení do matriční knihy po lhůtě od provedení zápisu" and
+# "Vyhledávání v matriční knize po lhůtě od provedení zápisu",
+# portal.gov.cz, checked 2026-10-24). Check the paragraph in the current
+# full text of the act before citing it.
+law: zákon č. 301/2000 Sb., o matrikách, jménu a příjmení
+source: https://portal.gov.cz/sluzby-vs/nahlizeni-do-matricni-knihy-po-lhute-od-provedeni-zapisu-S5795
+entry_access:
+  birth: 100
+  marriage: 75
+  partnership: 75
+  death: 30
+book_transfer:
+  birth: 100
+  marriage: 75
+  death: 75
+# event types of the vocabulary → kind of register entry
+events:
+  birth: birth
+  baptism: birth
+  marriage: marriage
+  banns: marriage
+  death: death
+  burial: death

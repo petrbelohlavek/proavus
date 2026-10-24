@@ -107,6 +107,26 @@ class Plan(OldRepoCase):
         self.assertIn("Marital status inside status_as_written", self.cli("upgrade-plan").stdout)
         self.assertNotIn(("R-20261020-ab-r01", "p1", "legitimus"), plan.marital)   # origin, not marital status
 
+    def test_volume_inside_page_is_listed(self):
+        record = self.path(RECORD)
+        record.write_text(record.read_text(encoding="utf-8").replace("  page: 41\n", "  page: \"II, 41\"\n"), encoding="utf-8")
+        plan = family_repo.plan_upgrade(self.repo)
+        self.assertEqual(plan.volumes, [("R-20261020-ab-r01", "II, 41")])
+        self.assertIn("Volume inside locator.page", self.cli("upgrade-plan").stdout)
+
+    def test_plain_page_is_no_volume(self):
+        self.assertEqual(family_repo.plan_upgrade(self.repo).volumes, [])
+
+    def test_confirmation_without_basis_is_listed(self):
+        record = self.path(RECORD)
+        record.write_text(record.read_text(encoding="utf-8").replace("    basis: member-after-agent\n", ""), encoding="utf-8")
+        plan = family_repo.plan_upgrade(self.repo)
+        self.assertEqual(plan.unexplained, ["R-20261020-ab-r01"])
+        self.assertIn("Confirmed readings without basis", self.cli("upgrade-plan").stdout)
+
+    def test_explained_confirmation_is_not_listed(self):
+        self.assertEqual(family_repo.plan_upgrade(self.repo).unexplained, [])
+
     def test_cli_plan(self):
         out = self.cli("upgrade-plan")
         self.assertEqual(out.returncode, 0, out.stdout + out.stderr)

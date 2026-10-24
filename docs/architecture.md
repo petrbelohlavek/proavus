@@ -87,10 +87,13 @@ proavus/
 │   ├── build_views.py                  mapa views/mapa.html (ADR 0027–0029) [v0]; později GEDCOM
 │   ├── archive_fetch.py                snímky z portálů: ARON plně, Acta Publica a Matricula jen odkaz (ADR 0041) [v0]
 │   ├── bulk_import.py                  převod staršího bádání plánem (docs/import.md, ADR 0042) [v0]
+│   ├── merge_assertions.py             sloučení zdvojených tvrzení: plán, pak zápis (ADR 0063) [v0]
+│   ├── access.py                       režim přístupu ke zdroji a zákonné lhůty matrik (ADR 0064) [v0]
+│   ├── locate.py                       strana → snímek z kotev source.image_map (ADR 0061) [v0]
 │   ├── eval.py                         evaly agenta: příprava, běh, hodnocení (ADR 0055; jen ve frameworku) [v0]
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
-├── skills/                             init · setup · start · end · upgrade [v0]; později check · claim · review · feedback
+├── skills/                             init · setup · start · registers · end · upgrade [v0]; později check · claim · review · feedback
 ├── hooks/                              hooky pluginu (později); validace před commitem je v šabloně: templates/family/.githooks/pre-commit (ADR 0049) [v0]
 ├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu

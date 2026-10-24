@@ -71,7 +71,7 @@ TEMPLATE = FRAMEWORK / "templates" / "family"
 EMPTY_REPO_ENTRIES = {".git", ".claude"}
 # What goes into .proavus/ (ADR 0014). guard_names.py is framework-only.
 COPY_DIRS = ["schema"]
-COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py"]
+COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py", "locate.py", "merge_assertions.py", "access.py"]
 COPY_METHOD = ["rules.md", "rules.cs.md", "reading-records.md"]
 
 PROAVUS_README = """# .proavus – pinned copy of the Proavus framework
@@ -118,7 +118,8 @@ def install_tools(repo: Path) -> None:
     shutil.copytree(TOOLS_DIR / "proavuslib", target / "tools" / "proavuslib", ignore=ignore)
     for name in COPY_DIRS:
         shutil.copytree(FRAMEWORK / name, target / name, ignore=ignore)
-    for ext in sorted([*(FRAMEWORK / "regions").glob("*/schema-ext.yaml"), *(FRAMEWORK / "regions").glob("*/portals.yaml")]):
+    for ext in sorted([*(FRAMEWORK / "regions").glob("*/schema-ext.yaml"), *(FRAMEWORK / "regions").glob("*/portals.yaml"),
+                       *(FRAMEWORK / "regions").glob("*/access.yaml")]):
         dest = target / "regions" / ext.parent.name
         dest.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ext, dest / ext.name)
@@ -331,6 +332,29 @@ def loose_task(lab: Labeler, sid: str, task: dict) -> str:
     return f"{task_line(lab, task)}{where} – {sid}"
 
 
+def inaccessible_item(v, lab, cov, today: dt.date) -> str:
+    """An inaccessible search with its legal time limit, if the region has one (ADR 0064)."""
+    text = lab.ref(cov)
+    found = v.access_limit(cov)
+    if found is not None:
+        lim, opens = found
+        if opens <= today.year:
+            text += f" – time limit passed in {opens} ({lim.years} years for {lim.kind} entries): search again"
+        else:
+            text += f" – open to anyone from {opens} ({lim.years} years for {lim.kind} entries)"
+    if cov.data.get("access_note"):
+        text += f" – {cov.data['access_note']}"
+    return text
+
+
+def pointer_target(lab, to) -> str:
+    """Where an index pointer leads, in words: the book and the place in it (ADR 0060)."""
+    to = to if isinstance(to, dict) else {}
+    where = ", ".join(f"{k} {to[k]}" for k in ("volume", "page", "folio", "entry", "image") if to.get(k) is not None)
+    book = lab.ref(to["source"]) if to.get("source") else "?"
+    return f"{book}, {where}" if where else book
+
+
 def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     today = today or dt.date.today()
     v = RepoValidator(repo, FRAMEWORK, today=today)
@@ -395,12 +419,17 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     disputed = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "disputed"]
     conflicts = [c for c in of("conflict") if c.data.get("status") in ("open", "unresolved")]
     inquiries = waiting_inquiries(of("inquiry"))
+    closed = [inaccessible_item(v, lab, cov, today) for cov in sorted(of("coverage"), key=lambda c: c.id)
+              if cov.data.get("result") == "inaccessible"]
+    pointers = [f"{lab.ref(cov)}: {ptr.get('name_as_written')} → {pointer_target(lab, ptr.get('to'))}" for cov, ptr in v.open_pointers()]
     lines += ["## Waiting for a human", ""]
     for title, items in (("records read once (second reading needed before identity)", [lab.ref(r) for r in read_once]),
                          ("disputed readings", [lab.ref(r) for r in disputed]),
                          ("open conflicts", [lab.ref(c) for c in conflicts]),
                          ("open human tasks without an open question", [loose_task(lab, sid, task) for sid, task in loose]),
-                         ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries])):
+                         ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries]),
+                         ("index pointers not followed into the book yet", pointers),
+                         ("searches not accessible", closed)):
         lines.append(f"- {title}: {len(items)}")
         lines += [f"  - {item}" for item in items[:10]]
         if len(items) > 10:
@@ -442,6 +471,8 @@ class UpgradePlan:
     map_missing: list[str] = field(default_factory=list)
     candidates: list[tuple[str, str]] = field(default_factory=list)
     marital: list[tuple[str, str, str]] = field(default_factory=list)
+    volumes: list[tuple[str, str]] = field(default_factory=list)
+    unexplained: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -569,6 +600,36 @@ def marital_hints(repo: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+# A volume written into locator.page (before 0.7.0 the locator had no volume, ADR 0058):
+# a roman numeral, or tom / tomus / Bd / Band / sv. / svazek / vol.
+VOLUME_IN_PAGE = re.compile(r"(?i)(^|[\s,;/])(tom(us)?|bd|band|sv|svazek|vol(ume)?)\b\.?|^\s*[IVXLC]+\b")
+
+
+def volume_hints(repo: Path) -> list[tuple[str, str]]:
+    """Records whose locator.page seems to hold a volume: (record ID, page)."""
+    v = RepoValidator(repo, FRAMEWORK)
+    v.run()
+    out = []
+    for rec in sorted(v.of_type("record"), key=lambda r: r.id):
+        loc = rec.data.get("locator") if isinstance(rec.data.get("locator"), dict) else {}
+        page = loc.get("page")
+        if isinstance(page, str) and loc.get("volume") is None and VOLUME_IN_PAGE.search(page):
+            out.append((rec.id, page))
+    return out
+
+
+def unexplained_confirmations(repo: Path) -> list[str]:
+    """Records with a confirmed reading that does not say how it was confirmed (ADR 0059)."""
+    v = RepoValidator(repo, FRAMEWORK)
+    v.run()
+    out = []
+    for rec in sorted(v.of_type("record"), key=lambda r: r.id):
+        reading = rec.data.get("reading") if isinstance(rec.data.get("reading"), dict) else {}
+        if isinstance(reading.get("confirmed"), dict) and not reading["confirmed"].get("basis"):
+            out.append(rec.id)
+    return out
+
+
 def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     check_family_repo(repo, "upgrade")
     installed = installed_version(repo)
@@ -597,6 +658,8 @@ def plan_upgrade(repo: Path, target: str | None = None) -> UpgradePlan:
     if "root" in plan.map_missing:
         plan.candidates = map_candidates(repo)
     plan.marital = marital_hints(repo)
+    plan.volumes = volume_hints(repo)
+    plan.unexplained = unexplained_confirmations(repo)
     return plan
 
 
@@ -717,6 +780,16 @@ def print_plan(plan: UpgradePlan) -> None:
               "(and marital_status) with the user, see method/reading-records.md §4:")
         for rec, key, value in plan.marital:
             print(f"  {rec} {key}: {value!r}")
+    if plan.volumes:
+        print("Volume inside locator.page – move it into locator.volume with the user "
+              "(and list the volumes in source.volumes), see method/reading-records.md §1:")
+        for rec, page in plan.volumes:
+            print(f"  {rec} page: {page!r}")
+    if plan.unexplained:
+        print("Confirmed readings without basis – ask the person who confirmed them how the second reading was done "
+              "and add basis and checked only from their answer, see method/reading-records.md §5:")
+        for rec in plan.unexplained:
+            print(f"  {rec}")
 
 
 # ---------------------------------------------------------- check-private
