@@ -91,7 +91,7 @@ proavus/
 │   ├── eval.py                         evaly agenta: příprava, běh, hodnocení (ADR 0055; jen ve frameworku) [v0]
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]
 ├── .claude-plugin/                     PLUGIN = CELÉ REPO (ADR 0014): marketplace.json ("source": ".") · plugin.json
-├── skills/                             init · setup · start · end · upgrade [v0]; později check · claim · review · feedback
+├── skills/                             init · setup · start · registers · end · upgrade [v0]; později check · claim · review · feedback
 ├── hooks/                              hooky pluginu (později); validace před commitem je v šabloně: templates/family/.githooks/pre-commit (ADR 0049) [v0]
 ├── templates/family/                   ŠABLONA RODINNÉHO REPA (používá /proavus:init a /proavus:upgrade; ADR 0009) [v0]
 ├── adapters/chat/                      jeden prompt pro chatové nástroje bez pluginu

@@ -98,6 +98,8 @@ Follow the method:
   with who searched: `searched_by: member` when the member searched
   themselves, `searched_by: agent` (and `agent_model: <your model>`) when
   you searched on their instruction; `by` is always the member.
+- A search in a register or its index: follow the `registers` skill
+  (`/proavus:registers`) – index → book → volume → page → image.
 - An index and the book it points to are two searches: one coverage file
   for the index, one for the pages of the book; the record goes into the
   book's `found`. Each index hit is a `pointers` item of the index coverage

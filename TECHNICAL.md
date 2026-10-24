@@ -22,7 +22,7 @@ public framework, and one **private** family repository per family
 
 > **Work in progress (0.6.2).** The schema, the validator, the binding rules
 > and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
-> `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
+> `/proavus:registers`, `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
 
 ## Install the plugin from a local folder
 
@@ -61,9 +61,10 @@ developing Proavus).
    desktop app or start a new session:
    - **terminal:** run `claude` in any folder and type `/proavus:` – the
      suggestions offer `/proavus:init`, `/proavus:setup`,
-     `/proavus:start`, `/proavus:end` and `/proavus:upgrade`;
+     `/proavus:start`, `/proavus:registers`, `/proavus:end` and
+     `/proavus:upgrade`;
    - **desktop app:** open a new session in the Code tab and type `/proavus:`
-     in the message box – the same five commands appear.
+     in the message box – the same six commands appear.
 
    A quick check that changes nothing: in an empty folder run
    `claude -p "/proavus:start" --permission-mode plan` – Proavus answers that
@@ -147,6 +148,7 @@ the **folder the session runs in** – it is shown under the message box.
 | `/proavus:init` | once | a new session in the folder where the family repository should live, or in its empty clone | creates the **private** family repository from the template, installs `.proavus/`, protects the framework from edits, switches on the check before every commit, puts it on GitHub and checks it is private |
 | `/proavus:setup` | once per computer and member | a new session in any folder (not the framework) | installs git, gh, uv and the plugin, logs in to GitHub, clones the private family repository, adds the member to `repo.yaml` (commit or pull request), recommends two-factor login |
 | `/proavus:start` | first message of every research session | a session in the family repository | privacy check, downloads others' work, overview (`START-HERE.md`), picks or writes the research question |
+| `/proavus:registers` | during a session, for a search in a register or its index (Claude also uses it on its own) | the same session | index → book → volume → page → image: pointers from the index, page → image from anchors, header and margin notes, the record with a blind second reading, coverage with ranges and name forms, negative results |
 | `/proavus:end` | last message of every research session | the same session | session record with the next step, decisions only a human makes, validation (0 errors), saves to GitHub |
 | `/proavus:upgrade` | when `/proavus:start` says the Proavus copy is older than the plugin | a session in the family repository, with nothing unsaved | shows what changes, asks about new settings (e.g. the map's starting person), updates `.proavus/`, the Proavus blocks, the check workflow and `schema_version`, migrates data if needed, validates and saves |
 

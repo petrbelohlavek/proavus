@@ -52,6 +52,13 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   anchor), and prints the `archive_fetch.py link` command; it is copied into
   `.proavus/`. The validator rejects anchors that cannot all be true and
   warns when a record's image does not fit the map.
+- `/proavus:registers` (ADR 0062): a skill for searching registers –
+  name forms and the right book first, the index as pointers, book and
+  volume, page → image with `locate.py` and anchors, column headers,
+  neighbouring entries and margin notes, the record with a blind second
+  reading, coverage of the book with `followed`, and negative results.
+  Claude also uses it on its own when a question leads to a register;
+  `/proavus:start` points to it.
 
 ## 0.6.2 – 2026-10-23
 
