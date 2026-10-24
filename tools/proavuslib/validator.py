@@ -12,7 +12,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import edtf, ids, imagemap
+from . import access, edtf, ids, imagemap
 from .frontmatter import load_yaml, split
 from .schemas import SchemaSet
 
@@ -108,6 +108,7 @@ class RepoValidator:
         self._check_volumes()
         self._check_pointers()
         self._check_image_maps()
+        self._check_access()
         self._check_index_citations()
         self._check_sessions()
         self._check_inquiries()
@@ -651,6 +652,48 @@ class RepoValidator:
                 if self._volume_key(r["volume"]) not in {self._volume_key(v) for v in vols}:
                     self.report.error(cov.path, f"range volume {r['volume']!r} is not one of the volumes of {cov.data.get('source')} "
                                                 f"({', '.join(map(str, vols))})")
+
+    # --------------------------------------------------------------- access
+    def access_rules(self) -> dict[str, dict]:
+        regions = self.config.get("regions") if isinstance(getattr(self, "config", None), dict) else []
+        return access.rules(self.framework_root, regions or [])
+
+    def access_limit(self, cov: Entity) -> tuple[access.Limit, int] | None:
+        """(time limit, year from which all entries of the searched range are open) of a coverage, if the region has one."""
+        event = cov.data.get("event")
+        years = [access.last_year(r.get("dates")) for r in cov.data.get("ranges") or [] if isinstance(r, dict) and r.get("dates")]
+        years = [y for y in years if y is not None]
+        if not event or not years:
+            return None
+        lim = access.limit(self.access_rules(), event)
+        return (lim, lim.opens(max(years))) if lim else None
+
+    def _check_access(self) -> None:
+        """Sources name a known portal and do not claim more than it allows; negatives respect time limits (ADR 0064)."""
+        catalog = access.portals(self.framework_root)
+        for src in sorted(self.of_type("source"), key=lambda s: s.id):
+            pid = src.data.get("portal")
+            if pid is None:
+                continue
+            portal = catalog.get(pid)
+            if portal is None:
+                self.report.warn(src.path, f"portal {pid!r} is not in the portal catalogue (regions/*/portals.yaml) – "
+                                           f"known: {', '.join(sorted(catalog))}")
+                continue
+            mode = (src.data.get("access") or {}).get("mode") if isinstance(src.data.get("access"), dict) else None
+            if mode and access.REACH.get(mode, 0) > access.REACH.get(portal.get("access"), 0):
+                self.report.error(src.path, f"access mode {mode!r}, but the portal {pid} allows only {portal.get('access')!r} "
+                                            f"({portal.get('why', '')}) – a source never claims more than its portal")
+        year = self.today.year
+        for cov in sorted(self.of_type("coverage"), key=lambda c: c.id):
+            found = self.access_limit(cov)
+            if found is None or cov.data.get("result") != "negative":
+                continue
+            lim, opens = found
+            if opens > year:
+                self.report.warn(cov.path, f"negative over {lim.kind} entries up to {opens - lim.years}: entries younger than "
+                                           f"{lim.years} years are open to anyone only from {opens} ({lim.law}) – were they shown? "
+                                           "If not, the result is inaccessible or partial, not negative")
 
     # ----------------------------------------------------------- image maps
     def _check_image_maps(self) -> None:

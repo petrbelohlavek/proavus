@@ -10,6 +10,11 @@
     "type": { "const": "coverage" },
     "source": { "$ref": "common.schema.json#/$defs/ref_source" },
     "method": { "type": "string", "x-vocab": "search_methods" },
+    "event": {
+      "description": "The kind of entries searched for (birth, marriage, death …). With the dates of the ranges it gives the legal time limit of the region (ADR 0064).",
+      "type": "string",
+      "x-vocab": "event_types"
+    },
     "ranges": {
       "type": "array",
       "minItems": 1,

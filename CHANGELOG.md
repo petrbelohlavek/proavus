@@ -69,6 +69,17 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   compares the place: the same date in two places is reported as two
   versions to write into a conflict, not as a duplicate, and the advice to
   join citations names the command.
+- Access and legal time limits (ADR 0064): `source.portal` (an id from the
+  portal catalogue) and `source.access: {mode, held_by, note}` (automated,
+  link, manual, on-site, request, none); the validator warns about an
+  unknown portal and rejects a source that claims more than its portal
+  allows. `regions/cz/access.yaml`: anyone may see a birth entry after 100,
+  a marriage after 75 and a death after 30 years from the entry (zákon
+  č. 301/2000 Sb.). `coverage.event` with the dates of the ranges gives the
+  year all searched entries are open; a negative over a range not open yet
+  is a warning, and START-HERE lists inaccessible searches with that year
+  or says the limit has passed. New `tools/access.py limit|source`; both
+  copied into `.proavus/`.
 
 ## 0.6.2 – 2026-10-23
 

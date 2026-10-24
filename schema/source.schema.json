@@ -71,6 +71,28 @@
     },
     "language": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/lang" } },
     "url": { "$ref": "common.schema.json#/$defs/url" },
+    "portal": {
+      "description": "Portal id from the catalogue of the regional packages (regions/*/portals.yaml); the access mode of the portal applies (ADR 0064).",
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "access": {
+      "description": "How this source can be read, when it differs from its portal or has none (ADR 0064).",
+      "type": "object",
+      "required": ["mode"],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "description": "automated – tools may fetch; link – tools build links, a person reads; manual – a person searches online; on-site – reading room or office; request – only by a written request; none – not accessible now.",
+          "enum": ["automated", "link", "manual", "on-site", "request", "none"]
+        },
+        "held_by": {
+          "description": "Who holds it: archive, registry-office (books not yet handed to the archive), parish, other.",
+          "enum": ["archive", "registry-office", "parish", "other"]
+        },
+        "note": { "type": "string" }
+      }
+    },
     "accessed": { "$ref": "common.schema.json#/$defs/date" },
     "citation": { "type": "string", "minLength": 1, "description": "Full citation in words (Evidence Explained style)." },
     "original_file": { "type": "string", "description": "Path to the original (PDF, scan) in the family repo." },

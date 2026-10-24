@@ -88,6 +88,7 @@ proavus/
 │   ├── archive_fetch.py                snímky z portálů: ARON plně, Acta Publica a Matricula jen odkaz (ADR 0041) [v0]
 │   ├── bulk_import.py                  převod staršího bádání plánem (docs/import.md, ADR 0042) [v0]
 │   ├── merge_assertions.py             sloučení zdvojených tvrzení: plán, pak zápis (ADR 0063) [v0]
+│   ├── access.py                       režim přístupu ke zdroji a zákonné lhůty matrik (ADR 0064) [v0]
 │   ├── locate.py                       strana → snímek z kotev source.image_map (ADR 0061) [v0]
 │   ├── eval.py                         evaly agenta: příprava, běh, hodnocení (ADR 0055; jen ve frameworku) [v0]
 │   └── migrate.py                      převod dat mezi hlavními verzemi schématu [kostra, zatím bez migrací]

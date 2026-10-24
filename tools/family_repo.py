@@ -71,7 +71,7 @@ TEMPLATE = FRAMEWORK / "templates" / "family"
 EMPTY_REPO_ENTRIES = {".git", ".claude"}
 # What goes into .proavus/ (ADR 0014). guard_names.py is framework-only.
 COPY_DIRS = ["schema"]
-COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py", "locate.py", "merge_assertions.py"]
+COPY_TOOLS = ["validate.py", "new_id.py", "family_repo.py", "build_views.py", "migrate.py", "archive_fetch.py", "bulk_import.py", "locate.py", "merge_assertions.py", "access.py"]
 COPY_METHOD = ["rules.md", "rules.cs.md", "reading-records.md"]
 
 PROAVUS_README = """# .proavus – pinned copy of the Proavus framework
@@ -118,7 +118,8 @@ def install_tools(repo: Path) -> None:
     shutil.copytree(TOOLS_DIR / "proavuslib", target / "tools" / "proavuslib", ignore=ignore)
     for name in COPY_DIRS:
         shutil.copytree(FRAMEWORK / name, target / name, ignore=ignore)
-    for ext in sorted([*(FRAMEWORK / "regions").glob("*/schema-ext.yaml"), *(FRAMEWORK / "regions").glob("*/portals.yaml")]):
+    for ext in sorted([*(FRAMEWORK / "regions").glob("*/schema-ext.yaml"), *(FRAMEWORK / "regions").glob("*/portals.yaml"),
+                       *(FRAMEWORK / "regions").glob("*/access.yaml")]):
         dest = target / "regions" / ext.parent.name
         dest.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ext, dest / ext.name)
@@ -331,6 +332,21 @@ def loose_task(lab: Labeler, sid: str, task: dict) -> str:
     return f"{task_line(lab, task)}{where} – {sid}"
 
 
+def inaccessible_item(v, lab, cov, today: dt.date) -> str:
+    """An inaccessible search with its legal time limit, if the region has one (ADR 0064)."""
+    text = lab.ref(cov)
+    found = v.access_limit(cov)
+    if found is not None:
+        lim, opens = found
+        if opens <= today.year:
+            text += f" – time limit passed in {opens} ({lim.years} years for {lim.kind} entries): search again"
+        else:
+            text += f" – open to anyone from {opens} ({lim.years} years for {lim.kind} entries)"
+    if cov.data.get("access_note"):
+        text += f" – {cov.data['access_note']}"
+    return text
+
+
 def pointer_target(lab, to) -> str:
     """Where an index pointer leads, in words: the book and the place in it (ADR 0060)."""
     to = to if isinstance(to, dict) else {}
@@ -403,6 +419,8 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
     disputed = [r for r in of("record") if (r.data.get("reading") or {}).get("status") == "disputed"]
     conflicts = [c for c in of("conflict") if c.data.get("status") in ("open", "unresolved")]
     inquiries = waiting_inquiries(of("inquiry"))
+    closed = [inaccessible_item(v, lab, cov, today) for cov in sorted(of("coverage"), key=lambda c: c.id)
+              if cov.data.get("result") == "inaccessible"]
     pointers = [f"{lab.ref(cov)}: {ptr.get('name_as_written')} → {pointer_target(lab, ptr.get('to'))}" for cov, ptr in v.open_pointers()]
     lines += ["## Waiting for a human", ""]
     for title, items in (("records read once (second reading needed before identity)", [lab.ref(r) for r in read_once]),
@@ -410,7 +428,8 @@ def start_here(repo: Path, today: dt.date | None = None) -> tuple[str, int]:
                          ("open conflicts", [lab.ref(c) for c in conflicts]),
                          ("open human tasks without an open question", [loose_task(lab, sid, task) for sid, task in loose]),
                          ("inquiries not closed", [f"{lab.ref(i)} – {inquiry_state(i)}" for i in inquiries]),
-                         ("index pointers not followed into the book yet", pointers)):
+                         ("index pointers not followed into the book yet", pointers),
+                         ("searches not accessible", closed)):
         lines.append(f"- {title}: {len(items)}")
         lines += [f"  - {item}" for item in items[:10]]
         if len(items) > 10:

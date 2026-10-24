@@ -110,6 +110,9 @@ Follow the method:
   from the anchors in the source's `image_map`. No map yet, an estimate or
   a break → read the page number on the image and add an anchor
   (`{page, image, by, on}`) – never a formula from another book.
+- How a source can be read and from when: `uv run .proavus/tools/access.py
+  source . <SO-ID>` (its `access` or its `portal`), and the legal time limit
+  of an entry `access.py limit . --event <event> --year <year>` (ADR 0064).
 - Before using a portal: `uv run .proavus/tools/archive_fetch.py portals`
   (or from the plugin) says what you may do there – `automated`, `link`
   (links only, a person reads) or `manual` (a person searches) – and lists

@@ -186,6 +186,7 @@ source:
 | Bringing older research in | [docs/import.md](docs/import.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, example in [examples/import/](examples/import/) |
 | Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
 | Merging duplicate assertions | `uv run tools/merge_assertions.py plan <family-repo> [A-ID …]`, then `apply` with the IDs (ADR 0063) |
+| Access and time limits | `uv run tools/access.py source <family-repo> <SO-ID>`, `uv run tools/access.py limit <family-repo> --event death --year 1995` (ADR 0064) |
 | Page → image | `uv run tools/locate.py <SO-ID> --page N --repo <family-repo>` – from the anchors in `source.image_map` (ADR 0061) |
 | Regional packages | [regions/cz/](regions/cz/pitfalls.md) (Czech lands), [regions/at/](regions/at/pitfalls.md) (Austria, Vienna): schema extension, pitfalls, portal catalogue – `uv run tools/archive_fetch.py portals` (ADR 0050) |
 | Evals – does an agent follow the method? | [evals/](evals/README.md) – `uv run tools/eval.py list` (ADR 0055); results of the runs are in [evals/README.md](evals/README.md#results) |
