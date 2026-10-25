@@ -113,5 +113,20 @@ migration (`tools/migrate.py`, ADR 0030).
   for the legal time limits of the region (`regions/cz/access.yaml`,
   ADR 0064).
 
+## New in 0.8
+
+- `question.leads`: entries that may belong to the family, with where,
+  why, who and when, and a state `open` / `confirmed` (with the `record`) /
+  `rejected` (with a note) – never names of other people (ADR 0067);
+- `coverage.ranges[].part` (a village, section or index letter of the
+  book), `pages` may start with `..`; `coverage.index_covers` – the period
+  an index really covers (ADR 0068);
+- `source.image_map[].part`: a map for a part of the book with its own page
+  numbering (ADR 0068);
+- vocabulary values: name type `baptismal`, relationship subtype
+  `unmarried-parents` (ADR 0066, 0068).
+
+All optional; older files stay valid, no migration.
+
 Unknown fields are errors (typos are caught); unknown vocabulary values are
 warnings.

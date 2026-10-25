@@ -5,8 +5,8 @@
 # ///
 """Page → image: where a page or folio of a source is in the portal viewer.
 
-Usage:  uv run tools/locate.py SOURCE_ID --page N [--volume V] [--repo DIR]
-        uv run tools/locate.py SOURCE_ID --folio 23r [--volume V] [--repo DIR]
+Usage:  uv run tools/locate.py SOURCE_ID --page N [--volume V] [--part P] [--repo DIR]
+        uv run tools/locate.py SOURCE_ID --folio 23r [--volume V] [--part P] [--repo DIR]
 
 Computes the image from the anchors in the source's `image_map` (ADR 0061)
 and says what the result rests on: exact (an anchor), interpolated (between
@@ -43,6 +43,7 @@ def main(argv: list[str] | None = None) -> int:
     where.add_argument("--page", type=int)
     where.add_argument("--folio", help="folio with side, e.g. 23r")
     parser.add_argument("--volume", help="volume of the source")
+    parser.add_argument("--part", help="part of the book with its own page numbering (ADR 0068)")
     parser.add_argument("--repo", default=".", help="family repository (default: .)")
     args = parser.parse_args(argv)
 
@@ -52,10 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     if src is None or src.type != "source":
         print(f"locate: {args.source} is not a source in this repository", file=sys.stderr)
         return 2
-    image_map = imagemap.map_for(src.data, args.volume)
+    image_map = imagemap.map_for(src.data, args.volume, args.part)
     what = f"folio {args.folio}" if args.folio else f"page {args.page}"
     if image_map is None:
-        vol = f" (volume {args.volume})" if args.volume else ""
+        vol = "".join(f" ({k} {x})" for k, x in (("volume", args.volume), ("part", args.part)) if x)
         print(f"{src.id}{vol} has no image map – read the page number on two images, far apart, and write them "
               "as anchors into image_map of the source")
         return 1

@@ -24,7 +24,8 @@
         "properties": {
           "volume": { "$ref": "common.schema.json#/$defs/volume", "description": "volume searched, one of source.volumes when the source lists them (ADR 0058)" },
           "dates": { "$ref": "common.schema.json#/$defs/edtf" },
-          "pages": { "type": "string", "description": "e.g. 12-140, or images 5-88" },
+          "part": { "type": "string", "minLength": 1, "description": "part of the book searched, as the book or portal names it: a village, a section (e.g. Ukázkov), a letter of an index" },
+          "pages": { "type": "string", "description": "e.g. 12-140, or images 5-88; ..-250 or images ..-250 when the first one of a part is not known" },
           "query": { "type": "string", "minLength": 1, "description": "the search as typed into a database, full-text search or index (ADR 0035)" },
           "note": { "type": "string" }
         },
@@ -91,6 +92,10 @@
     "agent_model": { "type": "string", "minLength": 1, "description": "The model that searched, with searched_by: agent." },
     "on": { "$ref": "common.schema.json#/$defs/date" },
     "access_note": { "type": "string" },
+    "index_covers": {
+      "$ref": "common.schema.json#/$defs/edtf",
+      "description": "With method index: the period the index really covers, checked in the index itself, when it differs from the archive's description (e.g. the book 1870/1950, but the index section of the letter starts in 1900: 1900/1950). Years searched outside it are not covered by this search."
+    },
     "index_negative_accepted": {
       "description": "A negative from an index only, accepted on purpose (ADR 0040): who decided, when and why the index is enough here.",
       "type": "object",

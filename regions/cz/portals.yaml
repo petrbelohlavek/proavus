@@ -26,6 +26,11 @@ portals:
     notes:
       - The application sits behind a Cloudflare check – the agent only builds
         links (`archive_fetch.py link`), a person opens and reads the images.
+      - The address of an image in the viewer is …/matrika/detail/<id>?image=<prefix>-<NNNNN>.jp2,
+        NNNNN = image number × 10 in five digits. Give `archive_fetch.py link`
+        the address of any image of the book and the image number you need.
+      - Books have parts (villages, sections) with their own page numbering –
+        note the part in coverage (`part`) and check page → image on two images.
   - id: matricula
     name: Matricula Online
     url: https://data.matricula-online.eu/

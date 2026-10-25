@@ -36,7 +36,7 @@
       }
     },
     "image_map": {
-      "description": "Page (or folio) → image of the portal viewer, from anchors read on the images (ADR 0061). One map per volume; the offset may change inside a book, so each anchor is a point that was looked at, never a computed one.",
+      "description": "Page (or folio) → image of the portal viewer, from anchors read on the images (ADR 0061). One map per volume (and part with its own numbering); the offset may change inside a book, so each anchor is a point that was looked at, never a computed one.",
       "type": "array",
       "minItems": 1,
       "items": {
@@ -45,6 +45,7 @@
         "additionalProperties": false,
         "properties": {
           "volume": { "$ref": "common.schema.json#/$defs/volume", "description": "the volume this map is for; without it the map is for the whole source" },
+          "part": { "type": "string", "minLength": 1, "description": "part of the book with its own page numbering (a village, a section), as the book or portal names it (ADR 0068); one map per volume and part" },
           "unit": { "enum": ["page", "folio"], "description": "what the book numbers: pages (default) or folios with side (23r, 23v)" },
           "anchors": {
             "type": "array",

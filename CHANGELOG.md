@@ -8,6 +8,48 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## 0.8.0 – unreleased
+
+From a day of research in the registers of Acta Publica (MZA) with 0.6.2 –
+what 0.7 did not solve yet.
+
+- Map: versions of a fact with compatible dates of different precision
+  (1902 and 1902-05-20, `../1910`, `190X`) are not a disagreement – the card
+  shows the most precise date (and the place of an agreeing version when it
+  has none) and marks `≠` only for a real disagreement: dates that cannot
+  both be true, or different places or values (ADR 0066). Before, dates
+  were compared as text.
+- Map: the detail of a person lists their siblings (children of their own
+  parents, half siblings marked) with their partners (ADR 0066).
+- Validator: a birth, baptism, death or burial assertion that agrees with a
+  more precise one about the same person – one fact, with the
+  `merge_assertions.py plan` command; the merge accepts compatible dates
+  and keeps the most precise one (ADR 0066).
+- Validator: a child with two own parents who have no partnership between
+  them; new relationship subtype `unmarried-parents` for parents who never
+  married (no marriage sign in the map) (ADR 0066).
+- Validator: a text that YAML read as a key and a value because of `: `
+  (e.g. an item of `reading.uncertain`) is reported with the fix – quotes,
+  or a dash instead of the colon – instead of "is not of type 'string'".
+- Schema: `question.leads` – entries that may belong to the family, with
+  where, why, who and when, closed as `confirmed` (with the record) or
+  `rejected` (with a note); no names of other people. START-HERE lists open
+  leads under their question; the validator warns about open leads in a
+  closed question (ADR 0067).
+- Schema: `coverage.ranges[].part` (a part of the book) and pages starting
+  with `..` when the first one is not known; `coverage.index_covers` – the
+  period an index really covers, with a warning when the search reaches
+  outside it (ADR 0068).
+- Schema: `source.image_map[].part` – one page → image map per part of a
+  book with its own page numbering; `locate.py --part P` (ADR 0068).
+- Vocabulary: name type `baptismal` (all given names as in the register).
+- `archive_fetch.py link` builds image links from an Acta Publica viewer
+  address (`…/matrika/detail/<id>?image=…-NNNNN.jp2`, image × 10) (ADR 0068).
+- `new_id.py --count N`: N IDs in one run.
+- Unchanged: the pre-commit validation and the identity gate.
+
+All new fields are optional – no migration.
+
 ## 0.7.2 – 2026-10-25
 
 - `archive_fetch.py` reads the source (ADR 0065): `book`, `list`, `link`

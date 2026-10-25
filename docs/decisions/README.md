@@ -70,5 +70,8 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0063](0063-merging-assertions.md) | Sloučení zdvojených tvrzení: `merge_assertions.py` | přijato | — |
 | [0064](0064-access-and-time-limits.md) | Režim přístupu u zdroje a zákonné lhůty matrik | přijato | — |
 | [0065](0065-archive-fetch-source-access.md) | `archive_fetch.py` čte zdroj a jeho režim přístupu | přijato | — |
+| [0066](0066-compatible-dates-and-family-around.md) | Slučitelná data různé přesnosti, sourozenci v detailu, rodiče bez partnerství | přijato | — |
+| [0067](0067-leads-in-question.md) | Stopy: zápisy s nedoloženou vazbou na rodinu v otázce | přijato | — |
+| [0068](0068-book-parts-index-range-image-links.md) | Části knihy a skutečný rozsah rejstříku v coverage; odkazy na snímky Acta Publica | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

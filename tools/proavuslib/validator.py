@@ -23,6 +23,8 @@ STRONG = ("proved", "probable")
 LIVING_ALLOWED_FACTS = {"name", "sex", "birth"}
 BIRTH_FACTS = ("birth", "baptism")
 DEATH_FACTS = ("death", "burial")
+# Parent–child subtypes of the child's own parents (not step, adoptive, foster, guardian).
+OWN_PARENT_SUBTYPES = (None, "biological", "legitimated", "presumed")
 # Coverage ranges given only as a query (ADR 0035).
 QUERY_METHODS = {"database-search", "full-text-search", "index"}
 # Question states after which no task for it should stay open (ADR 0047).
@@ -104,6 +106,8 @@ class RepoValidator:
         self._check_identity_sex()
         self._check_duplicate_persons()
         self._check_duplicate_facts()
+        self._check_mergeable_facts()
+        self._check_parents_partnership()
         self._check_coverage()
         self._check_volumes()
         self._check_pointers()
@@ -112,6 +116,7 @@ class RepoValidator:
         self._check_index_citations()
         self._check_sessions()
         self._check_inquiries()
+        self._check_leads()
         self._check_map()
         return self.report
 
@@ -532,6 +537,16 @@ class RepoValidator:
         return (self.aliases.get(a.data.get("place"), a.data.get("place")) or "",
                 str(a.data.get("place_as_written") or "").strip().casefold())
 
+    def facts_agree(self, a: Entity, b: Entity) -> bool:
+        """Can two facts of one type both be true: compatible dates (1902 and 1902-05-20, ADR 0066), and the
+        same place and value where both give one – a missing place or value does not disagree."""
+        da, db = a.data.get("date"), b.data.get("date")
+        if da is not None and db is not None:
+            if not (edtf.is_valid(da) and edtf.is_valid(db) and edtf.compatible(da, db)):
+                return False
+        va, vb = str(a.data.get("value") or "").casefold(), str(b.data.get("value") or "").casefold()
+        return (not va or not vb or va == vb) and self.same_place(self.place_key(a), self.place_key(b))
+
     def same_place(self, x: tuple[str, str], y: tuple[str, str]) -> bool:
         """Same place, or one of them names none. Two place IDs must be equal; a place ID and a name as
         written agree when the name is one of the place's names or the other's name as written."""
@@ -588,6 +603,54 @@ class RepoValidator:
                     self.report.warn(a.path, f"{a.id} and {b.id}: the same {da.get('fact_type')} on {da.get('date')} in two places – "
                                              "not a duplicate but two versions: write a conflict (or correct the place)")
 
+    def _check_mergeable_facts(self) -> None:
+        """Two birth/death facts about one person that agree, one more precise (1902 and 1902-05-20):
+        join the citations into the more precise one."""
+        groups: dict[tuple, list[Entity]] = {}
+        for a in sorted(self.of_type("assertion"), key=lambda a: a.id):
+            d = a.data
+            if (d.get("kind") != "fact" or d.get("fact_type") not in BIRTH_FACTS + DEATH_FACTS
+                    or not edtf.is_valid(d.get("date")) or d.get("confidence") == "disproved"):
+                continue
+            groups.setdefault((self.aliases.get(d.get("subject"), d.get("subject")), d["fact_type"]), []).append(a)
+        for (subject, fact_type), facts in groups.items():
+            for a in facts:
+                finer = [b for b in facts if b is not a and self.facts_agree(a, b)
+                         and edtf.width(b.data["date"]) < edtf.width(a.data["date"])]
+                if not finer:
+                    continue
+                best = min(finer, key=lambda b: (edtf.width(b.data["date"]), b.id))
+                self.report.warn(a.path, f"{fact_type} of {subject}: {a.id} ({a.data['date']}) agrees with the more precise "
+                                         f"{best.id} ({best.data['date']}) – one fact: join the citations into one assertion: "
+                                         f"uv run .proavus/tools/merge_assertions.py plan . {best.id} {a.id}")
+
+    def _check_parents_partnership(self) -> None:
+        """Two own parents of a child should be partners – a partnership is easily forgotten."""
+        parents: dict[str, set[str]] = {}
+        for rel in self.of_type("relationship"):
+            d = rel.data
+            if d.get("rel_type") != "parent-child" or d.get("subtype") not in OWN_PARENT_SUBTYPES or d.get("confidence") == "disproved":
+                continue
+            roles = {p.get("role"): p.get("person") for p in d.get("parties") or [] if isinstance(p, dict)}
+            parent, child = roles.get("parent"), roles.get("child")
+            if isinstance(parent, str) and parent != "unknown" and isinstance(child, str):
+                parents.setdefault(self.aliases.get(child, child), set()).add(self.aliases.get(parent, parent))
+        partners = set()
+        for rel in self.of_type("relationship"):
+            if rel.data.get("rel_type") == "partnership" and rel.data.get("confidence") != "disproved":
+                pair = frozenset(self.aliases.get(p.get("person"), p.get("person"))
+                                 for p in rel.data.get("parties") or [] if isinstance(p, dict))
+                partners.add(pair)
+        missing: dict[frozenset, list[str]] = {}
+        for child, ps in sorted(parents.items()):
+            if len(ps) == 2 and frozenset(ps) not in partners:
+                missing.setdefault(frozenset(ps), []).append(child)
+        for pair, children in missing.items():
+            a, b = sorted(pair)
+            where = self.entities[a].path if a in self.entities else "relationships/"
+            self.report.warn(where, f"{a} and {b} are both parents of {', '.join(children)}, but there is no partnership between them – "
+                                    "add one (rel_type partnership, subtype marriage – or unmarried-parents if they never married)")
+
     # ------------------------------------------------------------- coverage
     def _check_coverage(self) -> None:
         index_only: list[Entity] = []
@@ -597,6 +660,13 @@ class RepoValidator:
                 if isinstance(r, dict) and r.get("query") and not (r.get("dates") or r.get("pages")) and method not in QUERY_METHODS:
                     self.report.error(cov.path, f"a range given only as a query fits a database search ({', '.join(sorted(QUERY_METHODS))}), not method {method!r} – add dates or pages")
             accepted = cov.data.get("index_negative_accepted")
+            outside = self._outside_index(cov)
+            if cov.data.get("index_covers") is not None and method != "index":
+                self.report.warn(cov.path, "index_covers only fits a search of an index (method index)")
+            elif outside:
+                self.report.warn(cov.path, f"the index covers only {cov.data['index_covers']}, but {', '.join(outside)} was searched – "
+                                           "the years outside the index are not searched by this; page through the book for them, "
+                                           "or narrow the range to what the index covers")
             if result == "negative" and method == "index" and not accepted:
                 index_only.append(cov)
             elif accepted and not (result == "negative" and method == "index"):
@@ -704,10 +774,13 @@ class RepoValidator:
             seen = set()
             for m in maps:
                 key = None if m.get("volume") is None else self._volume_key(m["volume"])
-                where = "image_map" + (f" of volume {m['volume']!r}" if key is not None else "")
-                if key in seen:
-                    self.report.error(src.path, f"two image maps for {'volume ' + repr(m['volume']) if key is not None else 'the whole source'}")
-                seen.add(key)
+                part = None if m.get("part") is None else self._volume_key(m["part"])
+                where = "image_map" + (f" of volume {m['volume']!r}" if key is not None else "") + (f" part {m['part']!r}" if part is not None else "")
+                if (key, part) in seen:
+                    what = " ".join(x for x in ("volume " + repr(m["volume"]) if key is not None else "",
+                                                "part " + repr(m["part"]) if part is not None else "") if x)
+                    self.report.error(src.path, f"two image maps for {what or 'the whole source'}")
+                seen.add((key, part))
                 if key is not None and vols and key not in vols:
                     self.report.error(src.path, f"{where}: volume {m['volume']!r} is not one of the volumes of the source")
                 for msg in imagemap.problems(m):
@@ -794,6 +867,16 @@ class RepoValidator:
                     self.report.warn(a.path, f"cites the index search {cov.id} as evidence – an index points to the book; "
                                              "cite the record found there (an index search fits only negative evidence)")
 
+    @staticmethod
+    def _outside_index(cov: Entity) -> list[str]:
+        """Searched dates reaching outside the period the index really covers (index_covers)."""
+        covers = cov.data.get("index_covers")
+        if cov.data.get("method") != "index" or not edtf.is_valid(covers):
+            return []
+        lo, hi = edtf.parse(covers)
+        return [str(r["dates"]) for r in cov.data.get("ranges") or []
+                if isinstance(r, dict) and edtf.is_valid(r.get("dates")) and (edtf.parse(r["dates"])[0] < lo or edtf.parse(r["dates"])[1] > hi)]
+
     # ------------------------------------------------------------- sessions
     def _check_sessions(self) -> None:
         for s in self.of_type("session"):
@@ -831,6 +914,15 @@ class RepoValidator:
                     self.report.error(inq.path, f"{k2} {d2} is before {k1} {d1}")
             if isinstance(inq.data.get("sent"), str) and inq.data["sent"] > self.today.isoformat():
                 self.report.error(inq.path, f"sent {inq.data['sent']} is in the future")
+
+    # ---------------------------------------------------------------- leads
+    def _check_leads(self) -> None:
+        """Leads of a question (ADR 0067): none left open when the question is closed."""
+        for q in self.of_type("question"):
+            open_leads = [x for x in q.data.get("leads") or [] if isinstance(x, dict) and x.get("status") == "open"]
+            if open_leads and q.data.get("status") in CLOSED_QUESTION:
+                self.report.warn(q.path, f"question is {q.data['status']}, but {len(open_leads)} lead{'s are' if len(open_leads) > 1 else ' is'} "
+                                         "still open – check each one, then close it (confirmed with the record, or rejected with a note)")
 
     # ------------------------------------------------------------------ map
     def _check_map(self) -> None:

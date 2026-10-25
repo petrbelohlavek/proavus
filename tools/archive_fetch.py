@@ -234,8 +234,22 @@ class ActaPublica(Manual):
     hosts = ("www.mza.cz", "mza.cz")
     why = "its terms of use and robots.txt do not allow automated access without the archive's consent"
 
+    # The viewer of a book: …/matrika/detail/<id>?image=<prefix>-<image number × 10, five digits>.jp2
+    # (checked in research 2026-10-25: image 12 is …-00120.jp2).
+    DETAIL_IMAGE = re.compile(r"^(?P<prefix>.+)-(?P<number>[0-9]{5})\.jp2$")
+
     def link(self, n: int) -> str:
-        query = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(self.url).query))
+        parts = urllib.parse.urlsplit(self.url)
+        query = dict(urllib.parse.parse_qsl(parts.query))
+        if re.search(r"/matrika/detail/[^/]+$", parts.path):
+            m = self.DETAIL_IMAGE.match(query.get("image", ""))
+            if not m:
+                raise FetchError("an Acta Publica viewer URL (…/matrika/detail/<id>) needs image=<…>-<number>.jp2 – "
+                                 "copy the address of any image of the book from the browser")
+            if not 1 <= n <= 9999:
+                raise FetchError(f"image number {n} out of range (1–9999)")
+            image = f"{m['prefix']}-{n * 10:05d}.jp2"
+            return urllib.parse.urlunsplit(("https", parts.netloc or "www.mza.cz", parts.path, urllib.parse.urlencode({"image": image}), ""))
         book = query.get("signatura") or (self.url if re.fullmatch(r"[\w./ -]+", self.url) and "/" not in self.url else None)
         if not book:
             raise FetchError("give the Acta Publica book as a viewer URL with signatura=… or as the book number")

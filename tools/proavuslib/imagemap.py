@@ -122,9 +122,12 @@ def _volume_key(value) -> str:
     return str(value).strip().casefold()
 
 
-def map_for(source: dict, volume=None) -> dict | None:
-    """The image map of the source for this volume (or the map without a volume)."""
-    maps = [m for m in source.get("image_map") or [] if isinstance(m, dict)]
+def map_for(source: dict, volume=None, part=None) -> dict | None:
+    """The image map of the source for this volume (or the map without a volume) and part of the book
+    (ADR 0068): with a part, the map of that part; without one, a map without a part."""
+    maps = [m for m in source.get("image_map") or [] if isinstance(m, dict)
+            and (_volume_key(m["part"]) == _volume_key(part) if part is not None and m.get("part") is not None
+                 else m.get("part") is None and part is None)]
     if volume is not None:
         same = [m for m in maps if m.get("volume") is not None and _volume_key(m["volume"]) == _volume_key(volume)]
         if same:
@@ -133,8 +136,8 @@ def map_for(source: dict, volume=None) -> dict | None:
     return general[0] if general else None
 
 
-def locate_in_source(source: dict, page=None, folio=None, volume=None) -> Located:
-    image_map = map_for(source, volume)
+def locate_in_source(source: dict, page=None, folio=None, volume=None, part=None) -> Located:
+    image_map = map_for(source, volume, part)
     if image_map is None:
         return Located(None, "no-map")
     pos = position(image_map, {"page": page, "folio": folio})

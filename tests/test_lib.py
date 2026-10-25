@@ -62,6 +62,24 @@ class Edtf(unittest.TestCase):
                 self.assertFalse(edtf.is_valid(value))
 
 
+    def test_compatible_dates(self):
+        """Dates of different precision that can both be true (1902 and 1902-05-20) agree."""
+        agree = [("1902", "1902-05-20"), ("1902-05", "1902-05-20"), ("../1910", "1902-05-20"), ("1900/1910", "1902"),
+                 ("190X", "1902-05"), ("1902?", "1902-05-20"), ("1855-02-1X", "1855-02-13"), ("1855-02-X5", "1855-02-15")]
+        differ = [("1902", "1903-01-02"), ("1902-05", "1902-06-01"), ("../1901", "1902"), ("1850~", "1853~"),
+                  ("1855-02-X5", "1855-02-10"), ("1902-05-20", "1902-05-21")]
+        for a, b in agree:
+            with self.subTest(a=a, b=b):
+                self.assertTrue(edtf.compatible(a, b) and edtf.compatible(b, a))
+        for a, b in differ:
+            with self.subTest(a=a, b=b):
+                self.assertFalse(edtf.compatible(a, b) or edtf.compatible(b, a))
+
+    def test_width(self):
+        self.assertEqual([edtf.width(x) for x in ("1902-05-20", "1902-05", "1902", "1855-02-X5")], [1, 31, 365, 3])
+        self.assertGreater(edtf.width("../1900"), edtf.width("190X"))
+
+
 class Ids(unittest.TestCase):
     def test_new_id_format_and_uniqueness(self):
         seen = set()
@@ -70,6 +88,22 @@ class Ids(unittest.TestCase):
             self.assertRegex(new, r"^Q-20261020-ab-[2-9a-hjkmnp-z]{3}$")
             self.assertNotIn(new, seen)
             seen.add(new)
+
+    def test_new_id_count(self):
+        """--count N: N different IDs from one run, none taken in the repository."""
+        import new_id
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "assertions").mkdir()
+            (Path(tmp) / "assertions" / "A-20261020-ab-k7m.md").write_text("", encoding="utf-8")
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(new_id.main(["assertion", "ab", "--repo", tmp, "--count", "25"]), 0)
+            got = out.getvalue().split()
+            self.assertEqual(len(got), 25)
+            self.assertEqual(len(set(got)), 25)
+            self.assertNotIn("A-20261020-ab-k7m", got)
+            with contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(new_id.main(["assertion", "ab", "--repo", tmp, "--count", "0"]), 2)
 
     def test_prefixes_match_schema(self):
         pattern = re.search(r'"pattern": "\^\((.*?)\)-', (ROOT / "schema/common.schema.json").read_text())[1]

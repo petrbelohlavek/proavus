@@ -13,6 +13,7 @@ flag what is impossible under every reading of the date.
 from __future__ import annotations
 
 import calendar
+import datetime as _dt
 import re
 
 _SINGLE = re.compile(
@@ -96,3 +97,52 @@ def is_valid(value: object) -> bool:
     except ValueError:
         return False
     return True
+
+
+# ------------------------------------------------- dates as possible days
+_FIRST, _LAST = _dt.date.min.toordinal(), _dt.date.max.toordinal()
+
+
+def _days(text: str) -> tuple[int, int, frozenset[int] | None]:
+    """A single date as (first day, last day, the possible days or None) – ordinals, qualifiers ignored."""
+    m = _SINGLE.match(text)
+    if not m:
+        raise ValueError(f"not an EDTF date: {text!r}")
+    year = m["year"]
+    if "X" in year:
+        lo, hi = int(year.replace("X", "0")), int(year.replace("X", "9"))
+        return _dt.date(lo, 1, 1).toordinal(), _dt.date(hi, 12, 31).toordinal(), None
+    y, months, days, _ = expand(text)
+    if months is None:
+        return _dt.date(y, 1, 1).toordinal(), _dt.date(y, 12, 31).toordinal(), None
+    found = frozenset(_dt.date(y, mo, d).toordinal() for mo in months
+                      for d in (days or range(1, 32)) if d <= calendar.monthrange(y, mo)[1])
+    return min(found), max(found), found
+
+
+def days(value: str | int) -> tuple[int, int, frozenset[int] | None]:
+    """The days a date may mean: (first, last, the exact set for a single date with a month, else None)."""
+    text = str(value).strip()
+    if "/" in text:
+        parse(text)   # raises for a broken interval
+        start, _, end = text.partition("/")
+        lo = _FIRST if start in ("", "..") else _days(start)[0]
+        hi = _LAST if end in ("", "..") else _days(end)[1]
+        return lo, hi, None
+    return _days(text)
+
+
+def compatible(a, b) -> bool:
+    """Can both dates be true at once? 1902 and 1902-05-20 can, ../1910 and 1902 too;
+    1902 and 1903 cannot. Qualifiers (~ ?) do not widen a date here."""
+    lo_a, hi_a, set_a = days(a)
+    lo_b, hi_b, set_b = days(b)
+    if set_a is not None and set_b is not None:
+        return bool(set_a & set_b)
+    return lo_a <= hi_b and lo_b <= hi_a
+
+
+def width(value) -> int:
+    """How many days a date may mean – fewer is more precise."""
+    lo, hi, found = days(value)
+    return len(found) if found is not None else hi - lo + 1

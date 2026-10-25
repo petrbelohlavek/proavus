@@ -93,8 +93,17 @@ class SchemaSet:
                 # The default message dumps the whole value; say what is expected.
                 hint = err.schema.get("x-hint", "does not match any allowed form")
                 msg = f"{where}: {hint}"
+            elif err.validator == "type" and isinstance(err.instance, dict) and "string" in _types(err.validator_value):
+                # YAML reads `- text: more text` as a mapping, not as a text with a colon.
+                text = "; ".join(f"{k}: {v}" for k, v in err.instance.items())
+                msg = (f"{where}: should be text, but YAML read {text!r} as a key and a value because of the colon and space – "
+                       f"put the item in quotes (\"{text}\") or replace the colon with a dash")
             else:
                 msg = f"{where}: {err.message}"
             (warnings if err.validator == VOCAB_KEYWORD else errors).append(msg)
         return sorted(set(errors)), sorted(set(warnings))
 
+
+
+def _types(value) -> list:
+    return value if isinstance(value, list) else [value]

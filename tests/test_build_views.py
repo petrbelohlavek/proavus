@@ -423,6 +423,73 @@ class BestFact(MapCase):
         self.assertNotIn('class="alt"', self.tree())
 
 
+class CompatibleVersions(MapCase):
+    """Versions of different precision that agree: the most precise on the card, no ≠."""
+
+    def add_birth(self, aid, date, info="secondary"):
+        self.add(f"assertions/{aid}.md", {"id": aid, "type": "assertion", "kind": "fact", "subject": JOSEF, "fact_type": "birth",
+                                         "date": date, "citations": [{"source": SRC, "information": info, "evidence": "direct"}],
+                                         "confidence": "probable"})
+
+    def josef_card(self):
+        return re.search(rf'<button type="button" class="card[^"]*" data-id="{JOSEF}".*?</button>', self.tree()).group(0)
+
+    def test_precise_date_wins_without_mark(self):
+        self.add_birth("A-20261020-ab-b08", "1878", info="primary")     # e.g. a gravestone, stronger by its citation
+        self.add_birth("A-20261020-ab-b09", "1878-03-12")
+        self.build()
+        card = self.josef_card()
+        self.assertIn("* 12 March 1878", card)
+        self.assertNotIn('class="alt"', card)
+        self.assertIn("other versions: 1878", self.card(JOSEF))
+
+    def test_real_disagreement_is_marked(self):
+        self.add_birth("A-20261020-ab-b08", "1878", info="primary")
+        self.add_birth("A-20261020-ab-b09", "1877-12-30")
+        self.build()
+        self.assertIn('class="alt"', self.josef_card())
+
+    def test_unmarried_parents_without_marriage_sign(self):
+        self.edit("RL-20261020-ab-m01", lambda d: d.update(subtype="unmarried-parents"))
+        self.build()
+        self.assertNotIn('data-rel="RL-20261020-ab-m01"><title>', self.tree())
+
+
+class Siblings(MapCase):
+    """The ancestor's siblings and their partners in the detail, not only among persons outside the tree."""
+
+    def test_sibling_with_partner(self):
+        self.add("people/P-20261020-ab-s01.md", {"id": "P-20261020-ab-s01", "type": "person", "names": [{"value": "Marie Pokusná"}],
+                                                "sex": "female", "vital_status": "deceased"})
+        self.add("people/P-20261020-ab-s02.md", {"id": "P-20261020-ab-s02", "type": "person", "names": [{"value": "Jan Vzorný"}],
+                                                "sex": "male", "vital_status": "deceased"})
+        for n, parent in (("s1", MATEJ), ("s2", ANNA)):
+            self.add(f"relationships/RL-20261020-ab-{n}x.md", {"id": f"RL-20261020-ab-{n}x", "type": "relationship", "rel_type": "parent-child",
+                     "subtype": "biological", "parties": [{"role": "parent", "person": parent}, {"role": "child", "person": "P-20261020-ab-s01"}],
+                     "confidence": "probable"})
+        self.add("relationships/RL-20261020-ab-s3x.md", {"id": "RL-20261020-ab-s3x", "type": "relationship", "rel_type": "partnership",
+                 "subtype": "marriage", "parties": [{"role": "partner", "person": "P-20261020-ab-s01"},
+                                                    {"role": "partner", "person": "P-20261020-ab-s02"}], "confidence": "probable"})
+        self.build()
+        detail = self.card(JOSEF)
+        self.assertIn("<dt>Siblings</dt>", detail)
+        self.assertRegex(detail, r'data-id="P-20261020-ab-s01">Marie Pokusná</button> · ⚭ <button[^>]*data-id="P-20261020-ab-s02">Jan Vzorný')
+        self.assertNotIn(">half<", detail)
+
+    def test_half_sibling(self):
+        self.add("people/P-20261020-ab-s01.md", {"id": "P-20261020-ab-s01", "type": "person", "names": [{"value": "Marie Pokusná"}],
+                                                "sex": "female", "vital_status": "deceased"})
+        self.add("relationships/RL-20261020-ab-s1x.md", {"id": "RL-20261020-ab-s1x", "type": "relationship", "rel_type": "parent-child",
+                 "subtype": "biological", "parties": [{"role": "parent", "person": MATEJ}, {"role": "child", "person": "P-20261020-ab-s01"}],
+                 "confidence": "probable"})
+        self.build()
+        self.assertIn('<span class="tag">half</span>', self.card(JOSEF))
+
+    def test_no_siblings_no_row(self):
+        self.build()
+        self.assertNotIn("<dt>Siblings</dt>", self.card(JOSEF))
+
+
 class Labels(MapCase):
     """3) Names and titles instead of IDs; 4) long texts shortened on the card."""
 

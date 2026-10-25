@@ -834,6 +834,129 @@ class DuplicateFacts(FamilyRepoCase):
         self.assertNotIn("with the same date", "\n".join(self.validate().warnings))
 
 
+class MergeableFacts(FamilyRepoCase):
+    """Two versions of a birth that agree, one more precise: join the citations into it."""
+
+    def birth(self, aid, date, **extra):
+        self.add(f"assertions/{aid}.md", {"id": aid, "type": "assertion", "kind": "fact", "subject": JOSEF, "fact_type": "birth",
+                                         "date": date, **extra, "citations": [{"source": SRC}], "confidence": "possible"})
+
+    def test_year_and_day(self):
+        self.birth("A-20261020-ab-b08", "1878")
+        self.birth("A-20261020-ab-b09", "1878-03-12")
+        self.assertWarning(self.validate(), "A-20261020-ab-b08.md: birth of P-20261020-ab-j01: A-20261020-ab-b08 (1878) agrees with "
+                                            "the more precise A-20261020-ab-b09 (1878-03-12) – one fact: join the citations into one assertion: "
+                                            "uv run .proavus/tools/merge_assertions.py plan . A-20261020-ab-b09 A-20261020-ab-b08")
+
+    def test_interval_before(self):
+        self.birth("A-20261020-ab-b08", "../1880")
+        self.birth("A-20261020-ab-b09", "1878-03")
+        self.assertWarning(self.validate(), "A-20261020-ab-b08 (../1880) agrees with the more precise A-20261020-ab-b09 (1878-03)")
+
+    def test_real_disagreement_is_not_mergeable(self):
+        self.birth("A-20261020-ab-b08", "1877")
+        self.birth("A-20261020-ab-b09", "1878-03-12")
+        self.assertNotIn("agrees with", "\n".join(self.validate().warnings))
+
+    def test_other_place_is_not_mergeable(self):
+        self.birth("A-20261020-ab-b08", "1878", place_as_written="Jinde")
+        self.birth("A-20261020-ab-b09", "1878-03-12", place="PL-20261020-ab-v01")
+        self.assertNotIn("agrees with", "\n".join(self.validate().warnings))
+
+
+class ParentsPartnership(FamilyRepoCase):
+    """Two own parents of a child without a partnership between them – easily forgotten."""
+
+    def test_missing_partnership(self):
+        (self.repo / "relationships/RL-20261020-ab-m01.md").unlink()
+        self.assertWarning(self.validate(), f"{ANNA} and {MATEJ} are both parents of {JOSEF}, but there is no partnership between them")
+
+    def test_unmarried_parents(self):
+        self.edit("RL-20261020-ab-m01", lambda d: (d.update(subtype="unmarried-parents"), d.pop("start")))
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual(report.warnings, [])
+
+    def test_step_parent_needs_no_partnership(self):
+        self.assertNotIn("no partnership", "\n".join(self.validate().warnings))   # Karel: own father and a step-father
+
+
+class YamlColon(FamilyRepoCase):
+    """A list item with ': ' is read by YAML as a mapping – say how to fix it."""
+
+    def test_uncertain_reading_with_colon(self):
+        # what YAML makes of `uncertain: [p2 surname: Ukazka or Ukaska]` written without quotes
+        self.edit(REC, lambda d: d["reading"].update(uncertain=[{"p2 surname": "Ukazka or Ukaska"}]))
+        self.assertError(self.validate(), "reading.uncertain[0]: should be text, but YAML read 'p2 surname: Ukazka or Ukaska' as a key and a value",
+                         'put the item in quotes ("p2 surname: Ukazka or Ukaska") or replace the colon with a dash')
+
+
+class CoverageParts(FamilyRepoCase):
+    """A part of a book (village, section, index letter) and the period an index really covers."""
+
+    def test_part_and_open_start(self):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(ranges=[{"part": "Ukázkov", "pages": "images ..-250"}]))
+        self.assertClean(self.validate())
+
+    def index(self, covers, dates="1870/1950", **extra):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(method="index", index_covers=covers,
+                                                          ranges=[{"part": "letter P", "dates": dates}], **extra))
+
+    def test_index_covers_less_than_searched(self):
+        self.index("1900/1950")
+        report = self.validate()
+        self.assertClean(report)
+        self.assertWarning(report, "C-20261020-ab-c02.md: the index covers only 1900/1950, but 1870/1950 was searched")
+
+    def test_index_covers_what_was_searched(self):
+        self.index("1900/1950", dates="1900/1950")
+        self.assertNotIn("covers only", "\n".join(self.validate().warnings))
+
+    def test_still_warned_when_negative_accepted(self):
+        self.index("1900/1950", index_negative_accepted={"by": "ab", "on": "2026-10-20", "note": "the index is reliable"})
+        self.assertWarning(self.validate(), "the index covers only 1900/1950")
+
+    def test_index_covers_only_for_an_index(self):
+        self.edit("C-20261020-ab-c02", lambda d: d.update(index_covers="1900/1950"))
+        self.assertWarning(self.validate(), "index_covers only fits a search of an index")
+
+
+class Leads(FamilyRepoCase):
+    """ADR 0067: entries that may belong to the family, kept in the question until confirmed or rejected."""
+
+    Q = "Q-20261020-ab-q01"
+    LEAD = {"where": "N 1870–1890, part Ukázkov, image 120", "why": "same house number", "by": "ab", "on": "2026-10-20", "status": "open"}
+
+    def lead(self, **change):
+        self.edit(self.Q, lambda d: d.update(leads=[{**self.LEAD, **change}]))
+
+    def test_open_lead(self):
+        self.lead()
+        report = self.validate()
+        self.assertClean(report)
+        self.assertEqual(report.warnings, [])
+
+    def test_confirmed_needs_record_and_who(self):
+        self.lead(status="confirmed")
+        self.assertError(self.validate(), "leads[0]")
+        self.lead(status="confirmed", record=REC, closed={"by": "ab", "on": "2026-10-21"})
+        self.assertClean(self.validate())
+
+    def test_rejected_needs_a_note(self):
+        self.lead(status="rejected", closed={"by": "ab", "on": "2026-10-21"})
+        self.assertError(self.validate(), "leads[0].closed: 'note' is a required property")
+        self.lead(status="rejected", closed={"by": "ab", "on": "2026-10-21", "note": "another house"})
+        self.assertClean(self.validate())
+
+    def test_open_lead_in_closed_question(self):
+        self.edit(self.Q, lambda d: d.update(status="abandoned", conclusion="no more sources", leads=[self.LEAD]))
+        self.assertWarning(self.validate(), "question is abandoned, but 1 lead is still open")
+
+    def test_lead_links_a_record_only(self):
+        self.lead(status="confirmed", record="R-20261020-ab-zzz", closed={"by": "ab", "on": "2026-10-21"})
+        self.assertError(self.validate(), "link to R-20261020-ab-zzz, which does not exist")
+
+
 class Roles(FamilyRepoCase):
     """ADR 0044: spouse's parents and grandparents without a side."""
 

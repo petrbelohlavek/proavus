@@ -88,7 +88,7 @@ LABELS = {
         "gen_n": "{n}× great-grandparents",
         "birth": "Birth", "death": "Death", "occupation": "Occupation", "other_names": "Other name forms",
         "marriage": "Marriage", "partners": "Partners", "parents": "Parents", "nonown_parents": "Non-biological parents",
-        "children": "Children", "facts": "Facts and sources", "identity": "In records",
+        "children": "Children", "siblings": "Siblings", "half": "half", "facts": "Facts and sources", "identity": "In records",
         "conflicts": "Open conflicts", "questions": "Open questions", "next": "Next steps",
         "outside": "Persons outside the tree", "none": "none", "unknown_value": "unknown",
         "close": "Close", "decides": "What would decide it", "claimed": "claimed by",
@@ -124,7 +124,7 @@ LABELS = {
         "gen_n": "{n}. generace předků",
         "birth": "Narození", "death": "Úmrtí", "occupation": "Povolání", "other_names": "Jiné podoby jména",
         "marriage": "Sňatek", "partners": "Partneři", "parents": "Rodiče", "nonown_parents": "Nevlastní rodiče",
-        "children": "Děti", "facts": "Údaje a zdroje", "identity": "V záznamech",
+        "children": "Děti", "siblings": "Sourozenci", "half": "polorodý", "facts": "Údaje a zdroje", "identity": "V záznamech",
         "conflicts": "Otevřené rozpory", "questions": "Otevřené otázky", "next": "Další kroky",
         "outside": "Osoby mimo strom", "none": "žádné", "unknown_value": "neznámé",
         "close": "Zavřít", "decides": "Co rozhodne", "claimed": "zabral/a",
@@ -265,26 +265,28 @@ class MapBuilder:
     def best_fact(self, pid: str, types) -> Entity | None:
         found = [a for a in self.visible_facts(pid) if a.data.get("fact_type") in types and a.data.get("confidence") != "disproved"]
         found.sort(key=lambda a: (types.index(a.data["fact_type"]), *self.strength(a), a.id))
-        return found[0] if found else None
+        if not found:
+            return None
+        # Versions that agree with the strongest one (1902 and 1902-05-20): the most precise date is shown.
+        agree = [a for a in found if a.data["fact_type"] == found[0].data["fact_type"] and self.v.facts_agree(found[0], a)]
+        return min(agree, key=lambda a: _width(a.data.get("date")))
 
     def alternatives(self, pid: str, fact: Entity) -> list[Entity]:
         """Other (not disproved) facts of the same type as the chosen one."""
         return [a for a in self.visible_facts(pid) if a is not fact and a.data.get("fact_type") == fact.data.get("fact_type")
                 and a.data.get("confidence") != "disproved"]
 
-    def _what(self, a: Entity) -> tuple:
-        return (str(a.data.get("date", "")), str(a.data.get("value", "")).casefold())
-
-    def _same_place(self, a: Entity, b: Entity) -> bool:
-        """Same place: the same place ID, or – when one of them has only place_as_written – the same name.
-        A place ID in one assertion and the same name as written in the other is not another version."""
-        pa, pb = self.canon(a.data.get("place")), self.canon(b.data.get("place"))
-        if pa and pb:
-            return pa == pb
-        return self.place_text(a).strip().casefold() == self.place_text(b).strip().casefold()
-
     def differs(self, a: Entity, b: Entity) -> bool:
-        return self._what(a) != self._what(b) or not self._same_place(a, b)
+        """Another version: a date that cannot be true with the other one, or another place or value
+        where both give one (ADR 0066) – 1902 and 1902-05-20 agree."""
+        return not self.v.facts_agree(a, b)
+
+    def with_place(self, pid: str, fact: Entity) -> Entity:
+        """The fact itself, or – when it names no place – an agreeing version that does."""
+        if fact.data.get("place") or fact.data.get("place_as_written"):
+            return fact
+        return next((a for a in self.alternatives(pid, fact) if (a.data.get("place") or a.data.get("place_as_written"))
+                     and self.v.facts_agree(fact, a)), fact)
 
     def variance(self, pid: str, fact: Entity) -> str | None:
         """'equal' – an equally strong version says something else; 'conflict' – a weaker one does."""
@@ -595,7 +597,7 @@ class MapBuilder:
                 svg.append(f'<path class="{cls}" data-rel="{esc(p.rel.id)}" d="M{x0:.0f},{y0:.0f} H{xm:.0f} V{y1:.0f} H{xp:.0f}"/>')
             own = [p.person for p in n.parents if not p.nonown]
             rel = self.marriage_between(*own[:2]) if len(own) >= 2 else None
-            if rel is not None:
+            if rel is not None and rel.data.get("subtype") != "unmarried-parents":
                 short, long = self.marriage_text(rel)
                 svg.append(f'<g class="mar-g" data-rel="{esc(rel.id)}"><title>{esc(self.L["marriage"])} {esc(long)}</title>'
                            f'<rect class="mar-bg" x="{xm - 28:.0f}" y="{y0 - 29:.0f}" width="56" height="18" rx="9"/>'
@@ -658,7 +660,7 @@ class MapBuilder:
                                    for a, text, where in self.other_versions(pid, fact))
                 mark = f' <span class="alt" title="{esc(self.L["alt_" + kind])}: {esc(others)}">≠</span>'
             out.append(f"<span>{esc(sign)} {esc(human_date(date, self.lang))}{mark}</span>")
-            place = self.place_shown(pid, fact)
+            place = self.place_shown(pid, self.with_place(pid, fact))
             if place:
                 out.append(f'<span class="pl" title="{esc(place)}">{esc(clip(place, CLIP_PLACE))}</span>')
         if pid in self.living:
@@ -748,7 +750,7 @@ class MapBuilder:
                 text = f'<span class="muted">{esc(L["minor_date"])}</span>'
             else:
                 text = esc(human_date(date, self.lang))
-            place = self.place_html(fact, pid)
+            place = self.place_html(self.with_place(pid, fact), pid)
             value = ", ".join(x for x in (text, place) if x) or f'<span class="muted">{esc(L["unknown_value"])}</span>'
             others = self.alternatives(pid, fact) if pid not in self.minors else []
             if others:
@@ -776,6 +778,9 @@ class MapBuilder:
             row(L["partners"], self.rel_list(pid, self.partner_rels[pid], "partner"))
         if self.child_rels.get(pid):
             row(L["children"], self.rel_list(pid, self.child_rels[pid], "child"))
+        siblings = self.siblings(pid)
+        if siblings:
+            row(L["siblings"], self.sibling_list(siblings))
         out.append("</dl>")
 
         facts = self.visible_facts(pid)
@@ -828,6 +833,40 @@ class MapBuilder:
                 out.append(f"<dt>{esc(label)}</dt><dd>{self.rel_list(pid, rels, role)}</dd>")
         out.append(f'</dl><button type="button" class="close">{esc(L["close"])}</button></template>')
         return "\n".join(out)
+
+    def own_parents(self, pid: str) -> set[str]:
+        return {self.canon(p) for r in self.parent_rels.get(pid, []) if r.data.get("subtype") in OWN_SUBTYPES
+                and r.data.get("confidence") != "disproved" for p in self.party(r, "parent") if p != "unknown"}
+
+    def siblings(self, pid: str) -> list[tuple[str, bool]]:
+        """Children of the person's own parents, (ID, half sibling), by birth."""
+        parents = self.own_parents(pid)
+        found = {self.canon(c) for par in parents for r in self.child_rels.get(par, []) if r.data.get("subtype") in OWN_SUBTYPES
+                 and r.data.get("confidence") != "disproved" for c in self.party(r, "child")} - {pid}
+        found &= set(self.people)
+
+        def born(sib):
+            fact = self.best_fact(sib, BIRTH_FACTS)
+            return _start(fact.data.get("date")) if fact is not None else 99999
+        return [(sib, self.own_parents(sib) != parents) for sib in sorted(found, key=lambda x: (born(x), self.name(x).casefold(), x))]
+
+    def sibling_list(self, siblings: list[tuple[str, bool]]) -> str:
+        """Siblings with their partners – the ancestor's family, not only the line (ADR 0066)."""
+        items = []
+        for sib, half in siblings:
+            bits = [self.ref(sib)]
+            if half:
+                bits.append(f'<span class="tag">{esc(self.L["half"])}</span>')
+            fact = self.best_fact(sib, BIRTH_FACTS)
+            date = self.show_date(sib, fact) if fact is not None else None
+            if date:
+                bits.append(esc(human_date(date, self.lang)))
+            partners = [self.canon(o) for r in self.partner_rels.get(sib, []) if r.data.get("confidence") != "disproved"
+                        for o in self.party(r, "partner") if self.canon(o) != sib]
+            if partners:
+                bits.append("⚭ " + ", ".join(self.ref(o) for o in partners))
+            items.append(f"<div>{' · '.join(bits)}</div>")
+        return "".join(items)
 
     def rel_list(self, pid: str, rels: list[Entity], other_role: str) -> str:
         items = []
@@ -954,6 +993,11 @@ def default_lang(config: dict) -> str:
 
 def _rank(confidence) -> int:
     return CONFIDENCE.index(confidence) if confidence in CONFIDENCE else len(CONFIDENCE)
+
+
+def _width(date) -> int:
+    """Days a date may mean; a missing or broken date is the least precise."""
+    return edtf.width(date) if edtf.is_valid(date) else 10**9
 
 
 def _start(date) -> int:

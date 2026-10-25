@@ -191,6 +191,19 @@ class ManualPortals(Case):
         self.assertIn("consent", err)
         self.assertEqual(self.net.calls, [])
 
+    def test_acta_publica_viewer_link(self):
+        """…/matrika/detail/<id>?image=<prefix>-<image × 10, five digits>.jp2 (research 2026-10-25)."""
+        viewer = "https://www.mza.cz/actapublica/matrika/detail/1234?image=999000001-000002-000003-000000-000004-0-0001-00120.jp2"
+        code, out, _ = self.run_cli("link", viewer, "--image", "250")
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), "https://www.mza.cz/actapublica/matrika/detail/1234?image=999000001-000002-000003-000000-000004-0-0001-02500.jp2")
+        code, out, _ = self.run_cli("link", viewer, "--image", "7")
+        self.assertTrue(out.strip().endswith("-00070.jp2"))
+        code, _, err = self.run_cli("link", "https://www.mza.cz/actapublica/matrika/detail/1234", "--image", "7")
+        self.assertEqual(code, 1)
+        self.assertIn("copy the address of any image", err)
+        self.assertEqual(self.net.calls, [])
+
     def test_unknown_portal(self):
         code, _, err = self.run_cli("book", "https://example.org/register/1")
         self.assertEqual(code, 1)

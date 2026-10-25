@@ -33,3 +33,6 @@ values:
   - id: spelling-variant
     en: "spelling variant"
     cs: "pravopisná varianta"
+  - id: baptismal
+    en: "full baptismal name (all given names as in the register)"
+    cs: "plné křestní jméno (všechna jména z matriky)"

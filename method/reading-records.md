@@ -19,9 +19,10 @@ compute one from the other without calibration points.
   double scans), and so does the number of pages on one image; a formula
   from another book does not hold. Read the page number on two images – near
   the entry and further away – and write them as anchors into the source's
-  `image_map` (per volume; `unit: folio` for a book numbered in folios), with
-  who read them and when (ADR 0061). `uv run .proavus/tools/locate.py
-  <SO-ID> --page N [--volume V]` then gives the image: exact, between two
+  `image_map` (per volume, or per `part` of a book with its own page
+  numbering; `unit: folio` for a book numbered in folios), with who read
+  them and when (ADR 0061, 0068). `uv run .proavus/tools/locate.py
+  <SO-ID> --page N [--volume V] [--part P]` then gives the image: exact, between two
   anchors, or only an estimate outside them. When the image shows another
   page, there is a break: add an anchor there. The validator compares every
   record with a page and an image against the map.
@@ -179,7 +180,21 @@ book's `found`. What the index gives is a **pointer**, not a record (ADR
 index gives it and where it leads (`to: {source, volume, page, entry}`),
 never as participants or an assertion – and once the book is searched, set
 `followed` to the book's coverage. A year or date in the index
-(`date_as_written`) is a hint; the book decides. Tasks a machine cannot do (logging in to a
+(`date_as_written`) is a hint; the book decides.
+
+Searched one part of a book (a village, a section, a letter
+of the index)? Name it in the range's `part`; when the first page or image
+of the part is not known, start the range with `..` (`images ..-250`). An
+index that really covers less than the archive says (the section of a
+letter starts years later) gets `index_covers` – the years outside it are
+not searched by that coverage.
+
+An entry that may belong to the family but is not shown to is a **lead**:
+add it to the question's `leads` with where it is (book, part, image,
+entry, URL), why it is suspected, who found it and when, `status: open` –
+no names of other people and no transcript. Close it later: `confirmed`
+with the `record` written from it, or `rejected` with a note why, both
+with `closed: {by, on}`. Tasks a machine cannot do (logging in to a
 portal, paying a fee) go to `human_tasks` with the exact address of the
 record, as `{task, status: open, question: <Q-ID>}` (and `conflict` or
 `inquiry` if the task serves one); close them later with `status: done` or

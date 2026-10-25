@@ -115,6 +115,17 @@ class Merge(FamilyRepoCase):
     def test_not_the_same_fact(self):
         self.assertIn("not the same fact", "\n".join(self.plan((B02, "A-20261020-ab-b05")).problems))
 
+    def test_compatible_dates_keep_the_most_precise(self):
+        """ADR 0066: a year and a day of one birth are one fact – the day stays."""
+        self.edit(DUP, lambda d: d.update(date="1850-04-02"))
+        self.edit(B02, lambda d: d.update(date="1850"))
+        p = self.plan()
+        self.assertTrue(p.ok, p.problems)
+        self.assertEqual(p.data["date"], "1850-04-02")
+        self.assertIn("date 1850-04-02 – the most precise of 1850, 1850-04-02", "\n".join(p.notes))
+        self.edit(DUP, lambda d: d.update(date="1851-04-02"))
+        self.assertIn("not the same fact", "\n".join(self.plan().problems))
+
     def test_identity_links_are_not_merged_here(self):
         self.assertIn("is an identity link", "\n".join(self.plan((B02, "A-20261020-ab-i01")).problems))
 

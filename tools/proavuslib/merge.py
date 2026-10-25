@@ -1,7 +1,7 @@
 """Merging duplicate fact assertions into one (ADR 0063).
 
 plan() checks that the assertions say the same thing (subject, fact type,
-date, value, place) and can be joined without a human choice, chooses the
+date – or compatible dates, of which the most precise stays –, value, place) and can be joined without a human choice, chooses the
 assertion to keep, joins the citations and lists every file that links to
 the assertions that go away. apply() writes the plan: the kept assertion
 with all citations, the links rewritten, the other files deleted (git keeps
@@ -16,6 +16,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import edtf
 from .frontmatter import join, split
 from .validator import Entity, RepoValidator
 
@@ -82,6 +83,8 @@ def plan(repo: Path, framework: Path, ids: list[str], keep: str | None = None, c
             a, b = first.data.get(k), e.data.get(k)
             if k == "subject":
                 a, b = canon(a), canon(b)
+            if k == "date" and a is not None and b is not None and edtf.is_valid(a) and edtf.is_valid(b) and edtf.compatible(a, b):
+                continue   # 1902 and 1902-05-20: one fact, the more precise date stays (ADR 0066)
             if str(a if a is not None else "") != str(b if b is not None else ""):
                 p.problems.append(f"{e.id} has {k} {b!r}, {first.id} {a!r} – not the same fact")
         if not v.same_place(v.place_key(first), v.place_key(e)):
@@ -127,6 +130,12 @@ def plan(repo: Path, framework: Path, ids: list[str], keep: str | None = None, c
         values = [x for e in entities for x in e.data.get(k) or []]
         if values:
             data[k] = [x for x in dict.fromkeys(values) if x not in all_ids or x == kept.id]
+    dates = [e.data["date"] for e in entities if edtf.is_valid(e.data.get("date"))]
+    if dates:
+        precise = min(dates, key=edtf.width)
+        if str(precise) != str(data.get("date")):
+            p.notes.append(f"date {precise} – the most precise of {', '.join(str(d) for d in dict.fromkeys(dates))}")
+        data["date"] = precise
     for k in ("place", "place_as_written"):
         if data.get(k) is None:
             other = next((e.data.get(k) for e in entities if e.data.get(k) is not None), None)

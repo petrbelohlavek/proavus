@@ -217,6 +217,26 @@ class StartHere(unittest.TestCase):
         self.assertIn("(C-20261024-ab-i01): Pokusný Václav → ", text)
         self.assertIn("(SO-20261020-ab-s01), volume 7, page 57", text)
 
+    def test_open_leads_under_their_question(self):
+        """ADR 0067: entries not yet shown to belong are listed under the question; closed ones are not."""
+        path = self.repo / "questions" / "Q-20261020-ab-q01.md"
+        text = path.read_text(encoding="utf-8").replace("---\n", "", 1).rsplit("---\n", 1)
+        lead = ("leads:\n"
+                "  - where: N 1870–1890, part Ukázkov, image 120, entry 4\n"
+                "    why: same house number 12, father a weaver\n"
+                "    url: https://example.org/archive/vzorkov-7/image/120\n"
+                "    by: ab\n    on: 2026-10-20\n    status: open\n"
+                "  - where: N 1870–1890, image 140\n    why: same surname\n    by: ab\n    on: 2026-10-20\n"
+                "    status: rejected\n    closed: {by: ab, on: 2026-10-20, note: another house}\n")
+        path.write_text("---\n" + text[0] + lead + "---\n" + text[1], encoding="utf-8")
+        _, code = family_repo.start_here(self.repo, today=TODAY)
+        self.assertEqual(code, 0)
+        out = (self.repo / "START-HERE.md").read_text(encoding="utf-8")
+        self.assertIn("- open leads (entries not yet shown to belong, ADR 0067): 1", out)
+        self.assertIn("  - N 1870–1890, part Ukázkov, image 120, entry 4 – same house number 12, father a weaver (ab, 2026-10-20) "
+                      "https://example.org/archive/vzorkov-7/image/120", out)
+        self.assertNotIn("image 140", out)
+
     def test_names_next_to_ids(self):
         family_repo.start_here(self.repo, today=TODAY)
         text = (self.repo / "START-HERE.md").read_text(encoding="utf-8")

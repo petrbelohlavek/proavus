@@ -123,7 +123,11 @@ Follow the method:
 - Transcribe records per `${CLAUDE_PLUGIN_ROOT}/method/reading-records.md`:
   locator first, verbatim transcript with `[ ]`, then interpretation and
   participants.
-- New files always with `new_id.py`; one entity = one file.
+- New files always with `new_id.py`; one entity = one file. Many files at
+  once: `new_id.py <type> <abbr> --count N` prints N IDs in one run.
+- An entry that may belong to the family but is not shown to: a lead in the
+  question's `leads` (where, why, by, on, `status: open`) – no names of
+  other people, no record or assertion until it is confirmed.
 - **Identity gate:** never set `confirmed` (reading, identity link, merge,
   proved relationship) without the user's explicit yes in this session after
   looking at the crop.

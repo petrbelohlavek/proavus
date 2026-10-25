@@ -33,3 +33,6 @@ values:
   - id: cohabitation
     en: "cohabitation"
     cs: "soužití"
+  - id: unmarried-parents
+    en: "parents of a common child, never married"
+    cs: "rodiče společného dítěte, nesezdaní"

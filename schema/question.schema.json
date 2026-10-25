@@ -23,8 +23,51 @@
         "next_sources": { "type": "array", "items": { "type": "string" } }
       }
     },
+    "leads": {
+      "description": "Entries found while searching that may belong to the family, but the link is not shown yet (ADR 0067). Never copied into records or assertions until confirmed; no names of other people – where it is and why it is suspected.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/lead" }
+    },
     "conclusion": { "type": "string", "description": "Short conclusion; reasoning (GPS) in the body." },
     "conclusion_assertions": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/ref_assertion" } }
+  },
+  "$defs": {
+    "lead": {
+      "type": "object",
+      "required": ["where", "why", "by", "on", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "$ref": "common.schema.json#/$defs/ref_source", "description": "the book, when it is already a source" },
+        "where": { "type": "string", "minLength": 1, "description": "book and position as the portal names them, e.g. N 1870–1890, part Ukázkov, image 120, entry 12" },
+        "url": { "$ref": "common.schema.json#/$defs/url" },
+        "why": { "type": "string", "minLength": 1, "description": "why it may belong to the family – without names of other people" },
+        "by": { "$ref": "common.schema.json#/$defs/member" },
+        "on": { "$ref": "common.schema.json#/$defs/date" },
+        "status": { "enum": ["open", "confirmed", "rejected"] },
+        "record": { "$ref": "common.schema.json#/$defs/ref_record", "description": "status confirmed: the record written from the entry" },
+        "closed": {
+          "description": "Who closed the lead, when and why (status confirmed or rejected).",
+          "type": "object",
+          "required": ["by", "on"],
+          "additionalProperties": false,
+          "properties": {
+            "by": { "$ref": "common.schema.json#/$defs/member" },
+            "on": { "$ref": "common.schema.json#/$defs/date" },
+            "note": { "type": "string", "minLength": 1 }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "confirmed" } } },
+          "then": { "required": ["record", "closed"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "rejected" } } },
+          "then": { "required": ["closed"], "properties": { "closed": { "required": ["by", "on", "note"] } } }
+        }
+      ]
+    }
   },
   "allOf": [
     { "$ref": "common.schema.json#/$defs/base" },

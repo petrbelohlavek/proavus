@@ -318,6 +318,11 @@ def question_summary(v: RepoValidator, lab: Labeler, q, tasks: list[dict] | None
             lines.append(f"- inquiry: {lab.ref(i)} – {inquiry_state(i)}")
     for task in tasks or []:
         lines.append(f"- open task: {task_line(lab, task)}")
+    leads = [x for x in d.get("leads") or [] if isinstance(x, dict) and x.get("status") == "open"]
+    if leads:
+        lines.append(f"- open leads (entries not yet shown to belong, ADR 0067): {len(leads)}")
+        lines += [f"  - {x.get('where')} – {x.get('why')} ({x.get('by')}, {x.get('on')})"
+                  + (f" {x['url']}" if x.get("url") else "") for x in leads]
     next_sources = (d.get("plan") or {}).get("next_sources") or []
     if next_sources:
         lines.append("- planned sources: " + "; ".join(str(x) for x in next_sources))

@@ -75,6 +75,15 @@ class Locate(unittest.TestCase):
         self.assertEqual(imagemap.locate_in_source(src, page=5, volume="III").image, 5)   # falls back to the general map
 
 
+    def test_map_per_part(self):
+        """ADR 0068: parts of a book with their own page numbering – one map per part."""
+        src = {"image_map": [{"anchors": [anchor(1, page=1), anchor(10, page=10)]},
+                             {"part": "Ukázkov", "anchors": [anchor(120, page=1), anchor(129, page=10)]}]}
+        self.assertEqual(imagemap.locate_in_source(src, page=5).image, 5)
+        self.assertEqual(imagemap.locate_in_source(src, page=5, part="ukázkov").image, 124)
+        self.assertEqual(imagemap.locate_in_source(src, page=5, part="Vzorkov").status, "no-map")   # never another part's map
+
+
 class Validate(FamilyRepoCase):
     def set_map(self, *anchors, **extra):
         self.edit(SRC, lambda d: d.update(image_map=[{"anchors": list(anchors), **extra}]))
@@ -124,6 +133,26 @@ class Validate(FamilyRepoCase):
         self.edit(SRC, lambda d: d.update(image_map=[{"anchors": [anchor(4, page=1), anchor(84, page=81)]},
                                                      {"anchors": [anchor(4, page=1), anchor(84, page=81)]}]))
         self.assertError(self.validate(), "two image maps for the whole source")
+
+    def test_two_maps_for_one_part(self):
+        part = {"part": "Ukázkov", "anchors": [anchor(120, page=1), anchor(129, page=10)]}
+        self.edit(SRC, lambda d: d.update(image_map=[{"anchors": [anchor(4, page=1), anchor(84, page=81)]}, part]))
+        self.assertClean(self.validate())
+        self.edit(SRC, lambda d: d.update(image_map=[part, part]))
+        self.assertError(self.validate(), "two image maps for part 'Ukázkov'")
+
+    def test_cli_part(self):
+        self.edit(SRC, lambda d: d.update(image_map=[{"part": "Ukázkov", "anchors": [anchor(120, page=1), anchor(129, page=10)]}]))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = locate.main([SRC, "--page", "5", "--part", "Ukázkov", "--repo", str(self.repo)])
+        self.assertEqual(code, 0)
+        self.assertIn("page 5: image 124 – interpolated", out.getvalue())
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = locate.main([SRC, "--page", "5", "--repo", str(self.repo)])
+        self.assertEqual(code, 1)
+        self.assertIn("has no image map", out.getvalue())
 
     def test_cli(self):
         self.set_map(anchor(4, page=1), anchor(84, page=81))
