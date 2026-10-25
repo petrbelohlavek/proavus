@@ -68,6 +68,7 @@ README name the agent, the model and the Proavus version.
 |---|---|---|---|---|---|---|---|
 | 2026-10-22 | Claude Code (`claude -p`, the plan's default model) | 0.6.0 | 5/5 | 4/5 | 5/5 | – | – |
 | 2026-10-25 | Claude Code (`claude -p --model claude-sonnet-5-5`), framework tools allowed¹ | 0.7.0 | 5/5 | 5/5 | 3/5 | 5/5 | 1/5 |
+| 2026-10-25 | the same, with the page → image line in AGENTS.md² | 0.7.0 + AGENTS.md line | – | – | – | – | 5/5 |
 
 ¹ `--permission-mode acceptEdits --allowedTools` for `uv run
 .proavus/tools/validate.py`, `new_id.py`, `locate.py`, `access.py`,
@@ -77,6 +78,9 @@ at all: it cannot validate or make IDs with `new_id.py`, writes IDs by hand
 and leaves invalid files; such a run says nothing about the method and was
 stopped. The 2026-10-22 run may have had other permissions, so the two rows
 are not directly comparable.
+
+² Only `image-numbering-break` was run again, after the family AGENTS.md
+block got the line on `image_map` and `locate.py`.
 
 What the failures showed:
 
@@ -97,7 +101,7 @@ What the failures showed:
   AGENTS.md said nothing about `image_map` – only
   `method/reading-records.md` §1 and the skills did, and `claude -p` without
   the plugin does not load the skills. The family AGENTS.md block now says
-  it in one line.
+  it in one line; with it, 5 of 5 added a true anchor.
 
 Next runs should name the model in `--label`.
 

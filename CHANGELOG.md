@@ -24,8 +24,8 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   `image-numbering-break` (no anchor added after the break).
 - Family `AGENTS.md` block: page → image from the anchors in the source's
   `image_map` with `locate.py`; when an image shows another page, read it
-  and add an anchor – never a computed one. Reaches family repositories
-  through `/proavus:upgrade`.
+  and add an anchor – never a computed one. With it `image-numbering-break`
+  passed 5/5. Reaches family repositories through `/proavus:upgrade`.
 
 ## 0.7.0 – 2026-10-24
 
