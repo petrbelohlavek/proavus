@@ -1,0 +1,10 @@
+Archiv Vzorkov (fictional) – Vzorkov 11, N 1890–1910 – image 83 of 140
+https://example.org/archive/vzorkov-11/image/83
+Accessed: 2026-10-24
+Page number written on the page: 80
+
+Liber natorum Vzorkov, anno 1905
+
+No | natus     | baptisatus | nomen    | sexus | legitimus | pater                                     | mater                     | patrini
+13 | 2. Maii   | 3. Maii    | Carolus  | m     | leg.      | Josephus Pokusny agricola Vzorkov N. 12    | Maria nata Kmotrovska     | Joannes Kmotrovsky
+14 | 9. Maii   | 9. Maii    | Anna     | f     | leg.      | Wenceslaus Zkusil inquilinus Vzorkov N. 5  | Catharina nata Novotna    | Rosalia Kmotrovska
