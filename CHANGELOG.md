@@ -8,7 +8,7 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
-## Unreleased
+## 0.7.2 – 2026-10-25
 
 - `archive_fetch.py` reads the source (ADR 0065): `book`, `list`, `link`
   and `get` take `--source SO-ID` (with `--repo` and `--volume`) instead of
