@@ -26,6 +26,11 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   `image_map` with `locate.py`; when an image shows another page, read it
   and add an anchor – never a computed one. With it `image-numbering-break`
   passed 5/5. Reaches family repositories through `/proavus:upgrade`.
+- Family `AGENTS.md` block: on a page you read, record every entry of the
+  family surname, not only the one you looked for; a namesake gets his own
+  record and stays unlinked until evidence decides. With it `namesakes`
+  passed 5/5 (before 3/5). Reaches family repositories through
+  `/proavus:upgrade`.
 
 ## 0.7.0 – 2026-10-24
 
