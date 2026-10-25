@@ -8,7 +8,7 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
-## Unreleased
+## 0.7.1 – 2026-10-25
 
 - Evals: two new tasks on the fictional family. `volume-out-of-order` – a
   marriage entered later in volume II, with only a note in volume I; the
@@ -26,6 +26,11 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   `image_map` with `locate.py`; when an image shows another page, read it
   and add an anchor – never a computed one. With it `image-numbering-break`
   passed 5/5. Reaches family repositories through `/proavus:upgrade`.
+- Family `AGENTS.md` block: on a page you read, record every entry of the
+  family surname, not only the one you looked for; a namesake gets his own
+  record and stays unlinked until evidence decides. With it `namesakes`
+  passed 5/5 (before 3/5). Reaches family repositories through
+  `/proavus:upgrade`.
 
 ## 0.7.0 – 2026-10-24
 

@@ -20,6 +20,10 @@ be a fork of `proavus`.
   reading of the decisive items from the crop – ask them to read the items
   before you show your reading – with `basis` and `checked`
   (`.proavus/method/reading-records.md` §5).
+- On a page you read, record every entry that names the family surname,
+  not only the one you looked for – a namesake gets his own record and
+  stays unlinked until evidence separates or joins them (house, wife,
+  occupation, godparents).
 - Living persons: only name, sex, birth and relationships; living minors
   without birth date.
 - Images from archive portals: `.proavus/tools/archive_fetch.py` only after

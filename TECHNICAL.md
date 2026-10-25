@@ -20,7 +20,7 @@ public framework, and one **private** family repository per family
 (`proavus-<family>`) with a pinned copy of the tools in `.proavus/`
 (ADR 0014). Never put family data in a fork of Proavus: forks are public.
 
-> **Work in progress (0.7.0).** The schema, the validator, the binding rules
+> **Work in progress (0.7.1).** The schema, the validator, the binding rules
 > and the commands (`/proavus:init`, `/proavus:setup`, `/proavus:start`,
 > `/proavus:registers`, `/proavus:end`, `/proavus:upgrade`) exist. Not ready for general use.
 
