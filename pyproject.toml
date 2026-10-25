@@ -3,7 +3,7 @@
 # header, so they also run from the copy .proavus/ in a family repository.
 [project]
 name = "proavus-tools"
-version = "0.7.0"
+version = "0.7.1"
 description = "Tools of the Proavus genealogy framework"
 requires-python = ">=3.11"
 dependencies = [
