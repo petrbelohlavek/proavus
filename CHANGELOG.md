@@ -8,7 +8,7 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
-## 0.8.0 – unreleased
+## 0.8.0 – 2026-10-25
 
 From a day of research in the registers of Acta Publica (MZA) with 0.6.2 –
 what 0.7 did not solve yet.
