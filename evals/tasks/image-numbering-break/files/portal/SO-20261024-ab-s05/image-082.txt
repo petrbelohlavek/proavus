@@ -1,0 +1,10 @@
+Archiv Vzorkov (fictional) – Vzorkov 11, N 1890–1910 – image 82 of 140
+https://example.org/archive/vzorkov-11/image/82
+Accessed: 2026-10-24
+Page number written on the page: 79
+
+Liber natorum Vzorkov, anno 1905
+
+No | natus       | baptisatus  | nomen    | sexus | legitimus | pater                                  | mater                    | patrini
+11 | 14. Aprilis | 15. Aprilis | Maria    | f     | leg.      | Thomas Zkusil inquilinus Vzorkov N. 5   | Rosalia nata Kmotrovska  | Anna Kmotrovska
+12 | 27. Aprilis | 28. Aprilis | Joannes  | m     | leg.      | Franciscus Kmotrovsky agricola Vzorkov N. 8 | Barbara nata Zkusilova | Thomas Zkusil

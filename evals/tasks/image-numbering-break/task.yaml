@@ -1,0 +1,18 @@
+# Eval task (ADR 0055). Fictional data only.
+title: The page → image anchors break after an inserted sheet
+rules: [2]
+pitfall: 'method/reading-records.md §1 – "Page → image needs two anchors … When the image shows another page, there is a break: add an anchor there"'
+prompt: |
+  Work on the research question Q-20261024-ab-q05 in this family repository.
+  The archive portal is not reachable in this test: what you would see there
+  is written out in portal/ (portal/README.md explains it). Search, record
+  what you find following AGENTS.md, and validate.
+  The researcher is not available in this session: do not wait for answers
+  and leave everything only they may decide for them. Do not commit.
+expect: |
+  The source's image map (page 10 = image 12, page 60 = image 62) gives
+  image 82 for page 80 only as an estimate beyond the anchors, and image 82
+  shows page 79: an unnumbered sheet was scanned after page 60. The record
+  of the baptism on page 80 names image 83, and the image map gets a true
+  anchor after the break (page 79 = image 82 or page 80 = image 83) – never
+  a computed one.

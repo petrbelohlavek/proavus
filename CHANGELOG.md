@@ -8,6 +8,17 @@ Every version has a git tag `vX.Y.Z` and a GitHub release, older ones
 added on 2026-10-21. `v0.1.0` and `v0.2.1` mark versions that were not
 released on `stable` (their changes are in 0.2.0 and 0.3.0).
 
+## Unreleased
+
+- Evals: two new tasks on the fictional family. `volume-out-of-order` – a
+  marriage entered later in volume II, with only a note in volume I; the
+  record names the volume in `locator.volume`, coverage names both volumes
+  (ADR 0058). `image-numbering-break` – an unnumbered sheet after page 60
+  shifts the images; the record names the image the page is really on and
+  the image map gets a true anchor after the break, never a computed one
+  (ADR 0061). Each with a grader, a reference solution and two wrong ones;
+  not run with an agent yet.
+
 ## 0.7.0 – 2026-10-24
 
 - Volume of a source (ADR 0058): `record.locator.volume`,
