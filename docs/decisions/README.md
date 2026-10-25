@@ -69,5 +69,6 @@ Sloupec *Původně* odkazuje na číslování rozhodnutí v pracovním návrhu a
 | [0062](0062-registers-skill.md) | Skill pro hledání v matrikách (`/proavus:registers`) | přijato | — |
 | [0063](0063-merging-assertions.md) | Sloučení zdvojených tvrzení: `merge_assertions.py` | přijato | — |
 | [0064](0064-access-and-time-limits.md) | Režim přístupu u zdroje a zákonné lhůty matrik | přijato | — |
+| [0065](0065-archive-fetch-source-access.md) | `archive_fetch.py` čte zdroj a jeho režim přístupu | přijato | — |
 
 Nové záznamy: `NNNN-kratky-nazev.md`, další volné číslo, stejná struktura.

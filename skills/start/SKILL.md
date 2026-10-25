@@ -144,7 +144,9 @@ Follow the method:
   pilot question, `bulk_import.py --dry-run`, and write only after the user's
   yes; never raise confidence above what the old notes and the records show.
 - **Images from archive portals:** first show the list –
-  `uv run .proavus/tools/archive_fetch.py get <book URL> --images <n-m> --out <folder outside the repository> --dry-run`
+  `uv run .proavus/tools/archive_fetch.py get --source <SO-ID> [--volume V] --images <n-m> --out <folder outside the repository> --dry-run`
+  (`--source` takes the book URL from the source and refuses what its
+  `access` does not allow; a bare `<book URL>` works too)
   (images, sizes, where they go) – and download only after the user's
   explicit yes to exactly that list; then the same command without
   `--dry-run`. Never into the repository (only small crops go into

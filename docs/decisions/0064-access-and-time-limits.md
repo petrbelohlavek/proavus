@@ -2,6 +2,7 @@
 
 - **Stav:** přijato (2026-10-24)
 - **Původně:** —
+- **Doplněno:** [ADR 0065](0065-archive-fetch-source-access.md) (archive_fetch čte `source.access`)
 - **Doplňuje:** [ADR 0041](0041-archive-portals.md),
   [ADR 0050](0050-region-at-and-portal-catalogue.md) (katalog portálů)
 

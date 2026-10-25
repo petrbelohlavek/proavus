@@ -197,6 +197,71 @@ class ManualPortals(Case):
         self.assertIn("unknown portal", err)
 
 
+class SourceAccess(Case):
+    """--source: the URL and the access mode of a source in the family repository (ADR 0064)."""
+
+    SRC = "SO-20261025-ab-s07"
+
+    def add_source(self, **extra):
+        repo = Path(self._tmp.name) / "family"
+        (repo / "sources").mkdir(parents=True, exist_ok=True)
+        lines = [f"id: {self.SRC}", "type: source", f"url: {BOOK_URL}"]
+        lines += [f"{k}: {json.dumps(v, ensure_ascii=False)}" for k, v in extra.items()]
+        (repo / "sources" / f"{self.SRC}.md").write_text("---\n" + "\n".join(lines) + "\n---\n", encoding="utf-8")
+        return str(repo)
+
+    def test_url_from_the_source(self):
+        repo = self.add_source()
+        code, out, _ = self.run_cli("book", "--source", self.SRC, "--repo", repo)
+        self.assertEqual(code, 0)
+        self.assertIn("3 images", out)
+
+    def test_url_of_a_volume(self):
+        other = "https://data.matricula-online.eu/de/oesterreich/beispiel/vzorkov/02-01/"
+        repo = self.add_source(volumes=[{"volume": "II", "url": other}])
+        code, out, _ = self.run_cli("link", "--source", self.SRC, "--volume", "ii", "--repo", repo, "--image", "2")
+        self.assertEqual(code, 0)
+        self.assertEqual(out.strip(), other + "?pg=2")
+        code, _, err = self.run_cli("link", "--source", self.SRC, "--volume", "IX", "--repo", repo, "--image", "2")
+        self.assertEqual(code, 1)
+        self.assertIn("has no volume 'IX'", err)
+
+    def test_on_site_source_refuses_everything(self):
+        repo = self.add_source(access={"mode": "on-site", "held_by": "registry-office", "note": "not digitised"})
+        for cmd in (("book",), ("list",), ("link", "--image", "2"),
+                    ("get", "--images", "1", "--out", str(self.out))):
+            code, _, err = self.run_cli(cmd[0], "--source", self.SRC, "--repo", repo, *cmd[1:])
+            self.assertEqual(code, 3, cmd)
+            self.assertIn("access on-site, held by registry-office – not digitised", err)
+        self.assertEqual(self.net.calls, [])       # the portal is never contacted
+        self.assertFalse(self.out.exists())
+
+    def test_link_mode_allows_only_links(self):
+        repo = self.add_source(access={"mode": "link"})
+        code, out, _ = self.run_cli("link", "--source", self.SRC, "--repo", repo, "--image", "2")
+        self.assertEqual(code, 0)
+        self.assertIn("/dao/", out)
+        code, _, err = self.run_cli("get", "--source", self.SRC, "--repo", repo, "--images", "1", "--out", str(self.out), "--dry-run")
+        self.assertEqual(code, 3)
+        self.assertIn("'get' needs automated", err)
+
+    def test_source_never_widens_the_portal(self):
+        matricula = "https://data.matricula-online.eu/de/oesterreich/beispiel/vzorkov/01-01/"
+        repo = self.add_source(url=matricula, access={"mode": "automated"})
+        code, _, err = self.run_cli("list", "--source", self.SRC, "--repo", repo)
+        self.assertEqual(code, 3)
+        self.assertIn("robots.txt", err)
+        self.assertEqual(self.net.calls, [])
+
+    def test_missing_source_and_missing_url(self):
+        code, _, err = self.run_cli("book", "--source", "SO-20261025-ab-xxx", "--repo", self._tmp.name)
+        self.assertEqual(code, 1)
+        self.assertIn("not found", err)
+        code, _, err = self.run_cli("book")
+        self.assertEqual(code, 1)
+        self.assertIn("give a book URL or --source", err)
+
+
 class Catalogue(Case):
     """regions/*/portals.yaml – what the tool may do on each portal (ADR 0050)."""
 
