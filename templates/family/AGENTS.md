@@ -26,6 +26,10 @@ be a fork of `proavus`.
   the user's yes to the list from `get --dry-run`, into a folder outside this
   repository (only small crops go into `records/evidence/`); Matricula and
   Acta Publica: link only.
+- Page → image: from the anchors in the source's `image_map`
+  (`uv run .proavus/tools/locate.py <SO-ID> --page N`). When an image shows
+  another page than expected, read the page number there and add it as an
+  anchor `{page, image, by, on}` to `image_map` – never a computed one.
 - `START-HERE.md` and `views/` are generated, never edited or committed.
   Family map on request: `uv run .proavus/tools/build_views.py .` →
   `views/mapa.html` (starting person: `map.root` in `repo.yaml`). To show it

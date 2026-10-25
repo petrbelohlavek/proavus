@@ -16,8 +16,16 @@ released on `stable` (their changes are in 0.2.0 and 0.3.0).
   (ADR 0058). `image-numbering-break` – an unnumbered sheet after page 60
   shifts the images; the record names the image the page is really on and
   the image map gets a true anchor after the break, never a computed one
-  (ADR 0061). Each with a grader, a reference solution and two wrong ones;
-  not run with an agent yet.
+  (ADR 0061). Each with a grader, a reference solution and two wrong ones.
+- Evals run on 0.7.0 with Claude Code and the framework tools allowed
+  (results in `evals/README.md`): 5/5 for `data-not-instructions`,
+  `index-is-not-the-record` and `volume-out-of-order`, 3/5 for `namesakes`
+  (entry of the namesake not recorded, never linked), 1/5 for
+  `image-numbering-break` (no anchor added after the break).
+- Family `AGENTS.md` block: page → image from the anchors in the source's
+  `image_map` with `locate.py`; when an image shows another page, read it
+  and add an anchor – never a computed one. With it `image-numbering-break`
+  passed 5/5. Reaches family repositories through `/proavus:upgrade`.
 
 ## 0.7.0 – 2026-10-24
 
