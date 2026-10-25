@@ -184,7 +184,7 @@ source:
 | Validator | `uv run tools/validate.py <family-repo>` |
 | Family map | `uv run tools/build_views.py <family-repo>` → `views/mapa.html` |
 | Bringing older research in | [docs/import.md](docs/import.md) – `uv run tools/bulk_import.py plan.yaml --dry-run`, example in [examples/import/](examples/import/) |
-| Archive images | `uv run tools/archive_fetch.py list <book URL>` (ARON; Acta Publica and Matricula: links only, ADR 0041) |
+| Archive images | `uv run tools/archive_fetch.py list <book URL>` or `--source <SO-ID> --repo <family-repo>` (ARON; Acta Publica and Matricula: links only, ADR 0041; the source's access respected, ADR 0065) |
 | Merging duplicate assertions | `uv run tools/merge_assertions.py plan <family-repo> [A-ID …]`, then `apply` with the IDs (ADR 0063) |
 | Access and time limits | `uv run tools/access.py source <family-repo> <SO-ID>`, `uv run tools/access.py limit <family-repo> --event death --year 1995` (ADR 0064) |
 | Page → image | `uv run tools/locate.py <SO-ID> --page N --repo <family-repo>` – from the anchors in `source.image_map` (ADR 0061) |

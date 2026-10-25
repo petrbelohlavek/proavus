@@ -17,6 +17,13 @@ Usage:
   archive_fetch.py portals [--region at] the portal catalogue: what this tool
                                          may do there and notes from research
 
+  Instead of URL: --source SO-ID [--volume V] [--repo DIR] takes the book URL
+  from the source in the family repository (the volume's url, else the
+  source's) and respects its access mode (ADR 0064): a source whose
+  access.mode allows less than the portal – manual, on-site, request,
+  none – refuses what it does not allow (book, list and get need automated;
+  link needs link or automated).
+
 Portals (catalogue: regions/*/portals.yaml, ADR 0050):
   automated – ARON (ARchiv ONline, Východočeské archivy): book, list, link,
       get through its public interface.
@@ -46,6 +53,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from proavuslib.frontmatter import split  # noqa: E402
+
 REGIONS = Path(__file__).resolve().parent.parent / "regions"   # framework or .proavus/
 ACCESS = ("automated", "link", "manual")
 USER_AGENT = "Proavus-archive-fetch (personal genealogical research; https://github.com/petrbelohlavek/proavus)"
@@ -61,6 +71,50 @@ class FetchError(Exception):
 
 class NotAllowed(FetchError):
     pass
+
+
+# What each command needs from a source's access mode (ADR 0064), and how much each mode allows.
+NEEDS = {"book": "automated", "list": "automated", "get": "automated", "link": "link"}
+REACH = {"automated": 3, "link": 2, "manual": 1, "on-site": 1, "request": 1, "none": 0}
+
+
+def load_source(repo: Path, source_id: str) -> dict:
+    """Header of a source file of the family repository."""
+    hits = sorted((repo / "sources").glob(f"{source_id}*.md")) if (repo / "sources").is_dir() else []
+    if len(hits) != 1:
+        raise FetchError(f"source {source_id} not found in {repo / 'sources'}")
+    data, _ = split(hits[0].read_text(encoding="utf-8"))
+    if data.get("type") != "source":
+        raise FetchError(f"{source_id} is not a source")
+    return data
+
+
+def source_url(source: dict, volume=None) -> str:
+    """The book URL of a source: its volume's url, else its own."""
+    if volume is not None:
+        for v in source.get("volumes") or []:
+            if isinstance(v, dict) and str(v.get("volume")).strip().casefold() == str(volume).strip().casefold():
+                if v.get("url"):
+                    return v["url"]
+                break
+        else:
+            raise FetchError(f"{source.get('id')} has no volume {volume!r}")
+    if not source.get("url"):
+        raise FetchError(f"{source.get('id')} has no url" + (f" for volume {volume!r}" if volume is not None else ""))
+    return source["url"]
+
+
+def check_source_access(source: dict, cmd: str) -> None:
+    """Refuse what the source's own access mode does not allow (ADR 0064)."""
+    access = source.get("access") if isinstance(source.get("access"), dict) else {}
+    mode = access.get("mode")
+    need = NEEDS.get(cmd)
+    if mode is None or need is None or REACH.get(mode, 0) >= REACH[need]:
+        return
+    held = f", held by {access['held_by']}" if access.get("held_by") else ""
+    note = f" – {access['note']}" if access.get("note") else ""
+    raise NotAllowed(f"{source.get('id')}: access {mode}{held}{note}. '{cmd}' needs {need}: "
+                     "nothing is done automatically for this source – a person reads it as its access says")
 
 
 @dataclass
@@ -364,7 +418,10 @@ def main(argv: list[str] | None = None, fetch=http_get) -> int:
     p.add_argument("--region", help="only the portals of this regional package, e.g. at")
     for name in ("book", "list", "link", "get"):
         p = sub.add_parser(name)
-        p.add_argument("url", help="book URL (or ARON record ID, Acta Publica book number)")
+        p.add_argument("url", nargs="?", help="book URL (or ARON record ID, Acta Publica book number); or --source")
+        p.add_argument("--source", help="source ID (SO-…) of the family repository: its URL and its access mode")
+        p.add_argument("--volume", help="with --source: the volume whose url to use")
+        p.add_argument("--repo", default=".", help="with --source: the family repository (default: .)")
         if name == "list":
             p.add_argument("--from", dest="first", type=int, default=1)
             p.add_argument("--to", dest="last", type=int)
@@ -381,7 +438,14 @@ def main(argv: list[str] | None = None, fetch=http_get) -> int:
         if args.cmd == "portals":
             print_catalog(load_catalog(), args.region)
             return 0
-        portal = portal_for(args.url, fetch)
+        url = args.url
+        if args.source:
+            source = load_source(Path(args.repo).resolve(), args.source)
+            check_source_access(source, args.cmd)
+            url = url or source_url(source, args.volume)
+        elif not url:
+            raise FetchError("give a book URL or --source SO-ID")
+        portal = portal_for(url, fetch)
         if args.cmd == "link":
             print(portal.link(args.image))
             return 0
